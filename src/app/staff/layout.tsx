@@ -57,6 +57,11 @@ export default async function StaffLayout({
                 </Link>
               </li>
               <li>
+                <Link href="/staff/activities" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                  <span className="ml-3">Manage Activities</span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/teacher/students" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
                   <span className="ml-3 text-sm text-gray-500">(Go to Teacher Panel)</span>
                 </Link>

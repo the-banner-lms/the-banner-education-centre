@@ -72,6 +72,11 @@ export default async function AdminLayout({
                 <span className="ms-3">Platform Messages</span>
               </Link>
             </li>
+            <li>
+              <Link href="/admin/activities" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <span className="ms-3">Manage Activities</span>
+              </Link>
+            </li>
           </ul>
         </div>
       </div>
