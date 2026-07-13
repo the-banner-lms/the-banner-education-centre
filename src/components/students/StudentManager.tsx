@@ -1,0 +1,283 @@
+import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee } from '@/app/actions/studentActions'
+import ProfilePictureUpload from '@/app/admin/students/[id]/ProfilePictureUpload' // We'll move this later if needed, or leave it and update import
+import Link from 'next/link'
+import { getRoleBannerGradient, getRoleBadgeStyle } from '@/utils/theme'
+import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
+import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
+
+export default function StudentManager({
+  student,
+  studentId,
+  performances,
+  tuitionFees,
+  attendanceHistory,
+  weekStartDateStr,
+  prevWeekStr,
+  nextWeekStr,
+  weekEndDateFullStr,
+  basePath,
+  showTuition = false,
+}: {
+  student: any;
+  studentId: string;
+  performances: any[];
+  tuitionFees: any[];
+  attendanceHistory: any[];
+  weekStartDateStr: string;
+  prevWeekStr: string;
+  nextWeekStr: string;
+  weekEndDateFullStr: string;
+  basePath: string;
+  showTuition?: boolean;
+}) {
+  const gradeOptions = ['Excellent', 'Good', 'Needs Improvement']
+
+  const currentPerformances = performances?.filter(p => {
+    return p.week_start_date >= weekStartDateStr && p.week_start_date <= weekEndDateFullStr;
+  }) || [];
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div className="flex items-center space-x-4 mb-6">
+        <Link href={basePath} className="text-sm text-indigo-600 hover:text-indigo-900">
+          &larr; Back to Directory
+        </Link>
+      </div>
+
+      <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+        <div className={`h-32 w-full ${getRoleBannerGradient(student.role)}`}></div>
+        <div className="px-6 pb-6 relative">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end -mt-16 mb-4 gap-4">
+            <div className="relative group flex flex-col items-center">
+              <img 
+                src={student.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.email)} 
+                alt="Profile" 
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-white"
+                referrerPolicy="no-referrer"
+              />
+              <div className="mt-3">
+                <ProfilePictureUpload studentId={studentId} uploadAction={uploadProfilePicture} />
+              </div>
+            </div>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{student.full_name || 'No Name Provided'}</h1>
+            <p className="text-gray-600 font-medium">Student at The Banner Education Centre</p>
+            <p className="text-sm text-gray-500 mt-1">{student.email}</p>
+            <p className="text-xs text-gray-400 mt-2">Student ID: {student.id}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">Record Daily Attendance (နေ့စဉ် မှတ်တမ်း တင်ရန်)</h2>
+        </div>
+        <div className="p-6">
+          <form action={async (formData) => {
+            'use server'
+            const data = {
+              student_id: studentId,
+              date: formData.get('date') as string,
+              morning_status: formData.get('morning_status') as string,
+              afternoon_status: formData.get('afternoon_status') as string,
+              remarks: formData.get('remarks') as string,
+            }
+            await markDailyAttendance(data)
+          }} className="space-y-4">
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="w-full lg:w-auto flex justify-center lg:justify-start">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                  <DailyDatePicker recordedDates={attendanceHistory ? attendanceHistory.map(r => r.date) : []} />
+                </div>
+              </div>
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 h-min">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Morning Session</label>
+                  <select name="morning_status" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border">
+                    <option value="present">Present (✅)</option>
+                    <option value="absent">Absent (❌)</option>
+                    <option value="leave">Leave (⚠️)</option>
+                    <option value="off">Off Day (⏸️)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Afternoon Session</label>
+                  <select name="afternoon_status" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border">
+                    <option value="present">Present (✅)</option>
+                    <option value="absent">Absent (❌)</option>
+                    <option value="leave">Leave (⚠️)</option>
+                    <option value="off">Off Day (⏸️)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Remarks (Optional)</label>
+              <input type="text" name="remarks" placeholder="Late, sick, etc." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" />
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">
+                Save Attendance
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900">Add Weekly Performance (အပတ်စဉ် မှတ်တမ်း တင်ရန်)</h2>
+        </div>
+        <div className="p-6">
+        <form action={async (formData) => {
+          'use server'
+          const data = {
+            student_id: studentId,
+            week_start_date: formData.get('week_start_date') as string,
+            burmese_score: formData.get('burmese_score') as string,
+            english_score: formData.get('english_score') as string,
+            math_score: formData.get('math_score') as string,
+            science_score: formData.get('science_score') as string,
+            sports_score: formData.get('sports_score') as string,
+            art_score: formData.get('art_score') as string,
+            social_score: formData.get('social_score') as string,
+            health_score: formData.get('health_score') as string,
+            teamwork_score: formData.get('teamwork_score') as string,
+            discipline_score: formData.get('discipline_score') as string,
+            remarks: formData.get('remarks') as string,
+          }
+          await saveWeeklyPerformance(data)
+        }} className="space-y-4">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="w-full lg:w-auto flex justify-center lg:justify-start">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Week Start Date</label>
+                <WeeklyDatePicker recordedWeeks={performances ? performances.map(r => r.week_start_date) : []} />
+              </div>
+            </div>
+            
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 h-min">
+              {['burmese', 'english', 'math', 'science', 'sports', 'art', 'social', 'health', 'teamwork', 'discipline'].map((category) => (
+                <div key={category}>
+                  <label className="block text-xs font-medium text-gray-700 capitalize">{category}</label>
+                  <select name={`${category}_score`} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-1.5 border">
+                    {gradeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700">Staff/Teacher Remarks</label>
+            <textarea required name="remarks" rows={2} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" placeholder="Enter performance remarks here..."></textarea>
+          </div>
+
+          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm font-semibold mt-4">
+            Save Performance
+          </button>
+        </form>
+        </div>
+      </div>
+
+      {showTuition && (
+        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">Record Monthly Tuition Fee (လစဉ် မှတ်တမ်း တင်ရန်)</h2>
+          </div>
+          <div className="p-6">
+            <form action={async (formData) => {
+              'use server'
+              const data = {
+                student_id: studentId,
+                month_year: formData.get('month_year') as string,
+                status: formData.get('status') as string,
+                remarks: formData.get('remarks') as string,
+              }
+              await recordMonthlyTuitionFee(data)
+            }} className="space-y-4">
+              <div className="flex flex-col lg:flex-row gap-8">
+                <div className="w-full lg:w-auto flex justify-center lg:justify-start">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                    <MonthlyDatePicker recordedMonths={tuitionFees ? tuitionFees.map(r => r.month_year) : []} />
+                  </div>
+                </div>
+                <div className="flex-1 h-min">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <select name="status" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border md:w-1/2 lg:w-1/3">
+                      <option value="paid">Paid</option>
+                      <option value="unpaid">Unpaid</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700">Remarks (Optional)</label>
+                <input type="text" name="remarks" placeholder="Payment reference, etc." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" />
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700">
+                  Save Tuition Fee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <h2 className="text-xl font-bold mb-4 text-gray-900">Performance History</h2>
+          <WeeklyPerformanceDisplay 
+            performances={currentPerformances}
+            weekStartDate={weekStartDateStr}
+            prevWeekUrl={`${basePath}/${studentId}?week=${prevWeekStr}`}
+            nextWeekUrl={`${basePath}/${studentId}?week=${nextWeekStr}`}
+          />
+      </div>
+
+      {showTuition && (
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">Tuition Fees History</h2>
+          {tuitionFees && tuitionFees.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white">
+                  {tuitionFees.map(fee => (
+                    <tr key={fee.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{fee.month_year}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${fee.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {fee.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{new Date(fee.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No tuition fee records found.</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
