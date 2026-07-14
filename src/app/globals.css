@@ -32,6 +32,97 @@ body {
 .ql-align-center { text-align: center !important; }
 .ql-align-right { text-align: right !important; }
 .ql-align-justify { text-align: justify !important; }
+.ql-font-arial { font-family: Arial, Helvetica, sans-serif; }
+.ql-font-georgia { font-family: Georgia, 'Times New Roman', serif; }
+.ql-font-times-new-roman { font-family: 'Times New Roman', Times, serif; }
+.ql-font-courier-new { font-family: 'Courier New', Courier, monospace; }
+.ql-font-noto-sans-myanmar { font-family: 'Noto Sans Myanmar', Arial, sans-serif; }
+
+.editor-shell .quill-wrapper .ql-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: #f8fafc;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+  scrollbar-width: thin;
+}
+
+.editor-shell .quill-wrapper .ql-toolbar .ql-formats {
+  flex-shrink: 0;
+  margin-right: 6px;
+  padding-right: 6px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.editor-shell .quill-wrapper .ql-container {
+  min-height: 420px;
+  font-size: 16px;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.editor-shell .quill-wrapper .ql-editor {
+  min-height: 420px;
+  padding: 24px;
+  line-height: 1.6;
+}
+
+.editor-shell .quill-wrapper.is-fullscreen .ql-container,
+.editor-shell .quill-wrapper.is-fullscreen .ql-editor {
+  min-height: calc(100vh - 190px);
+}
+
+.editor-shell .ql-toolbar button.ql-undo::before,
+.editor-shell .ql-toolbar button.ql-redo::before {
+  display: block;
+  color: #334155;
+  font-size: 20px;
+  line-height: 18px;
+}
+
+.editor-shell .ql-toolbar button.ql-undo::before { content: '↶'; }
+.editor-shell .ql-toolbar button.ql-redo::before { content: '↷'; }
+
+.editor-shell .ql-snow .ql-picker.ql-font { width: 150px; }
+.editor-shell .ql-snow .ql-picker.ql-lineheight { width: 88px; }
+
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-label::before,
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-item::before { content: 'Arial'; }
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='georgia']::before,
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='georgia']::before { content: 'Georgia'; font-family: Georgia, serif; }
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='times-new-roman']::before,
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='times-new-roman']::before { content: 'Times New Roman'; font-family: 'Times New Roman', serif; }
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='courier-new']::before,
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='courier-new']::before { content: 'Courier New'; font-family: 'Courier New', monospace; }
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='noto-sans-myanmar']::before,
+.editor-shell .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='noto-sans-myanmar']::before { content: 'Myanmar'; font-family: 'Noto Sans Myanmar', sans-serif; }
+
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-label::before,
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item::before { content: 'Spacing'; }
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-label[data-value='1']::before,
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item[data-value='1']::before { content: '1.0'; }
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-label[data-value='1.15']::before,
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item[data-value='1.15']::before { content: '1.15'; }
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-label[data-value='1.5']::before,
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item[data-value='1.5']::before { content: '1.5'; }
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-label[data-value='2']::before,
+.editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item[data-value='2']::before { content: '2.0'; }
+
+@media (max-width: 640px) {
+  .editor-shell .quill-wrapper .ql-editor {
+    min-height: 360px;
+    padding: 16px;
+  }
+
+  .editor-shell .quill-wrapper .ql-container {
+    min-height: 360px;
+  }
+}
 
 /* Let Tailwind Typography handle paragraph margins naturally, 
    but ensure empty paragraphs (blank lines from Enter) have height */

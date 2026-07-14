@@ -24,6 +24,7 @@ export default function AnnouncementForm({ initialData, roleBasePath }: Announce
   const router = useRouter();
 
   const isEditing = !!initialData;
+  const editorDraftKey = `announcement:${roleBasePath}:${initialData?.id || 'new'}`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +48,7 @@ export default function AnnouncementForm({ initialData, roleBasePath }: Announce
       if (result.error) {
         setError(result.error);
       } else {
+        localStorage.removeItem(`banner-editor-draft:${editorDraftKey}`);
         router.push(roleBasePath);
       }
     });
@@ -92,6 +94,7 @@ export default function AnnouncementForm({ initialData, roleBasePath }: Announce
           label="Main Content"
           value={content}
           onChange={setContent}
+          draftKey={editorDraftKey}
           required
         />
       </div>

@@ -25,6 +25,8 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
   const router = useRouter();
 
   const isEditing = !!initialData;
+  const editorDraftKey = `blog:${roleBasePath}:${initialData?.id || 'new'}`;
+  const clearEditorDraft = () => localStorage.removeItem(`banner-editor-draft:${editorDraftKey}`);
 
   const handleDelete = async () => {
     if (!initialData?.id) return;
@@ -34,6 +36,7 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
     startTransition(async () => {
       try {
         await deleteBlog(initialData.id);
+        clearEditorDraft();
         router.push(roleBasePath);
       } catch (err: any) {
         setError(err.message || 'An error occurred while deleting');
@@ -67,6 +70,7 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
         } else {
           await createBlog(formData);
         }
+        clearEditorDraft();
         router.push(roleBasePath);
       } catch (err: any) {
         setError(err.message || 'An error occurred');
@@ -113,6 +117,7 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
           label="Main Content (Upload images directly here using the image icon)"
           value={content}
           onChange={setContent}
+          draftKey={editorDraftKey}
           required
         />
       </div>
