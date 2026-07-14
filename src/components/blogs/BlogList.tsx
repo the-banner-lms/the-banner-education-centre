@@ -62,7 +62,49 @@ export default function BlogList({ blogs, roleBasePath, currentUserId, currentUs
           + New Post
         </Link>
       </div>
-      <div className="overflow-x-auto overscroll-x-contain">
+      <div className="divide-y divide-gray-200 md:hidden">
+        {blogs.map((item) => {
+          const canEdit = currentUserRole === 'admin' || currentUserId === item.author_id;
+          return (
+            <article key={item.id} className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <Link href={`/blog/${item.id}`} target="_blank" className="font-semibold text-orange-600 hover:underline">
+                  {item.title}
+                </Link>
+                <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ${item.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                  {item.published ? 'Published' : 'Draft'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+              {canEdit && (
+                <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
+                  <button
+                    onClick={() => handleToggleStatus(item.id, item.published)}
+                    disabled={isPending}
+                    className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    {item.published ? 'Set as Draft' : 'Publish'}
+                  </button>
+                  <Link
+                    href={`${roleBasePath}/${item.id}/edit`}
+                    className="rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={isPending}
+                    className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      <div className="hidden overflow-x-auto overscroll-x-contain md:block">
       <table className="min-w-[680px] divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
 
 interface Comment {
   id: string;
@@ -20,7 +19,6 @@ export default function BlogComments({ postId }: { postId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
-  const router = useRouter();
 
   const fetchComments = useCallback(async () => {
     const { data, error } = await supabase

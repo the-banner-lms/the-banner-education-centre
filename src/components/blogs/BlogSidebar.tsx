@@ -155,7 +155,7 @@ export default async function BlogSidebar() {
           {recentComments?.map(comment => (
             <li key={comment.id} className="text-sm border-l-2 border-gray-100 pl-3 py-1 hover:border-orange-400 transition-colors">
               <span className="font-bold text-gray-800 text-xs tracking-wide uppercase">{(comment as any).profiles?.full_name || 'Anonymous'}</span>
-              <p className="text-gray-600 line-clamp-2 italic mt-1 text-sm">"{comment.content}"</p>
+              <p className="text-gray-600 line-clamp-2 italic mt-1 text-sm">&quot;{comment.content}&quot;</p>
               {comment.post_id && (
                 <Link href={`/blog/${comment.post_id}`} className="text-[11px] font-semibold text-orange-500 hover:text-orange-700 transition-colors mt-2 inline-flex items-center">
                   Read Context <span className="ml-1">→</span>

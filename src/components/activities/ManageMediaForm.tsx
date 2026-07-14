@@ -1,13 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { addPhotoToAlbum, addVideoToAlbum, deleteMedia, replacePhoto, updateMediaCaption } from '@/app/actions/activitiesActions'
 import type { ActivityMedia } from '@/app/actions/activitiesActions'
 import { TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 
 export default function ManageMediaForm({ albumId, existingMedia }: { albumId: string, existingMedia: ActivityMedia[] }) {
-  const router = useRouter()
   const [photoLoading, setPhotoLoading] = useState(false)
   const [videoLoading, setVideoLoading] = useState(false)
   const [replacingId, setReplacingId] = useState<string | null>(null)

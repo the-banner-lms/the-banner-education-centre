@@ -36,7 +36,37 @@ export default async function AdminTeamPage() {
       </div>
       
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-gray-200 md:hidden">
+          {teamMembers?.map((member) => (
+            <article key={member.id} className="space-y-3 p-4">
+              <div className="flex items-center gap-3">
+                <img
+                  className="h-12 w-12 rounded-full border border-gray-200 object-cover"
+                  src={member.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.name)}
+                  alt=""
+                />
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate font-semibold text-gray-900">{member.name}</h2>
+                  <p className="truncate text-sm text-gray-600">{member.role}</p>
+                </div>
+              </div>
+              {member.bio && <p className="line-clamp-2 text-sm text-gray-500">{member.bio}</p>}
+              <div className="flex gap-2 border-t border-gray-100 pt-3">
+                <Link
+                  href={`/admin/team/${member.id}/edit`}
+                  className="rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  Edit
+                </Link>
+                <DeleteTeamButton id={member.id} />
+              </div>
+            </article>
+          ))}
+          {(!teamMembers || teamMembers.length === 0) && (
+            <p className="p-6 text-center text-sm text-gray-500">No team members found.</p>
+          )}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -89,7 +119,7 @@ export default async function AdminTeamPage() {
               {(!teamMembers || teamMembers.length === 0) && (
                 <tr>
                   <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">
-                    No team members found. Click "Add Team Member" to create one.
+                    No team members found. Click &quot;Add Team Member&quot; to create one.
                   </td>
                 </tr>
               )}

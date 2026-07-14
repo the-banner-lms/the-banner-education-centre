@@ -9,7 +9,7 @@ export async function uploadBlogImage(file: File): Promise<string | null> {
   const filePath = `${fileName}`
 
   try {
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('blog_images')
       .upload(filePath, file)
 

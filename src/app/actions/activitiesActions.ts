@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
@@ -19,22 +18,6 @@ async function verifyStaffAccess() {
   const hasAccess = profile?.role === 'admin' || profile?.role === 'staff'
   if (!hasAccess) {
     throw new Error('Unauthorized: Only staff/admins can perform this action.')
-  }
-}
-
-async function verifyAdminAccess() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    throw new Error('Unauthorized: Only admins can perform this action.')
   }
 }
 
@@ -72,7 +55,7 @@ export async function createAlbum(formData: FormData) {
     const fileExt = coverFile.name.split('.').pop()
     const fileName = `album-covers/${Date.now()}-${Math.random()}.${fileExt}`
     
-    const { data, error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('activities')
       .upload(fileName, coverFile)
 
@@ -129,7 +112,7 @@ export async function updateAlbum(albumId: string, formData: FormData) {
     const fileExt = coverFile.name.split('.').pop()
     const fileName = `album-covers/${Date.now()}-${Math.random()}.${fileExt}`
     
-    const { data, error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('activities')
       .upload(fileName, coverFile)
 
@@ -258,7 +241,7 @@ export async function addPhotoToAlbum(albumId: string, formData: FormData) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${albumId}/${Date.now()}-${Math.random()}.${fileExt}`
       
-      const { data, error: uploadError } = await supabaseAdmin.storage
+      const { error: uploadError } = await supabaseAdmin.storage
         .from('activities')
         .upload(fileName, file)
 
@@ -322,7 +305,7 @@ export async function replacePhoto(mediaId: string, albumId: string, formData: F
   const fileExt = file.name.split('.').pop()
   const fileName = `${albumId}/${Date.now()}-${Math.random()}.${fileExt}`
   
-  const { data, error: uploadError } = await supabaseAdmin.storage
+  const { error: uploadError } = await supabaseAdmin.storage
     .from('activities')
     .upload(fileName, file)
 

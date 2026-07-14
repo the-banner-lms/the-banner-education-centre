@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { updateUserStatus, updateUserRole, deleteUser } from './actions'
+import { updateUserStatus, updateUserRole } from './actions'
 import DeleteUserButton from './DeleteUserButton'
 import { isAdmin } from '@/utils/supabase/queries'
 import { redirect } from 'next/navigation'

@@ -59,7 +59,7 @@ export async function uploadProfilePicture(studentId: string, formData: FormData
   const fileName = `${studentId}-${Math.random()}.${fileExt}`
   
   // Upload to Supabase Storage 'avatars' bucket
-  const { data, error: uploadError } = await supabaseAdmin.storage
+  const { error: uploadError } = await supabaseAdmin.storage
     .from('avatars')
     .upload(fileName, file)
 

@@ -131,7 +131,7 @@ export default function WeeklyPerformanceDisplay({
 
                 {perf.remarks && (
                   <div className="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
-                    <p className="text-sm font-semibold text-amber-800 uppercase tracking-wider mb-1">Teacher's Remarks</p>
+                    <p className="text-sm font-semibold text-amber-800 uppercase tracking-wider mb-1">Teacher&apos;s Remarks</p>
                     <p className="text-gray-700 whitespace-pre-wrap">{perf.remarks}</p>
                   </div>
                 )}

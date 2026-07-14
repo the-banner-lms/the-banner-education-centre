@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getAlbums, getStandaloneVideos } from '@/app/actions/activitiesActions'
-import { PhotoIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
+import { PhotoIcon } from '@heroicons/react/24/outline'
 import ManageStandaloneVideos from '@/components/activities/ManageStandaloneVideos'
 
 export const metadata = {

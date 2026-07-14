@@ -24,7 +24,8 @@ const ReactQuill = dynamic(
       // Register Image Resize
       if (typeof window !== 'undefined') {
         (window as any).Quill = Quill;
-        const ImageResize = require('quill-image-resize-module-react').default;
+        const imageResizeModule = await import('quill-image-resize-module-react');
+        const ImageResize = imageResizeModule.default;
         Quill.register('modules/imageResize', ImageResize);
       }
 
@@ -43,7 +44,6 @@ const ReactQuill = dynamic(
       Quill.register(SmartBreak);
     }
 
-    // eslint-disable-next-line react/display-name
     return function ForwardedQuill(props: any) {
       return <RQ ref={props.forwardedRef} {...props} />;
     };

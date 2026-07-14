@@ -60,8 +60,6 @@ export default async function StudentDetailPage(props: {
 
   const weekParam = typeof searchParams.week === 'string' ? searchParams.week : null;
   const weekStartDateStr = weekParam || getStartOfCurrentWeek();
-  const weekStartDate = new Date(weekStartDateStr);
-
   const [y, m, d] = weekStartDateStr.split('-').map(Number);
   
   const nextWeek = new Date(y, m - 1, d + 7);

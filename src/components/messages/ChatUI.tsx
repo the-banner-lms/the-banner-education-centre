@@ -55,7 +55,7 @@ export default function ChatUI({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [currentUserId, otherUser.id, supabase])
+  }, [currentUserId, otherUser.avatar_url, otherUser.full_name, otherUser.id, otherUser.role, supabase])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()

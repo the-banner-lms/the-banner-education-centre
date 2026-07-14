@@ -20,7 +20,6 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [tags, setTags] = useState(Array.isArray(initialData?.tags) ? initialData.tags.join(', ') : (typeof initialData?.tags === 'string' ? initialData.tags : ''));
-  const [published, setPublished] = useState(initialData?.published ?? true);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();

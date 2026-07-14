@@ -1,7 +1,7 @@
 import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee } from '@/app/actions/studentActions'
 import ProfilePictureUpload from '@/app/admin/students/[id]/ProfilePictureUpload' // We'll move this later if needed, or leave it and update import
 import Link from 'next/link'
-import { getRoleBannerGradient, getRoleBadgeStyle } from '@/utils/theme'
+import { getRoleBannerGradient } from '@/utils/theme'
 import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 

@@ -105,7 +105,7 @@ export default function TeacherReportsViewer({ currentDate, reports, attendanceR
           
           {!selectedTeacherId ? (
             <div className="p-8 text-center text-gray-500">
-              Select a teacher's report from the left to view the attendance they submitted.
+              Select a teacher&apos;s report from the left to view the attendance they submitted.
             </div>
           ) : (
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">

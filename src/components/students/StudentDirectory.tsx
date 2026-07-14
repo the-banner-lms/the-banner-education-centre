@@ -14,7 +14,38 @@ export default function StudentDirectory({
       <h1 className="text-2xl font-bold mb-6 text-gray-900">{title}</h1>
       
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-        <div className="overflow-x-auto overscroll-x-contain">
+        <div className="divide-y divide-gray-200 md:hidden">
+          {students?.map((student) => (
+            <article key={student.id} className="p-4">
+              <div className="flex items-center gap-3">
+                <Link href={`/dashboard/${student.id}`} className="shrink-0">
+                  <img
+                    className="h-12 w-12 rounded-full object-cover ring-1 ring-gray-200"
+                    src={student.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.email)}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/dashboard/${student.id}`} className="block truncate font-semibold text-gray-900 hover:text-indigo-600">
+                    {student.full_name || 'No Name'}
+                  </Link>
+                  <p className="truncate text-sm text-gray-500">{student.email}</p>
+                </div>
+              </div>
+              <Link
+                href={`${basePath}/${student.id}`}
+                className="mt-3 block rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+              >
+                Manage Profile
+              </Link>
+            </article>
+          ))}
+          {(!students || students.length === 0) && (
+            <p className="p-6 text-center text-sm text-gray-500">No students found.</p>
+          )}
+        </div>
+        <div className="hidden overflow-x-auto overscroll-x-contain md:block">
         <table className="min-w-[640px] divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

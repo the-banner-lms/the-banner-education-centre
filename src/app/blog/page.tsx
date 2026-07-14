@@ -32,7 +32,7 @@ export default async function BlogPage({
     query = query.ilike('title', `%${q}%`);
   }
 
-  const { data: posts, error } = await query;
+  const { data: posts } = await query;
 
   // Filter by archive if needed
   let filteredPosts = posts || [];

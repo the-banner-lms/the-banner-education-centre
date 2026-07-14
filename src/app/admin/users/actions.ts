@@ -11,7 +11,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function updateUserStatus(userId: string, status: 'approved' | 'rejected', formData?: FormData) {
+export async function updateUserStatus(userId: string, status: 'approved' | 'rejected', _formData?: FormData) {
+  void _formData
   // 1. Verify caller is an admin
   const supabase = await createServerClient()
   const hasAdminAccess = await isAdmin(supabase)
@@ -35,7 +36,8 @@ export async function updateUserStatus(userId: string, status: 'approved' | 'rej
   revalidatePath('/admin/users')
 }
 
-export async function updateUserRole(userId: string, role: string, formData?: FormData) {
+export async function updateUserRole(userId: string, role: string, _formData?: FormData) {
+  void _formData
   // 1. Verify caller is an admin
   const supabase = await createServerClient()
   const hasAdminAccess = await isAdmin(supabase)

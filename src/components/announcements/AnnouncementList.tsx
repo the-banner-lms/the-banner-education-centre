@@ -56,7 +56,45 @@ export default function AnnouncementList({ announcements, roleBasePath, currentU
           + New Announcement
         </Link>
       </div>
-      <div className="overflow-x-auto overscroll-x-contain">
+      <div className="divide-y divide-gray-200 md:hidden">
+        {announcements.map((item) => {
+          const canEdit = currentUserRole === 'admin' || currentUserId === item.author_id;
+          return (
+            <article key={item.id} className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <Link href={`/announcements/${item.id}`} className="font-semibold text-orange-600 hover:underline">
+                  {item.title}
+                </Link>
+                <span className="shrink-0 rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold capitalize text-orange-800">
+                  {item.target_role || 'all'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                <span className="capitalize">By {item.author_role || 'Admin'}</span>
+                <span>{new Date(item.created_at).toLocaleDateString()}</span>
+              </div>
+              {canEdit && (
+                <div className="flex gap-2 border-t border-gray-100 pt-3">
+                  <Link
+                    href={`${roleBasePath}/${item.id}/edit`}
+                    className="rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={isPending}
+                    className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      <div className="hidden overflow-x-auto overscroll-x-contain md:block">
       <table className="min-w-[760px] divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>

@@ -24,7 +24,7 @@ export default function ManageStandaloneVideos({ videos }: { videos: ActivityMed
       await addStandaloneVideo(url, caption)
       setUrl('')
       setCaption('')
-    } catch (error) {
+    } catch {
       alert('Error adding video')
     }
     setLoading(false)
@@ -34,7 +34,7 @@ export default function ManageStandaloneVideos({ videos }: { videos: ActivityMed
     if (confirm('Are you sure you want to delete this video?')) {
       try {
         await deleteStandaloneVideo(id)
-      } catch (error) {
+      } catch {
         alert('Error deleting video')
       }
     }
@@ -43,7 +43,7 @@ export default function ManageStandaloneVideos({ videos }: { videos: ActivityMed
   const handleUpdateCaption = async (id: string, newCaption: string) => {
     try {
       await updateMediaCaption(id, '', newCaption, true)
-    } catch (err) {
+    } catch {
       alert('Error updating caption')
     }
   }
