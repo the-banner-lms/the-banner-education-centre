@@ -47,53 +47,30 @@ export default function TeamForm({ initialData }: { initialData?: any }) {
           </div>
         </div>
 
-        {/* Email */}
-        <div className="sm:col-span-1">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address (Optional)</label>
-          <div className="mt-1">
-            <input type="email" name="email" id="email" defaultValue={initialData?.email} className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
-          </div>
-        </div>
-
         {/* Image URL */}
         <div className="sm:col-span-1">
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700">Image URL</label>
+          <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">Image URL</label>
           <div className="mt-1">
-            <input type="text" name="image" id="image" defaultValue={initialData?.image} placeholder="/images/team/placeholder.png" className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
+            <input type="text" name="image_url" id="image_url" defaultValue={initialData?.image_url} placeholder="/images/team/placeholder.png" className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
           </div>
         </div>
 
-        {/* About */}
-        <div className="sm:col-span-2">
-          <label htmlFor="about" className="block text-sm font-medium text-gray-700">About (Bio)</label>
-          <div className="mt-1">
-            <textarea name="about" id="about" rows={4} required defaultValue={initialData?.about} className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
-          </div>
-        </div>
-
-        {/* Skills */}
-        <div className="sm:col-span-2">
-          <label htmlFor="skills" className="block text-sm font-medium text-gray-700">Skills (Comma-separated)</label>
-          <div className="mt-1">
-            <input type="text" name="skills" id="skills" defaultValue={initialData?.skills?.join(', ')} placeholder="Leadership, Mentoring, Strategic Planning" className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
-          </div>
-        </div>
-
-        {/* Education - Degree */}
+        {/* Order Index */}
         <div className="sm:col-span-1">
-          <label htmlFor="degree" className="block text-sm font-medium text-gray-700">Education Degree</label>
+          <label htmlFor="order_index" className="block text-sm font-medium text-gray-700">Order (0 is first)</label>
           <div className="mt-1">
-            <input type="text" name="degree" id="degree" defaultValue={initialData?.education?.degree} placeholder="Master of Education" className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
+            <input type="number" name="order_index" id="order_index" defaultValue={initialData?.order_index || 0} className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
           </div>
         </div>
 
-        {/* Education - University */}
-        <div className="sm:col-span-1">
-          <label htmlFor="university" className="block text-sm font-medium text-gray-700">University</label>
+        {/* Bio */}
+        <div className="sm:col-span-2">
+          <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
           <div className="mt-1">
-            <input type="text" name="university" id="university" defaultValue={initialData?.education?.university} placeholder="Yangon University" className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
+            <textarea name="bio" id="bio" rows={4} defaultValue={initialData?.bio} className="shadow-sm focus:ring-banner-dark focus:border-banner-dark block w-full sm:text-sm border-gray-300 rounded-md p-2 border" />
           </div>
         </div>
+
       </div>
 
       <div className="pt-5 flex justify-end gap-3">

@@ -9,22 +9,14 @@ export async function createTeamMember(formData: FormData) {
 
   const name = formData.get('name') as string
   const role = formData.get('role') as string
-  const email = formData.get('email') as string
-  const about = formData.get('about') as string
-  const image = formData.get('image') as string // Or handle file upload separately
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-
-  const skillsString = formData.get('skills') as string
-  const skills = skillsString.split(',').map(s => s.trim()).filter(Boolean)
-
-  const degree = formData.get('degree') as string
-  const university = formData.get('university') as string
-  const education = { degree, university }
+  const bio = formData.get('bio') as string
+  const image_url = formData.get('image_url') as string
+  const order_index = parseInt(formData.get('order_index') as string || '0', 10)
 
   const { error } = await supabase
     .from('team_members')
     .insert([
-      { name, role, email, about, image, slug, skills, education }
+      { name, role, bio, image_url, order_index }
     ])
 
   if (error) {
@@ -41,21 +33,13 @@ export async function updateTeamMember(id: string, formData: FormData) {
 
   const name = formData.get('name') as string
   const role = formData.get('role') as string
-  const email = formData.get('email') as string
-  const about = formData.get('about') as string
-  const image = formData.get('image') as string
-  const slug = formData.get('slug') as string || name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-
-  const skillsString = formData.get('skills') as string
-  const skills = skillsString.split(',').map(s => s.trim()).filter(Boolean)
-
-  const degree = formData.get('degree') as string
-  const university = formData.get('university') as string
-  const education = { degree, university }
+  const bio = formData.get('bio') as string
+  const image_url = formData.get('image_url') as string
+  const order_index = parseInt(formData.get('order_index') as string || '0', 10)
 
   const { error } = await supabase
     .from('team_members')
-    .update({ name, role, email, about, image, slug, skills, education })
+    .update({ name, role, bio, image_url, order_index })
     .eq('id', id)
 
   if (error) {

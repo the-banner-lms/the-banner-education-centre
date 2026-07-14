@@ -14,6 +14,7 @@ export default async function TeamPage() {
   const { data: teamMembers, error } = await supabase
     .from('team_members')
     .select('*')
+    .order('order_index', { ascending: true })
     .order('created_at', { ascending: true });
 
   return (
@@ -33,11 +34,11 @@ export default async function TeamPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {teamMembers && teamMembers.map((member: any) => (
-              <Link key={member.id} href={`/team/${member.slug}`} className="group">
+              <Link key={member.id} href={`/team/${member.id}`} className="group">
                 <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border-b-4 border-transparent hover:border-blue-600 h-full flex flex-col">
                   <div className="relative w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                     <Image
-                      src={member.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.name) + '&size=512'}
+                      src={member.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.name) + '&size=512'}
                       alt={member.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"

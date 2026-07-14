@@ -25,15 +25,12 @@ async function seed() {
     return
   }
   
-  const { data, error } = await supabase.from('team_members').insert(teamMembers.map(m => ({
+  const { data, error } = await supabase.from('team_members').insert(teamMembers.map((m, index) => ({
     name: m.name,
     role: m.role,
-    email: m.email,
-    about: m.about,
-    image: m.image,
-    slug: m.slug,
-    skills: m.skills,
-    education: m.education
+    bio: m.about,
+    image_url: m.image,
+    order_index: index
   })))
 
   if (error) {
