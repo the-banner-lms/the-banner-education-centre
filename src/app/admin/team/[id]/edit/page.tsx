@@ -3,7 +3,8 @@ import { isAdmin } from '@/utils/supabase/queries'
 import { redirect } from 'next/navigation'
 import TeamForm from '@/components/team/TeamForm'
 
-export default async function EditTeamMemberPage({ params }: { params: { id: string } }) {
+export default async function EditTeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient()
 
   const isFullAdmin = await isAdmin(supabase)
@@ -14,7 +15,7 @@ export default async function EditTeamMemberPage({ params }: { params: { id: str
   const { data: teamMember, error } = await supabase
     .from('team_members')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !teamMember) {
