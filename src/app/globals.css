@@ -43,14 +43,21 @@ body {
   top: 0;
   z-index: 20;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 2px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
+  overflow: visible;
   border-radius: 0.5rem 0.5rem 0 0;
   background: #f8fafc;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
   scrollbar-width: thin;
+}
+
+.editor-shell .quill-wrapper .ql-toolbar .ql-picker.ql-expanded .ql-picker-options {
+  z-index: 60;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
 }
 
 .editor-shell .quill-wrapper .ql-toolbar .ql-formats {
@@ -114,6 +121,17 @@ body {
 .editor-shell .ql-snow .ql-picker.ql-lineheight .ql-picker-item[data-value='2']::before { content: '2.0'; }
 
 @media (max-width: 640px) {
+  .editor-shell .quill-wrapper .ql-toolbar {
+    position: relative;
+    align-items: center;
+    padding: 8px;
+  }
+
+  .editor-shell .quill-wrapper .ql-toolbar .ql-formats {
+    margin-right: 3px;
+    padding-right: 3px;
+  }
+
   .editor-shell .quill-wrapper .ql-editor {
     min-height: 360px;
     padding: 16px;
