@@ -9,7 +9,40 @@ import { uploadBlogImage } from '@/utils/supabase/storage';
 // Forward the ref properly for the dynamic component
 const ReactQuill = dynamic(
   async () => {
-    const { default: RQ } = await import('react-quill-new');
+    const rqModule = await import('react-quill-new');
+    const RQ = rqModule.default;
+    const Quill = rqModule.Quill;
+
+    // Register custom sizes
+    if (Quill) {
+      const Size = Quill.import('formats/size') as any;
+      if (Size) {
+        Size.whitelist = ['small', false, 'medium', 'large', 'huge'];
+        Quill.register(Size, true);
+      }
+
+      // Register Image Resize
+      if (typeof window !== 'undefined') {
+        (window as any).Quill = Quill;
+        const ImageResize = require('quill-image-resize-module-react').default;
+        Quill.register('modules/imageResize', ImageResize);
+      }
+
+      // Register Break Blot for Enter key = <br>
+      const Break = Quill.import('blots/break');
+      const Embed = Quill.import('blots/embed');
+      class SmartBreak extends (Break as any) {
+        length() { return 1; }
+        value() { return '\n'; }
+        insertInto(parent: any, ref: any) {
+          (Embed as any).prototype.insertInto.call(this, parent, ref);
+        }
+      }
+      (SmartBreak as any).blotName = 'break';
+      (SmartBreak as any).tagName = 'BR';
+      Quill.register(SmartBreak);
+    }
+
     // eslint-disable-next-line react/display-name
     return function ForwardedQuill(props: any) {
       return <RQ ref={props.forwardedRef} {...props} />;
@@ -84,25 +117,50 @@ export default function RichTextEditor({ label = 'Main Content', value, onChange
     };
   }, [onChange]);
 
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: [] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        ['blockquote', 'code-block'],
-        [{ color: [] }, { background: [] }],
-        [{ align: [] }],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        [{ script: 'sub' }, { script: 'super' }],
-        [{ indent: '-1' }, { indent: '+1' }],
-        ['link', 'image', 'video'],
-        ['clean']
-      ],
-      handlers: {
-        image: imageHandler
+  const modules = useMemo(() => {
+    const keyboardBindings = {
+      handleEnter: {
+        key: 13,
+        shiftKey: false,
+        handler: function(this: any, range: any, context: any) {
+          const quill = this.quill;
+          if (context.format.list) {
+            return true; // Let Quill handle Enter in lists natively
+          }
+          quill.insertEmbed(range.index, 'break', true, 'user');
+          quill.setSelection(range.index + 1, (quill.constructor as any).sources?.SILENT || 'silent');
+          return false;
+        }
       }
-    }
-  }), [imageHandler]);
+    };
+
+    return {
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, 4, 5, 6, false] }, { font: [] }, { size: ['small', false, 'medium', 'large', 'huge'] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          ['blockquote', 'code-block'],
+          [{ color: [] }, { background: [] }],
+          [{ align: [] }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ script: 'sub' }, { script: 'super' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          ['link', 'image', 'video'],
+          ['clean']
+        ],
+        handlers: {
+          image: imageHandler
+        }
+      },
+      keyboard: {
+        bindings: keyboardBindings
+      },
+      imageResize: {
+        parchment: typeof window !== 'undefined' ? (window as any).Quill?.import('parchment') : null,
+        modules: ['Resize', 'DisplaySize']
+      }
+    };
+  }, [imageHandler]);
 
   if (!mounted) return null;
 

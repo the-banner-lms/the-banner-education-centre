@@ -15,7 +15,7 @@ export default function MobileMenu({ userRole }: MobileMenuProps) {
   const closeMenu = () => setIsOpen(false)
 
   return (
-    <div className="lg:hidden ml-2 flex items-center">
+    <div className="xl:hidden ml-2 flex items-center">
       <button
         onClick={toggleMenu}
         className="inline-flex items-center justify-center p-2 rounded-md text-banner-dark hover:text-banner-dark/70 hover:bg-banner-light/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-banner-dark"
@@ -43,28 +43,28 @@ export default function MobileMenu({ userRole }: MobileMenuProps) {
             <Link onClick={closeMenu} href="/activities" className="block px-3 py-2 rounded-md text-base font-medium text-banner-dark hover:text-blue-600 hover:bg-gray-50">
               Activities
             </Link>
-            <Link onClick={closeMenu} href="/forum" className="block px-3 py-2 rounded-md text-base font-medium text-banner-dark hover:text-blue-600 hover:bg-gray-50">
-              Forum
+            <Link onClick={closeMenu} href="/team" className="block px-3 py-2 rounded-md text-base font-medium text-banner-dark hover:text-blue-600 hover:bg-gray-50">
+              Our Team
             </Link>
             
             {userRole === 'student' && (
               <Link onClick={closeMenu} href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-green-600 hover:bg-green-50">
-                Student Dashboard
+                Dashboard
               </Link>
             )}
             {userRole === 'teacher' && (
               <Link onClick={closeMenu} href="/teacher" className="block px-3 py-2 rounded-md text-base font-medium text-green-600 hover:bg-green-50">
-                Teacher Panel
+                Teacher
               </Link>
             )}
             {userRole === 'staff' && (
               <Link onClick={closeMenu} href="/staff" className="block px-3 py-2 rounded-md text-base font-bold text-blue-600 hover:bg-blue-50 border-t border-gray-100 mt-2">
-                Staff Panel
+                Staff
               </Link>
             )}
             {userRole === 'admin' && (
               <Link onClick={closeMenu} href="/admin" className="block px-3 py-2 rounded-md text-base font-bold text-blue-600 hover:bg-blue-50 border-t border-gray-100 mt-2">
-                Admin Panel
+                Admin
               </Link>
             )}
           </div>

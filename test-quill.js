@@ -1,2 +1,1 @@
-require('dotenv').config({ path: '.env.local' });
-console.log("Verified Quill fix!");
+import('react-quill-new').then(m => console.log(Object.keys(m)));

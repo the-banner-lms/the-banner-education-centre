@@ -27,3 +27,41 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* React-Quill Editor & Output Overrides */
+.ql-align-center { text-align: center !important; }
+.ql-align-right { text-align: right !important; }
+.ql-align-justify { text-align: justify !important; }
+
+/* Let Tailwind Typography handle paragraph margins naturally, 
+   but ensure empty paragraphs (blank lines from Enter) have height */
+.ql-editor p,
+.prose p {
+  min-height: 1.5em;
+}
+
+/* Quill Size Picker Labels */
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value=small]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value=small]::before {
+  content: 'Small';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value=medium]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value=medium]::before {
+  content: 'Medium';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value=large]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value=large]::before {
+  content: 'Large';
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value=huge]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value=huge]::before {
+  content: 'Huge';
+}
+
+/* Quill Image Resize handles */
+.blot-formatter__rect {
+  fill: #f97316 !important; /* Orange 500 */
+}
+.blot-formatter__border {
+  stroke: #f97316 !important;
+}

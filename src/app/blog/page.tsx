@@ -1,128 +1,142 @@
-import { createClient } from '@/utils/supabase/server'
-import Link from 'next/link'
-import Image from 'next/image'
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
+import BlogSidebar from '@/components/blogs/BlogSidebar';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-function getCoverImage(htmlContent: string): string | null {
-  if (!htmlContent) return null;
-  const match = htmlContent.match(/<img[^>]+src="([^">]+)"/);
-  return match ? match[1] : null;
-}
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const supabase = await createClient();
+  const q = typeof searchParams.q === 'string' ? searchParams.q : '';
+  const archive = typeof searchParams.archive === 'string' ? searchParams.archive : '';
 
-function truncateText(html: string, maxLength: number) {
-  const text = html.replace(/<[^>]+>/g, '') // Strip HTML tags
-  if (text.length <= maxLength) return text
-  return text.substr(0, maxLength) + '...'
-}
-
-export default async function BlogPage() {
-  const supabase = await createClient()
-
-  // Fetch from the actual blogs table
-  const { data: blogs, error } = await supabase
+  let query = supabase
     .from('blogs')
     .select(`
-      *,
-      profiles:author_id ( full_name )
+      id,
+      title,
+      content,
+      cover_image_url,
+      created_at,
+      author_id,
+      tags,
+      profiles (full_name, avatar_url)
     `)
     .eq('published', true)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (q) {
+    query = query.ilike('title', `%${q}%`);
+  }
+
+  const { data: posts, error } = await query;
+
+  // Filter by archive if needed
+  let filteredPosts = posts || [];
+  if (archive) {
+    filteredPosts = filteredPosts.filter(post => {
+      const date = new Date(post.created_at);
+      const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      return monthYear === archive;
+    });
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center py-10 mb-8 border-b border-gray-200">
           <h1 className="text-4xl md:text-5xl font-bold text-banner-dark mb-4">
             Our Stories
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Insights, updates, and inspiring stories from The Banner Education Centre
+          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            Insights, updates, and news from The Banner Education Centre.
           </p>
         </div>
 
-        {error && (
-          <div className="text-center text-red-600 p-4 bg-red-50 rounded-lg">
-            Error loading blogs. Please try again later.
-          </div>
-        )}
-
-        {!error && (!blogs || blogs.length === 0) ? (
-          <div className="text-center py-20">
-            <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No blogs found</h3>
-            <p className="text-gray-500">Check back later for new updates.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogs?.map((blog) => {
-              const coverImage = getCoverImage(blog.content);
-              return (
-                <Link 
-                  key={blog.id} 
-                  href={`/blog/${blog.id}`}
-                  className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col border border-gray-100 transform hover:-translate-y-1"
-                >
-                  <div className="relative h-56 w-full bg-gray-100 overflow-hidden">
-                    {coverImage ? (
-                      <Image 
-                        src={coverImage} 
-                        alt={blog.title} 
-                        fill 
-                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-banner-dark/5">
-                        <svg className="h-16 w-16 text-banner-dark/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
+            {filteredPosts.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No blogs found</h3>
+                <p className="text-gray-500">
+                  {q || archive ? 'Try adjusting your filters.' : 'Check back later for new updates.'}
+                </p>
+                {(q || archive) && (
+                  <Link href="/blog" className="text-orange-500 hover:underline mt-4 inline-block">
+                    Clear Filters
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {filteredPosts.map((post: any) => (
+                  <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row">
+                    {post.cover_image_url && (
+                      <div className="w-full md:w-1/3 h-48 md:h-auto shrink-0 relative">
+                        <img 
+                          src={post.cover_image_url} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                  
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                      <span className="flex items-center">
-                        <svg className="h-4 w-4 mr-1 text-banner-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {new Date(blog.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                    
-                    <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-banner-dark transition-colors line-clamp-2">
-                      {blog.title}
-                    </h2>
-                    
-                    <p className="text-gray-600 mb-6 flex-1 line-clamp-3">
-                      {truncateText(blog.content, 150)}
-                    </p>
-                    
-                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 bg-banner-dark rounded-full flex items-center justify-center text-white text-xs font-bold mr-2">
-                          {(blog.profiles?.full_name || 'A')[0].toUpperCase()}
+                    <div className="p-6 flex flex-col justify-between flex-grow">
+                      <div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
+                          <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                          {post.tags && post.tags.length > 0 && (
+                            <>
+                              <span>&bull;</span>
+                              <span className="text-orange-500 font-medium">{post.tags[0]}</span>
+                            </>
+                          )}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {blog.profiles?.full_name || 'Admin'}
-                        </span>
+                        <Link href={`/blog/${post.id}`}>
+                          <h2 className="text-2xl font-bold text-gray-900 hover:text-orange-500 transition-colors mb-3">
+                            {post.title}
+                          </h2>
+                        </Link>
+                        {/* Excerpt logic: remove HTML tags and truncate */}
+                        <div 
+                          className="text-gray-600 line-clamp-3 mb-4 text-sm"
+                          dangerouslySetInnerHTML={{ __html: post.content?.replace(/<[^>]+>/g, '').substring(0, 200) + '...' }}
+                        />
                       </div>
-                      <span className="text-banner-gold group-hover:translate-x-1 transition-transform inline-block">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </span>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center space-x-3">
+                          {post.profiles?.avatar_url ? (
+                            <img src={post.profiles.avatar_url} alt={post.profiles.full_name} className="w-8 h-8 rounded-full border border-gray-200 object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                              {post.profiles?.full_name ? post.profiles.full_name.charAt(0) : 'A'}
+                            </div>
+                          )}
+                          <span className="text-sm font-medium text-gray-900">{post.profiles?.full_name || 'Admin'}</span>
+                        </div>
+                        <Link href={`/blog/${post.id}`} className="text-sm font-semibold text-orange-500 hover:text-orange-600 flex items-center">
+                          Read More
+                          <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              )
-            })}
+                ))}
+              </div>
+            )}
           </div>
-        )}
+          <div className="lg:col-span-4">
+            <BlogSidebar />
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 import React, { useTransition } from 'react';
 import Link from 'next/link';
-import { deleteBlog } from '@/app/actions/blogActions';
+import { deleteBlog, toggleBlogStatus } from '@/app/actions/blogActions';
 
 interface Blog {
   id: string;
@@ -23,22 +23,29 @@ export default function BlogList({ blogs, roleBasePath, currentUserId, currentUs
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this blog?')) return;
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
     
     startTransition(async () => {
       await deleteBlog(id);
     });
   };
 
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    startTransition(async () => {
+      await toggleBlogStatus(id, !currentStatus);
+    });
+  };
+
+
   if (!blogs || blogs.length === 0) {
     return (
       <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
-        <h3 className="text-gray-500 font-medium mb-4">No blogs found.</h3>
+        <h3 className="text-gray-500 font-medium mb-4">No posts found.</h3>
         <Link 
           href={`${roleBasePath}/new`}
           className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md font-medium transition-colors"
         >
-          Create First Blog
+          Create First Post
         </Link>
       </div>
     );
@@ -47,12 +54,12 @@ export default function BlogList({ blogs, roleBasePath, currentUserId, currentUs
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="flex justify-between items-center p-6 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Manage Blogs</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Manage Posts</h2>
         <Link 
           href={`${roleBasePath}/new`}
           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
         >
-          + New Blog
+          + New Post
         </Link>
       </div>
       <table className="min-w-full divide-y divide-gray-200">
@@ -90,7 +97,14 @@ export default function BlogList({ blogs, roleBasePath, currentUserId, currentUs
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   {canEdit && (
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-3 items-center">
+                      <button 
+                        onClick={() => handleToggleStatus(item.id, item.published)}
+                        disabled={isPending}
+                        className={`${item.published ? 'text-gray-500 hover:text-gray-700' : 'text-green-600 hover:text-green-800'} disabled:opacity-50`}
+                      >
+                        {item.published ? 'Set as Draft' : 'Publish'}
+                      </button>
                       <Link 
                         href={`${roleBasePath}/${item.id}/edit`}
                         className="text-indigo-600 hover:text-indigo-900"

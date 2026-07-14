@@ -58,7 +58,7 @@ export default async function Navbar() {
                 <span className="hidden sm:block tracking-tight">The Banner</span>
               </Link>
             </div>
-            <div className="hidden lg:ml-6 lg:flex lg:space-x-4 xl:space-x-6">
+            <div className="hidden xl:ml-4 xl:flex xl:space-x-3 2xl:space-x-6">
               <Link href="/" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
                 Home
               </Link>
@@ -71,8 +71,8 @@ export default async function Navbar() {
               <Link href="/activities" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
                 Activities
               </Link>
-              <Link href="/forum" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Forum
+              <Link href="/team" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
+                Our Team
               </Link>
               {user && profile?.role === 'student' && (
                   <Link href="/dashboard" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
@@ -81,22 +81,22 @@ export default async function Navbar() {
               )}
               {user && profile?.role === 'teacher' && (
                   <Link href="/teacher" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                    Teacher Panel
+                    Teacher
                   </Link>
               )}
               {user && profile?.role === 'staff' && (
                   <Link href="/staff" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                    Staff Panel
+                    Staff
                   </Link>
               )}
               {user && profile?.role === 'admin' && (
                 <Link href="/admin" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                  Admin Panel
+                  Admin
                 </Link>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-3 md:space-x-5">
+          <div className="flex shrink-0 items-center space-x-2 md:space-x-3 2xl:space-x-5">
             {user && <SearchPopup />}
             {user && (
               <NotificationBell
@@ -120,7 +120,7 @@ export default async function Navbar() {
                       {(profile?.full_name || user.email || '?')[0].toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-banner-dark">{profile?.full_name || user.email}</span>
+                  <span className="text-sm font-medium text-banner-dark whitespace-nowrap">{profile?.full_name || user.email}</span>
                 </div>
                 <form action={signout}>
                   <button type="submit" className="text-sm px-4 py-2 rounded-full bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition-colors duration-200">

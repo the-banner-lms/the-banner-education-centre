@@ -30,6 +30,8 @@ export async function createBlog(formData: FormData) {
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const published = formData.get('published') === 'true';
+  const tagsString = formData.get('tags') as string || '';
+  const tags = tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -47,22 +49,24 @@ export async function createBlog(formData: FormData) {
       content,
       author_id: user.id,
       published,
+      tags,
     });
 
   if (error) {
-    throw new Error('Failed to create blog: ' + error.message);
+    throw new Error('Failed to create post: ' + error.message);
   }
 
   const basePath = profile?.role === 'admin' ? '/admin/blogs' : '/staff/blogs';
   revalidatePath(basePath);
   revalidatePath('/blog');
-  redirect(basePath);
 }
 
 export async function updateBlog(id: string, formData: FormData) {
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const published = formData.get('published') === 'true';
+  const tagsString = formData.get('tags') as string || '';
+  const tags = tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,15 +83,39 @@ export async function updateBlog(id: string, formData: FormData) {
       title,
       content,
       published,
+      tags,
     })
     .eq('id', id);
 
   if (error) {
-    throw new Error('Failed to update blog: ' + error.message);
+    throw new Error('Failed to update post: ' + error.message);
   }
 
   const basePath = profile?.role === 'admin' ? '/admin/blogs' : '/staff/blogs';
   revalidatePath(basePath);
   revalidatePath('/blog');
-  redirect(basePath);
+}
+
+export async function toggleBlogStatus(id: string, published: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+
+  const { error } = await supabase
+    .from('blogs')
+    .update({ published })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error('Failed to update status: ' + error.message);
+  }
+
+  const basePath = profile?.role === 'admin' ? '/admin/blogs' : '/staff/blogs';
+  revalidatePath(basePath);
+  revalidatePath('/blog');
 }

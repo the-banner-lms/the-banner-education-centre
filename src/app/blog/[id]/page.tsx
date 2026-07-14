@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import BlogComments from '@/components/blog/BlogComments'
+import BlogSidebar from '@/components/blogs/BlogSidebar'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +13,8 @@ function getCoverImage(htmlContent: string): string | null {
   return match ? match[1] : null;
 }
 
-export default async function BlogPostPage({ params }: { params: { id: string } }) {
+export default async function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient()
 
   const { data: blog, error } = await supabase
@@ -20,13 +23,37 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
       *,
       profiles:author_id ( full_name )
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('published', true)
     .single()
 
   if (error || !blog) {
     notFound()
   }
+
+  // Get previous post (chronologically older)
+  const { data: prevPost } = await supabase
+    .from('blogs')
+    .select('id, title')
+    .eq('published', true)
+    .lt('created_at', blog.created_at)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  // Get next post (chronologically newer)
+  const { data: nextPost } = await supabase
+    .from('blogs')
+    .select('id, title')
+    .eq('published', true)
+    .gt('created_at', blog.created_at)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single()
+
+  // Increment views asynchronously (swallow error if views column doesn't exist yet)
+  supabase.from('blogs').update({ views: ((blog as any).views || 0) + 1 }).eq('id', blog.id).then();
+
 
   const coverImageUrl = getCoverImage(blog.content);
 
@@ -54,7 +81,7 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
             <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Stories
+            Back to Stories (or view another category)
           </Link>
           
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
@@ -77,11 +104,30 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
               </time>
             </div>
           </div>
+          
+          {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+              {blog.tags.map((tag: string, index: number) => (
+                <span key={index} className="px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm shadow-sm hover:bg-white/20 transition-colors">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {typeof blog.tags === 'string' && blog.tags && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+              <span className="px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm shadow-sm hover:bg-white/20 transition-colors">
+                #{blog.tags}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="lg:col-span-8">
         <article 
           className="prose prose-lg prose-orange max-w-none
             prose-headings:text-banner-dark prose-headings:font-bold
@@ -94,9 +140,11 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
         {/* Author Bio Section */}
         <div className="mt-16 pt-10 border-t border-gray-200">
           <div className="flex items-center">
-            <div className="h-16 w-16 bg-banner-dark rounded-full flex items-center justify-center text-white text-xl font-bold">
-              {(blog.profiles?.full_name || 'A')[0].toUpperCase()}
-            </div>
+            {blog.profiles?.avatar_url ? (
+              <img src={blog.profiles.avatar_url} alt={blog.profiles.full_name} className="h-16 w-16 rounded-full object-cover border-2 border-gray-200" referrerPolicy="no-referrer" />
+            ) : (
+              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(blog.profiles?.full_name || 'Admin')}&background=random&color=fff`} alt={blog.profiles?.full_name || 'Admin'} className="h-16 w-16 rounded-full object-cover border-2 border-gray-200" />
+            )}
             <div className="ml-6">
               <h3 className="text-xl font-bold text-gray-900 mb-1">
                 Written by {blog.profiles?.full_name || 'Admin'}
@@ -105,6 +153,48 @@ export default async function BlogPostPage({ params }: { params: { id: string } 
                 The Banner Education Centre
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Navigation Section */}
+        <div className="mt-12 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4 border-t border-gray-200 pt-8">
+          {prevPost ? (
+            <Link 
+              href={`/blog/${prevPost.id}`}
+              className="w-full sm:w-1/2 flex flex-col items-start p-4 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-200"
+            >
+              <span className="text-sm text-gray-500 mb-1 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous Post
+              </span>
+              <span className="font-semibold text-banner-dark line-clamp-1">{prevPost.title}</span>
+            </Link>
+          ) : <div className="w-full sm:w-1/2"></div>}
+          
+          {nextPost ? (
+            <Link 
+              href={`/blog/${nextPost.id}`}
+              className="w-full sm:w-1/2 flex flex-col items-end text-right p-4 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-200"
+            >
+              <span className="text-sm text-gray-500 mb-1 flex items-center justify-end">
+                Next Post
+                <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+              <span className="font-semibold text-banner-dark line-clamp-1">{nextPost.title}</span>
+            </Link>
+          ) : <div className="w-full sm:w-1/2"></div>}
+        </div>
+
+        {/* Comments Section */}
+        <BlogComments postId={blog.id} />
+          </div>
+          
+          <div className="lg:col-span-4">
+            <BlogSidebar />
           </div>
         </div>
       </div>
