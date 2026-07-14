@@ -17,7 +17,7 @@ export default async function AnnouncementsPage() {
   if (!profile) redirect('/login');
 
   const { getRecentAnnouncementsForRole } = await import('@/utils/supabase/announcements');
-  const announcements = await getRecentAnnouncementsForRole(supabase, profile.role === 'admin' ? 'admin' : profile.role, 50);
+  const announcements = await getRecentAnnouncementsForRole(supabase, profile.role, 50);
 
   // Fetch read records for this user
   const { data: readRecords } = await supabase

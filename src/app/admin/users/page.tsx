@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
-import { updateUserStatus, updateUserRole } from './actions'
+import { updateUserStatus, updateUserRole, deleteUser } from './actions'
+import DeleteUserButton from './DeleteUserButton'
 import { isAdmin } from '@/utils/supabase/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -154,17 +155,24 @@ export default async function AdminUsersPage() {
                             <form action={updateUserStatus.bind(null, user.id, 'rejected')}>
                               <button type="submit" className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">Reject</button>
                             </form>
+                            <DeleteUserButton userId={user.id} />
                           </div>
                         )}
                         {user.approval_status === 'rejected' && (
-                          <form action={updateUserStatus.bind(null, user.id, 'approved')}>
-                            <button type="submit" className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-2 py-1 rounded transition-colors">Approve</button>
-                          </form>
+                          <div className="flex justify-end space-x-2">
+                            <form action={updateUserStatus.bind(null, user.id, 'approved')}>
+                              <button type="submit" className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-2 py-1 rounded transition-colors">Approve</button>
+                            </form>
+                            <DeleteUserButton userId={user.id} />
+                          </div>
                         )}
                         {user.approval_status === 'approved' && (
-                          <form action={updateUserStatus.bind(null, user.id, 'rejected')}>
-                            <button type="submit" className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">Reject</button>
-                          </form>
+                          <div className="flex justify-end space-x-2">
+                            <form action={updateUserStatus.bind(null, user.id, 'rejected')}>
+                              <button type="submit" className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">Reject</button>
+                            </form>
+                            <DeleteUserButton userId={user.id} />
+                          </div>
                         )}
                       </td>
                     </tr>

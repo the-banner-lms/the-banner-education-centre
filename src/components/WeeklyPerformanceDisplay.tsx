@@ -105,7 +105,7 @@ export default function WeeklyPerformanceDisplay({
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Recorded on: {new Date(perf.week_start_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   {subjects.map((sub) => {
                     const score = perf[sub.key as keyof PerformanceRecord] as string | null;
                     const data = getScoreData(score);

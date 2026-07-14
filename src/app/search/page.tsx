@@ -1,8 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import SearchInput from '@/components/SearchInput'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +22,14 @@ export default async function SearchPage(props: { searchParams: Promise<{ [key: 
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) redirect('/login')
 
   const results: SearchResult[] = []
 
@@ -120,7 +126,13 @@ export default async function SearchPage(props: { searchParams: Promise<{ [key: 
       supabase.from('textbooks').select('*').or(`title.ilike.${q},description.ilike.${q}`).limit(10),
       supabase.from('lessons').select('id, title, content').or(`title.ilike.${q},content.ilike.${q}`).limit(10),
       supabase.from('blog_posts').select('*').eq('published', true).or(`title.ilike.${q},content.ilike.${q}`).limit(10),
-      supabase.from('announcements').select('*').eq('is_active', true).or(`title.ilike.${q},content.ilike.${q}`).limit(10),
+      supabase
+        .from('announcements')
+        .select('*')
+        .eq('is_active', true)
+        .in('target_role', ['all', profile.role])
+        .or(`title.ilike.${q},content.ilike.${q}`)
+        .limit(10),
       supabase.from('albums').select('*').ilike('title', q).limit(10),
       supabase.from('activity_videos').select('*').ilike('title', q).limit(10),
       supabase.from('team_members').select('*').or(`name.ilike.${q},role.ilike.${q},bio.ilike.${q}`).limit(10)
@@ -258,7 +270,7 @@ export default async function SearchPage(props: { searchParams: Promise<{ [key: 
 
       {query && (
         <div className="space-y-6">
-          <h2 className="text-xl font-medium text-gray-700">Results for <span className="font-bold text-gray-900">"{query}"</span></h2>
+          <h2 className="text-xl font-medium text-gray-700">Results for <span className="font-bold text-gray-900">&quot;{query}&quot;</span></h2>
           
           {Object.keys(groupedResults).length > 0 ? (
             Object.entries(groupedResults).map(([category, items]) => (
@@ -299,7 +311,7 @@ export default async function SearchPage(props: { searchParams: Promise<{ [key: 
                 <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">No results found</h3>
-              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
+              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter to find what you&apos;re looking for.</p>
             </div>
           )}
         </div>

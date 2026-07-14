@@ -2,8 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
-import PDFDownloadButton from '@/components/PDFDownloadButton'
+import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
+import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import { getRoleBadgeStyle } from '@/utils/theme'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +47,7 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
     .order('month_year', { ascending: false })
 
   const { getRecentAnnouncementsForRole } = await import('@/utils/supabase/announcements');
-  const recentAnnouncements = await getRecentAnnouncementsForRole(supabase, profile.role === 'admin' ? 'admin' : profile.role, 5);
+  const recentAnnouncements = await getRecentAnnouncementsForRole(supabase, 'student', 5);
 
   const getStartOfCurrentWeek = () => {
     const d = new Date();
@@ -85,6 +86,10 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
     afternoon_status: r.afternoon_status as AttendanceStatus | null
   }));
 
+  const currentPerformances = performances?.filter(p => {
+    return p.week_start_date >= weekStartDateStr && p.week_start_date <= weekEndDateStr;
+  }) || [];
+
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-8" id="dashboard-content">
       <div className="mb-8">
@@ -109,60 +114,16 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
           </div>
         </div>
         <div className="hide-in-pdf">
-          <PDFDownloadButton targetId="dashboard-content" filename={`${profile.full_name || 'student'}-performance-report.pdf`} />
+          <StudentReportDownloadButton studentId={user.id} weekStartDate={weekStartDateStr} />
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 mb-8">
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">Weekly Performance Report</h2>
-        </div>
-        
-        {performances && performances.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Burmese</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">English</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Math</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Science</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Sports</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Art</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Social</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Health</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Teamwork</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Discipline</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {performances.map(perf => (
-                  <tr key={perf.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap align-top">{perf.week_start_date}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.burmese_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.english_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.math_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.science_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.sports_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.art_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.social_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.health_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.teamwork_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">{perf.discipline_score}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top max-w-xs whitespace-pre-wrap break-words">{perf.remarks}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            <p>No performance records have been uploaded yet.</p>
-          </div>
-        )}
-      </div>
+      <WeeklyPerformanceDisplay 
+        performances={currentPerformances}
+        weekStartDate={weekStartDateStr}
+        prevWeekUrl={`/dashboard?week=${prevWeekStr}`}
+        nextWeekUrl={`/dashboard?week=${nextWeekStr}`}
+      />
       <div className="bg-white p-6 rounded-lg shadow border border-gray-200 mb-8">
         <h2 className="text-xl font-bold mb-4 text-gray-900">Tuition Fees History</h2>
         {tuitionFees && tuitionFees.length > 0 ? (

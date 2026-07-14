@@ -164,10 +164,10 @@ export default function ManageMediaForm({ albumId, existingMedia }: { albumId: s
       {/* Existing Media Gallery */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Existing Media ({existingMedia.length})</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {existingMedia.map((media) => (
             <div key={media.id} className="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex flex-col">
-              <div className="relative aspect-square">
+              <div className="relative aspect-video sm:aspect-square">
                 {media.media_type === 'photo' ? (
                   <img src={media.url} alt={media.caption || 'Photo'} className="w-full h-full object-cover" />
                 ) : (

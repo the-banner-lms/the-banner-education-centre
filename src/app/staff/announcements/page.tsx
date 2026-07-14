@@ -24,6 +24,7 @@ export default async function StaffAnnouncementsPage() {
   const { data: announcements } = await supabase
     .from('announcements')
     .select('*')
+    .eq('author_id', user.id)
     .order('created_at', { ascending: false });
 
   return (

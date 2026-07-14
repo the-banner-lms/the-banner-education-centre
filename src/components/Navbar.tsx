@@ -4,6 +4,7 @@ import { signout } from '@/app/login/actions'
 import { getUserProfile } from '@/utils/supabase/queries'
 import SearchPopup from './SearchPopup'
 import NotificationBell from './NotificationBell'
+import MobileMenu from './MobileMenu'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 
 type NavbarAnnouncement = {
@@ -24,7 +25,7 @@ export default async function Navbar() {
     const { data: relevantAnnouncements } = await supabase
       .from('announcements')
       .select('id, title, created_at')
-      .in('target_role', profile.role === 'admin' ? ['all', 'admin', 'staff', 'teacher', 'student'] : ['all', profile.role])
+      .in('target_role', ['all', profile.role])
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -132,6 +133,7 @@ export default async function Navbar() {
                 Sign In
               </Link>
             )}
+            <MobileMenu userRole={profile?.role} />
           </div>
         </div>
       </div>

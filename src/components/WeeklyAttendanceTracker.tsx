@@ -82,7 +82,7 @@ export default function WeeklyAttendanceTracker({
       <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Attendance Summary</h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="bg-indigo-50 rounded-lg p-4 flex flex-col items-center justify-center border border-indigo-100">
             <span className="text-sm font-medium text-indigo-600 mb-1">Attendance Rate</span>
             <span className="text-3xl font-black text-indigo-700">{attendanceRate}%</span>
@@ -125,29 +125,29 @@ export default function WeeklyAttendanceTracker({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-3 md:gap-4">
           {days.map((day, idx) => {
             const amStyle = getStatusColor(day.morning_status);
             const pmStyle = getStatusColor(day.afternoon_status);
             return (
-              <div key={idx} className="flex md:flex-col justify-between md:justify-start bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-                <div className="flex flex-col mb-0 md:mb-4">
+              <div key={idx} className="flex items-center lg:flex-col justify-between lg:justify-start lg:items-start bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                <div className="flex flex-col mb-0 lg:mb-4">
                   <span className="text-sm font-bold text-gray-700">{getDayLabel(day.date)}</span>
                   <span className="text-xs text-gray-500">{getDayShortLabel(day.date)}</span>
                 </div>
                 
-                <div className="flex md:flex-col space-x-4 md:space-x-0 md:space-y-3">
+                <div className="flex lg:flex-col space-x-4 lg:space-x-0 lg:space-y-3">
                   {/* AM Session */}
                   <div className={`flex items-center p-2 rounded-md ${amStyle.bg} border ${amStyle.border}`}>
                     <span className="text-xs font-bold text-gray-500 w-6 mr-1">AM</span>
                     <span className="text-base mr-1">{amStyle.icon}</span>
-                    <span className={`text-xs font-semibold ${amStyle.text} hidden md:inline-block`}>{amStyle.label}</span>
+                    <span className={`text-xs font-semibold ${amStyle.text} hidden lg:inline-block`}>{amStyle.label}</span>
                   </div>
                   {/* PM Session */}
                   <div className={`flex items-center p-2 rounded-md ${pmStyle.bg} border ${pmStyle.border}`}>
                     <span className="text-xs font-bold text-gray-500 w-6 mr-1">PM</span>
                     <span className="text-base mr-1">{pmStyle.icon}</span>
-                    <span className={`text-xs font-semibold ${pmStyle.text} hidden md:inline-block`}>{pmStyle.label}</span>
+                    <span className={`text-xs font-semibold ${pmStyle.text} hidden lg:inline-block`}>{pmStyle.label}</span>
                   </div>
                 </div>
               </div>

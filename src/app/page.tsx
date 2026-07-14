@@ -25,7 +25,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="relative h-[400px] sm:h-[500px] lg:h-[650px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white z-10">
+          <div className="relative h-[250px] sm:h-[400px] lg:h-[650px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white z-10">
             <Image src="/images/zoo_trip_1.jpg" alt="Children learning in nature" fill className="object-cover" priority />
             <div className="absolute inset-0 bg-gradient-to-t from-banner-dark/40 via-transparent to-transparent"></div>
           </div>
@@ -44,7 +44,7 @@ export default function Home() {
         {/* Primary Education */}
         <section id="home-primary" className="bg-banner-dark/5 rounded-3xl p-8 md:p-12 shadow-sm border border-banner-dark/10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="order-2 md:order-1 relative h-[500px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+            <div className="order-2 md:order-1 relative h-[250px] sm:h-[350px] md:h-[500px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
               <Image src="/images/primary.jpg" alt="Primary Education" fill className="object-cover" />
             </div>
             <div className="order-1 md:order-2">
@@ -78,14 +78,14 @@ export default function Home() {
               Pre-kindergarten နှင့် kindergarten အတန်းများတွင် ကလေးငယ်များ၏ အသက်အရွယ်နှင့် ကိုက်ညီသော သင်ကြားမှုနည်းစနစ်များကို အသုံးပြုပါသည်။ ကလေးတိုင်းသည် ထူးခြားပြီး သူတို့ကိုယ်ပိုင် သင်ယူမှုနှုန်းထားရှိသည်ကို ကျွန်ုပ်တို့ နားလည်လက်ခံပါသည်။ ကျွန်ုပ်တို့၏ သင်ရိုးသည် Rudolf Steiner ၏ ဒဿနနှင့် ချဉ်းကပ်မှုများကို အခြေခံထားပြီး မြန်မာနိုင်ငံ၏ EYFS သင်ရိုးကိုလည်း အလေးထားပါသည်။ ကျွန်ုပ်တို့၏ ရည်ရွယ်ချက်မှာ ကလေးငယ်များ ကျန်းမာပျော်ရွှင်၍ ဘက်စုံဖွံ့ဖြိုးတိုးတက်စေရန် ပြုစုပျိုးထောင်ပေးရန် ဖြစ်ပါသည်။
             </p>
           </div>
-          <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+          <div className="relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
             <Image src="/images/holistic.jpg" alt="Holistic Development" fill className="object-cover" />
           </div>
         </section>
 
         {/* Free Play */}
         <section id="home-free-play" className="grid md:grid-cols-2 gap-12 items-center md:flex-row-reverse">
-          <div className="order-2 md:order-1 relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+          <div className="order-2 md:order-1 relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
             <Image src="/images/play.jpg" alt="Learning through play" fill className="object-cover" />
           </div>
           <div className="order-1 md:order-2">
@@ -110,14 +110,14 @@ export default function Home() {
               မြန်မာနိုင်ငံ၏ ရာသီဥတုသုံးပါးကို ဖြတ်သန်းရာတွင် ဥယျာဉ်စိုက်ပျိုးခြင်း၊ သဘာဝပြခန်းလေးများ (Nature table) ပြင်ဆင်ခြင်း၊ ကျောင်းဝင်းအတွင်းရှိ ပန်းများကို လေ့လာခြင်းနှင့် ရာသီအလိုက် လက်မှုပညာများ စသည့် လှုပ်ရှားမှုများကို ပြုလုပ်ပါသည်။ ကလေးငယ်များအား ပတ်ဝန်းကျင်ကို သတိပြုမိစေရန်နှင့် သူတို့၏ ပတ်ဝန်းကျင်ရှိ ရာသီဥတုနှင့် သဘာဝတရား အပြောင်းအလဲများကို သိရှိနားလည်စေရန် ရည်ရွယ်ပါသည်။
             </p>
           </div>
-          <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+          <div className="relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
             <Image src="/images/nature.jpg" alt="Connecting with nature" fill className="object-cover" />
           </div>
         </section>
 
         {/* Hand Work */}
         <section id="home-handwork" className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="order-2 md:order-1 relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+          <div className="order-2 md:order-1 relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
             <Image src="/images/handwork.jpg" alt="Creative handwork" fill className="object-cover" />
           </div>
           <div className="order-1 md:order-2">
@@ -171,7 +171,7 @@ export default function Home() {
               ကျွန်ုပ်တို့ကျောင်းသည် အာရှတိုက်၊ မြန်မာနိုင်ငံတွင် တည်ရှိပြီး ကျောင်းပတ်ဝန်းကျင်မှာ သဘာဝတရားများဖြင့် ဝန်းရံထားပါသည်။ အသုံးပြုသော ပစ္စည်းများနှင့် ထုတ်ကုန်များသည် အဓိကအားဖြင့် သဘာဝပစ္စည်းများ၊ လူသားနှင့် ပတ်ဝန်းကျင်ကို ထိခိုက်မှုမရှိစေသော ပစ္စည်းများဖြစ်ပါသည်။ ကျန်းမာရေးနှင့် ညီညွတ်သော အစားအစာများကို ကျွေးမွေးပြီး သစ်သားတုံးများ၊ ခရုခွံများ၊ အဝတ်အထည်များ၊ ထင်းရှူးသီးများနှင့် သစ်သားစသည့် သဘာဝပစ္စည်းများဖြင့် ပြုလုပ်ထားသော အရုပ်များဖြင့် ကစားစေခြင်းဖြင့် ကလေးငယ်များအား သဘာဝတရားနှင့် ချိတ်ဆက်မိစေရန်နှင့် တန်ဖိုးထားတတ်စေရန် ကူညီပေးပါသည်။
             </p>
           </div>
-          <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+          <div className="relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white">
             <Image src="/images/group.jpg" alt="Eco-friendly learning" fill className="object-cover" />
           </div>
         </section>
@@ -189,7 +189,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="relative h-[300px] sm:h-[400px] md:h-[500px] w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white mt-8 transform hover:scale-[1.02] transition-transform duration-500">
+            <div className="relative h-[200px] sm:h-[300px] md:h-[500px] w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white mt-8 transform hover:scale-[1.02] transition-transform duration-500">
               <Image src="/images/lower-section.png" alt="Our amazing faculty and learning environment" fill className="object-cover" />
             </div>
           </div>

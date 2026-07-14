@@ -25,24 +25,24 @@ export default async function TeacherLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-white shadow-md flex flex-col justify-between">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+      <aside className="w-full md:w-64 bg-white shadow-md flex-shrink-0 flex flex-col justify-between">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Teacher Panel</h2>
           <nav>
-            <ul className="space-y-2 font-medium">
+            <ul className="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-2 font-medium">
               <li>
-                <Link href="/teacher" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <Link href="/teacher" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                   <span className="ml-3">Dashboard</span>
                 </Link>
               </li>
               <li>
-              <Link href="/teacher/students" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link href="/teacher/students" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">My Students</span>
               </Link>
             </li>
             <li>
-              <Link href="/teacher/attendance" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link href="/teacher/attendance" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">Take Attendance</span>
               </Link>
             </li>

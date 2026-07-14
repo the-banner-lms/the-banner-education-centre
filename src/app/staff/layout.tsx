@@ -25,44 +25,50 @@ export default async function StaffLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-white shadow-md flex flex-col justify-between">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+      <aside className="w-full md:w-64 bg-white shadow-md flex-shrink-0 flex flex-col justify-between">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Staff Panel</h2>
           <nav>
-            <ul className="space-y-2 font-medium">
+            <ul className="flex flex-row flex-wrap md:flex-col gap-2 md:gap-0 md:space-y-2 font-medium">
               <li>
-                <Link href="/staff" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <Link href="/staff" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                   <span className="ml-3">Dashboard</span>
                 </Link>
               </li>
               <li>
-              <Link href="/staff/students" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link href="/staff/students" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">Manage Students</span>
               </Link>
             </li>
             <li>
-              <Link href="/staff/students/fast-entry" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link href="/staff/students/fast-entry" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">Fast Data Entry</span>
               </Link>
             </li>
             <li>
-              <Link href="/staff/teacher-reports" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+              <Link href="/staff/teacher-reports" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">Teacher Reports</span>
               </Link>
             </li>
               <li>
-                <Link href="/staff/announcements" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <Link href="/staff/announcements" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                   <span className="ml-3">Manage Announcements</span>
                 </Link>
               </li>
               <li>
-                <Link href="/staff/activities" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <Link href="/staff/blogs" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
+                  <span className="ml-3">Manage Blogs</span>
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/staff/activities" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                   <span className="ml-3">Manage Activities</span>
                 </Link>
               </li>
               <li>
-                <Link href="/teacher/students" className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <Link href="/teacher/students" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                   <span className="ml-3 text-sm text-gray-500">(Go to Teacher Panel)</span>
                 </Link>
               </li>

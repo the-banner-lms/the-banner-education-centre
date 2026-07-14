@@ -12,7 +12,7 @@ export default async function AdminDashboardPage() {
 
   // Fetch content counts
   const { count: textbookCount } = await supabase.from('textbooks').select('*', { count: 'exact', head: true })
-  const { count: blogCount } = await supabase.from('blog_posts').select('*', { count: 'exact', head: true })
+  const { count: blogCount } = await supabase.from('announcements').select('*', { count: 'exact', head: true }).eq('target_role', 'all')
   const { count: lessonCount } = await supabase.from('lessons').select('*', { count: 'exact', head: true })
   const { count: announcementCount } = await supabase.from('announcements').select('*', { count: 'exact', head: true })
 
@@ -21,7 +21,9 @@ export default async function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Dashboard Overview</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+      </div>
 
       <RecentAnnouncementsInbox announcements={recentAnnouncements || []} viewAllHref="/admin/announcements" />
 

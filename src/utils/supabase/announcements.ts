@@ -29,7 +29,7 @@ export async function getRecentAnnouncementsForRole(
   const { data, error } = await queryClient
     .from('announcements')
     .select('id, title, created_at, author_role, target_role')
-    .in('target_role', role === 'admin' ? ['all', 'admin', 'staff', 'teacher', 'student'] : ['all', role])
+    .in('target_role', ['all', role])
     .order('created_at', { ascending: false })
     .limit(limit)
 

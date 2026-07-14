@@ -38,8 +38,12 @@ export default async function AnnouncementDetailPage({ params }: { params: Promi
     );
   }
 
-  // Enforce access control if target_role is not 'all'
-  if (announcement.target_role && announcement.target_role !== 'all' && profile.role !== announcement.target_role && profile.role !== 'admin' && profile.role !== 'staff') {
+  const isIntendedRecipient = !announcement.target_role
+    || announcement.target_role === 'all'
+    || profile.role === announcement.target_role;
+  const canManageAnnouncement = profile.role === 'admin' || announcement.author_id === user.id;
+
+  if (!isIntendedRecipient && !canManageAnnouncement) {
     return (
        <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-center">
@@ -70,7 +74,7 @@ export default async function AnnouncementDetailPage({ params }: { params: Promi
   
   // Fetch profiles separately
   const userIds = replies.map(r => r.user_id);
-  let profilesMap: Record<string, any> = {};
+  const profilesMap: Record<string, { first_name: string; last_name: string }> = {};
   if (userIds.length > 0) {
     const { data: profilesData } = await supabase
       .from('profiles')
@@ -79,7 +83,10 @@ export default async function AnnouncementDetailPage({ params }: { params: Promi
       
     if (profilesData) {
       profilesData.forEach(p => {
-        profilesMap[p.id] = p;
+        profilesMap[p.id] = {
+          first_name: p.first_name || '',
+          last_name: p.last_name || '',
+        };
       });
     }
   }

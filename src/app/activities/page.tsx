@@ -1,11 +1,13 @@
 import Link from 'next/link'
-import { getAlbums } from '@/app/actions/activitiesActions'
-import { PhotoIcon } from '@heroicons/react/24/outline'
+import { getAlbums, getStandaloneVideos } from '@/app/actions/activitiesActions'
+import { PhotoIcon, PlayCircleIcon } from '@heroicons/react/24/outline'
+import StandaloneVideoPlayer from '@/components/activities/StandaloneVideoPlayer'
 
 export const dynamic = 'force-dynamic';
 
 export default async function ActivitiesPage() {
   const albums = await getAlbums()
+  const videos = await getStandaloneVideos()
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-banner-dark">
@@ -37,7 +39,7 @@ export default async function ActivitiesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
               {albums.map((album) => (
-                <Link key={album.id} href={`/activities/${album.id}`} className="group flex flex-col relative h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl">
+                <Link key={album.id} href={`/activities/${album.id}`} className="group flex flex-col relative h-[250px] sm:h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-xl border-4 border-white transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl">
                   <div className="absolute inset-0 bg-banner-light/20">
                     {album.cover_image_url ? (
                       <img 
@@ -67,6 +69,23 @@ export default async function ActivitiesPage() {
           )}
         </div>
       </main>
+
+      {/* Standalone Videos Section */}
+      {videos.length > 0 && (
+        <section className="bg-banner-light/5 py-20 border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <h2 className="text-3xl font-bold tracking-tight text-banner-dark mb-12 flex items-center">
+              <PlayCircleIcon className="w-8 h-8 mr-3 text-red-600" />
+              Featured Videos
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+              {videos.map(video => (
+                <StandaloneVideoPlayer key={video.id} video={video} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { canViewDashboard, hasAdminPanelAccess } from '@/utils/supabase/queries'
+import { canViewDashboard } from '@/utils/supabase/queries'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
-import PDFDownloadButton from '@/components/PDFDownloadButton'
+import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import Link from 'next/link'
@@ -51,8 +51,6 @@ export default async function UniversalUserDashboardView(props: {
   }
 
   const isStudent = profile.role === 'student';
-  const hasAdminNav = await hasAdminPanelAccess(supabase);
-
   const { data: performances } = await supabase
     .from('weekly_performances')
     .select('*')
@@ -81,8 +79,6 @@ export default async function UniversalUserDashboardView(props: {
 
   const weekParam = typeof searchParams.week === 'string' ? searchParams.week : null;
   const weekStartDateStr = weekParam || getStartOfCurrentWeek();
-  const weekStartDate = new Date(weekStartDateStr);
-
   const [y, m, d] = weekStartDateStr.split('-').map(Number);
   
   const nextWeek = new Date(y, m - 1, d + 7);
@@ -107,7 +103,8 @@ export default async function UniversalUserDashboardView(props: {
   }));
 
   const { getRecentAnnouncementsForRole } = await import('@/utils/supabase/announcements');
-  const recentAnnouncements = await getRecentAnnouncementsForRole(supabase, currentUserProfile.role === 'admin' ? 'admin' : profile.role, 5);
+  // Fetch announcements for the target user's role so admins/teachers see what the user actually sees
+  const recentAnnouncements = await getRecentAnnouncementsForRole(supabase, profile.role, 5);
 
   const currentPerformances = performances?.filter(p => {
     return p.week_start_date >= weekStartDateStr && p.week_start_date <= weekEndDateFullStr;
@@ -137,7 +134,7 @@ export default async function UniversalUserDashboardView(props: {
       )}
 
       <div className="mb-8">
-        <RecentAnnouncementsInbox announcements={(recentAnnouncements as any) || []} viewAllHref="/announcements" />
+        <RecentAnnouncementsInbox announcements={recentAnnouncements || []} viewAllHref="/announcements" />
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden border border-gray-200 mb-8 relative">
@@ -156,7 +153,7 @@ export default async function UniversalUserDashboardView(props: {
             </div>
             
             <div className="hide-in-pdf self-start sm:self-end mt-4 sm:mt-0">
-              <PDFDownloadButton targetId="dashboard-content" filename={`${profile.full_name || 'student'}-weekly-record.pdf`} />
+              <StudentReportDownloadButton studentId={studentId} weekStartDate={weekStartDateStr} />
             </div>
           </div>
           

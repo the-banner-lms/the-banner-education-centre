@@ -30,11 +30,11 @@ export default function PublicGallery({ media }: { media: ActivityMedia[] }) {
   return (
     <div>
       {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {media.map((item, index) => (
           <div 
             key={item.id} 
-            className="relative cursor-pointer group rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border-[3px] border-white bg-banner-light/5 aspect-square transition-all duration-300"
+            className="relative cursor-pointer group rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border-[3px] border-white bg-banner-light/5 aspect-video sm:aspect-square transition-all duration-300"
             onClick={() => setSelectedIndex(index)}
           >
             {item.media_type === 'photo' ? (

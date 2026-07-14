@@ -1,0 +1,117 @@
+'use client';
+
+import React, { useTransition } from 'react';
+import Link from 'next/link';
+import { deleteBlog } from '@/app/actions/blogActions';
+
+interface Blog {
+  id: string;
+  title: string;
+  created_at: string;
+  author_id: string;
+  published: boolean;
+}
+
+interface BlogListProps {
+  blogs: Blog[];
+  roleBasePath: string;
+  currentUserId: string;
+  currentUserRole: string;
+}
+
+export default function BlogList({ blogs, roleBasePath, currentUserId, currentUserRole }: BlogListProps) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleDelete = (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this blog?')) return;
+    
+    startTransition(async () => {
+      await deleteBlog(id);
+    });
+  };
+
+  if (!blogs || blogs.length === 0) {
+    return (
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+        <h3 className="text-gray-500 font-medium mb-4">No blogs found.</h3>
+        <Link 
+          href={`${roleBasePath}/new`}
+          className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md font-medium transition-colors"
+        >
+          Create First Blog
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="flex justify-between items-center p-6 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">Manage Blogs</h2>
+        <Link 
+          href={`${roleBasePath}/new`}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+        >
+          + New Blog
+        </Link>
+      </div>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {blogs.map((item) => {
+            const canEdit = currentUserRole === 'admin' || currentUserId === item.author_id;
+            return (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4">
+                  <Link href={`/blog/${item.id}`} target="_blank" className="text-sm font-medium text-orange-600 hover:underline">
+                    {item.title}
+                  </Link>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.published ? (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Published
+                    </span>
+                  ) : (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                      Draft
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(item.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  {canEdit && (
+                    <div className="flex justify-end gap-3">
+                      <Link 
+                        href={`${roleBasePath}/${item.id}/edit`}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Edit
+                      </Link>
+                      <button 
+                        onClick={() => handleDelete(item.id)}
+                        disabled={isPending}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

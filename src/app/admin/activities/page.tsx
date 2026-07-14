@@ -1,8 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getAlbums } from '@/app/actions/activitiesActions'
+import { getAlbums, getStandaloneVideos } from '@/app/actions/activitiesActions'
 import { PhotoIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
+import ManageStandaloneVideos from '@/components/activities/ManageStandaloneVideos'
 
 export const metadata = {
   title: 'Manage Activities | Admin',
@@ -28,6 +29,7 @@ export default async function AdminActivitiesPage() {
   }
 
   const albums = await getAlbums()
+  const videos = await getStandaloneVideos()
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -84,6 +86,8 @@ export default async function AdminActivitiesPage() {
           </ul>
         )}
       </div>
+
+      <ManageStandaloneVideos videos={videos} />
     </div>
   )
 }

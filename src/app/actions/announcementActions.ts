@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+const allowedTargetRoles = new Set(['all', 'admin', 'staff', 'teacher', 'student']);
+
 export async function createAnnouncement(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -23,6 +25,10 @@ export async function createAnnouncement(formData: FormData) {
 
   if (!title || !content) {
     return { error: 'Title and content are required' };
+  }
+
+  if (!allowedTargetRoles.has(target_role)) {
+    return { error: 'Invalid target role' };
   }
 
   const { error } = await supabase.from('announcements').insert({
@@ -68,6 +74,10 @@ export async function updateAnnouncement(id: string, formData: FormData) {
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const target_role = formData.get('target_role') as string || 'all';
+
+  if (!allowedTargetRoles.has(target_role)) {
+    return { error: 'Invalid target role' };
+  }
 
   const { error } = await supabase.from('announcements').update({
     title,

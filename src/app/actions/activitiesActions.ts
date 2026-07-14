@@ -49,7 +49,7 @@ export type Album = {
 
 export type ActivityMedia = {
   id: string
-  album_id: string
+  album_id: string | null
   media_type: 'photo' | 'video'
   url: string
   caption: string | null
@@ -288,7 +288,7 @@ export async function addPhotoToAlbum(albumId: string, formData: FormData) {
   revalidatePath(`/activities/${albumId}`)
 }
 
-export async function updateMediaCaption(mediaId: string, albumId: string, caption: string) {
+export async function updateMediaCaption(mediaId: string, albumId: string, caption: string, isStandalone = false) {
   await verifyStaffAccess()
 
   const { error } = await supabaseAdmin
@@ -301,9 +301,15 @@ export async function updateMediaCaption(mediaId: string, albumId: string, capti
     throw new Error('Failed to update caption')
   }
 
-  revalidatePath(`/admin/activities/${albumId}`)
-  revalidatePath(`/staff/activities/${albumId}`)
-  revalidatePath(`/activities/${albumId}`)
+  if (isStandalone) {
+    revalidatePath(`/admin/activities`)
+    revalidatePath(`/staff/activities`)
+    revalidatePath(`/activities`)
+  } else {
+    revalidatePath(`/admin/activities/${albumId}`)
+    revalidatePath(`/staff/activities/${albumId}`)
+    revalidatePath(`/activities/${albumId}`)
+  }
 }
 
 export async function replacePhoto(mediaId: string, albumId: string, formData: FormData) {
@@ -347,6 +353,65 @@ export async function replacePhoto(mediaId: string, albumId: string, formData: F
   revalidatePath(`/activities/${albumId}`)
   revalidatePath('/activities')
 }
+
+// --- Standalone Videos ---
+
+export async function addStandaloneVideo(youtubeUrl: string, caption?: string) {
+  await verifyStaffAccess()
+
+  if (!youtubeUrl) throw new Error('YouTube URL is required')
+
+  const { error } = await supabaseAdmin
+    .from('activities_media')
+    .insert({
+      album_id: null,
+      media_type: 'video',
+      url: youtubeUrl,
+      caption: caption || 'YouTube Video'
+    })
+
+  if (error) {
+    console.error('Error adding standalone video:', error)
+    throw new Error('Failed to add standalone video')
+  }
+
+  revalidatePath(`/admin/activities`)
+  revalidatePath(`/staff/activities`)
+  revalidatePath(`/activities`)
+}
+
+export async function deleteStandaloneVideo(mediaId: string) {
+  await verifyStaffAccess()
+
+  const { error } = await supabaseAdmin
+    .from('activities_media')
+    .delete()
+    .eq('id', mediaId)
+
+  if (error) {
+    console.error('Error deleting standalone video:', error)
+    throw new Error('Failed to delete video')
+  }
+
+  revalidatePath(`/admin/activities`)
+  revalidatePath(`/staff/activities`)
+  revalidatePath(`/activities`)
+}
+
+export async function getStandaloneVideos() {
+  const { data, error } = await supabaseAdmin
+    .from('activities_media')
+    .select('*')
+    .is('album_id', null)
+    .eq('media_type', 'video')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    return []
+  }
+  return data as ActivityMedia[]
+}
+
 
 export async function addVideoToAlbum(albumId: string, formData: FormData) {
   await verifyStaffAccess()
