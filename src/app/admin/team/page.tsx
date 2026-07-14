@@ -25,11 +25,11 @@ export default async function AdminTeamPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Manage Team</h1>
         <Link 
           href="/admin/team/new" 
-          className="bg-banner-dark hover:bg-opacity-90 text-white px-4 py-2 rounded-md shadow-sm font-medium transition-colors"
+          className="self-start rounded-md bg-banner-dark px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-opacity-90 sm:self-auto"
         >
           Add Team Member
         </Link>

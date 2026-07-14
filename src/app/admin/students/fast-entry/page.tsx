@@ -47,7 +47,7 @@ export default async function AdminFastEntryPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
           <Link href="/admin/students" className="text-indigo-600 hover:text-indigo-800 mr-4 font-medium flex items-center">
             &larr; Manage Students
           </Link>

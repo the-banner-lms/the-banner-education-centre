@@ -201,7 +201,7 @@ export default function TeamForm({ initialData }: { initialData?: TeamMemberForm
         </p>
       )}
 
-      <div className="pt-5 flex justify-end gap-3">
+      <div className="flex flex-wrap justify-end gap-3 pt-5">
         <button
           type="button"
           onClick={() => router.back()}

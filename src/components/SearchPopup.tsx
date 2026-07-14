@@ -52,7 +52,7 @@ export default function SearchPopup() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed left-4 right-4 top-20 z-50 mt-2 w-auto rounded-xl border border-gray-100 bg-white p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:w-72">
           <Form action="/search" onSubmit={() => setIsOpen(false)}>
             <div className="flex gap-2">
               <input

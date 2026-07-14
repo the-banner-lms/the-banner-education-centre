@@ -25,7 +25,7 @@ export default async function AdminMessagesMonitoringPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
           <Link href="/admin" className="text-indigo-600 hover:text-indigo-800 mr-4 font-medium flex items-center">
             &larr; Admin Panel
           </Link>
@@ -34,7 +34,7 @@ export default async function AdminMessagesMonitoringPage() {
       </div>
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200">
+        <div className="flex flex-col gap-2 border-b border-gray-200 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
             Recent Direct Messages
           </h3>

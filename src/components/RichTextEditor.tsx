@@ -166,11 +166,11 @@ export default function RichTextEditor({ label = 'Main Content', value, onChange
 
   return (
     <div className="flex flex-col w-full relative">
-      <div className="flex justify-between items-center mb-2">
+      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <label className="text-sm font-semibold text-gray-700">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {isUploading && <span className="text-xs text-orange-500 font-medium animate-pulse">Uploading image...</span>}
           <button
             type="button"

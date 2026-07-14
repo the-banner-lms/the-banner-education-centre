@@ -54,7 +54,7 @@ export default function NotificationBell({ unreadAnnouncements }: NotificationBe
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden">
+        <div className="fixed left-4 right-4 top-20 z-50 mt-2 w-auto overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:w-80">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
             {announcements.length > 0 && (

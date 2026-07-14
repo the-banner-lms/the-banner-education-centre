@@ -41,7 +41,7 @@ export default async function ManageAlbumPage({ params }: { params: Promise<{ id
           <Link href="/admin/activities" className="text-blue-600 hover:text-blue-800 text-sm font-semibold mb-2 inline-block">
             &larr; Back to Activities
           </Link>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
             <h1 className="text-3xl font-bold text-gray-900">{album.title}</h1>
             <Link href={`/admin/activities/${album.id}/edit`} className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold py-1 px-3 rounded">
               Edit Details

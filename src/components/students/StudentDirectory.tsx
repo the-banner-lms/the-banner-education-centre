@@ -13,8 +13,9 @@ export default function StudentDirectory({
     <div>
       <h1 className="text-2xl font-bold mb-6 text-gray-900">{title}</h1>
       
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+        <div className="overflow-x-auto overscroll-x-contain">
+        <table className="min-w-[640px] divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -66,6 +67,7 @@ export default function StudentDirectory({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

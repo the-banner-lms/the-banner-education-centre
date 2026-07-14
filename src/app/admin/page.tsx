@@ -35,8 +35,9 @@ export default async function AdminDashboardPage() {
       {/* Staff Actions Table */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-[#0f6630] mb-3">Staff Activities (Total: {staffCount || 0})</h2>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto overscroll-x-contain">
+          <table className="min-w-[620px] divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Textbooks Uploaded</th>
@@ -52,14 +53,16 @@ export default async function AdminDashboardPage() {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
       {/* Teacher Actions Table */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-[#0f6630] mb-3">Teacher Activities (Total: {teacherCount || 0})</h2>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto overscroll-x-contain">
+          <table className="min-w-[480px] divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lessons Created</th>
@@ -73,14 +76,16 @@ export default async function AdminDashboardPage() {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
       {/* Student Actions Table */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-[#0f6630] mb-3">Student Activities (Total: {studentCount || 0})</h2>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto overscroll-x-contain">
+          <table className="min-w-[480px] divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Students</th>
@@ -94,10 +99,10 @@ export default async function AdminDashboardPage() {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
     </div>
   )
 }
-

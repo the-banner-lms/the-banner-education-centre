@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { signout } from '@/app/login/actions'
 
 type MobileMenuProps = {
   userRole?: string | null
+  isAuthenticated?: boolean
 }
 
-export default function MobileMenu({ userRole }: MobileMenuProps) {
+export default function MobileMenu({ userRole, isAuthenticated = false }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const toggleMenu = () => setIsOpen(!isOpen)
@@ -66,6 +68,16 @@ export default function MobileMenu({ userRole }: MobileMenuProps) {
               <Link onClick={closeMenu} href="/admin" className="block px-3 py-2 rounded-md text-base font-bold text-blue-600 hover:bg-blue-50 border-t border-gray-100 mt-2">
                 Admin
               </Link>
+            )}
+            {isAuthenticated && (
+              <form action={signout} className="border-t border-gray-100 pt-2 sm:hidden">
+                <button
+                  type="submit"
+                  className="block w-full rounded-md px-3 py-2 text-left text-base font-semibold text-red-600 hover:bg-red-50"
+                >
+                  Sign Out
+                </button>
+              </form>
             )}
           </div>
         </div>

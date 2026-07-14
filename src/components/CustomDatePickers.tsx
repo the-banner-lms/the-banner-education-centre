@@ -15,7 +15,7 @@ const customStyles = `
   .react-calendar {
     width: 100% !important;
     max-width: 350px;
-    min-width: 280px;
+    min-width: 0;
     border: 1px solid #e5e7eb !important;
     border-radius: 0.5rem;
     font-family: inherit !important;

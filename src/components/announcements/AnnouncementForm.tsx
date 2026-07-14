@@ -98,7 +98,7 @@ export default function AnnouncementForm({ initialData, roleBasePath }: Announce
 
       {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div className="flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-4">
         <button
           type="button"
           onClick={() => router.push(roleBasePath)}

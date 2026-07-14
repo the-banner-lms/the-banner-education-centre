@@ -120,7 +120,7 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
 
       {error && <div className="mb-4 text-sm text-red-500">{error}</div>}
 
-      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+      <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {isEditing && (
             <button
@@ -133,7 +133,7 @@ export default function BlogForm({ initialData, roleBasePath }: BlogFormProps) {
             </button>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => router.push(roleBasePath)}

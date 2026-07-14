@@ -47,16 +47,17 @@ export default function AnnouncementList({ announcements, roleBasePath, currentU
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="flex justify-between items-center p-6 border-b border-gray-200">
+      <div className="flex flex-col gap-3 border-b border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900">Manage Announcements</h2>
         <Link 
           href={`${roleBasePath}/new`}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+          className="self-start rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 sm:self-auto"
         >
           + New Announcement
         </Link>
       </div>
-      <table className="min-w-full divide-y divide-gray-200">
+      <div className="overflow-x-auto overscroll-x-contain">
+      <table className="min-w-[760px] divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
@@ -109,6 +110,7 @@ export default function AnnouncementList({ announcements, roleBasePath, currentU
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

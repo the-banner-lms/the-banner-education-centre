@@ -33,11 +33,11 @@ export default async function AdminActivitiesPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Manage Activities & Albums</h1>
         <Link 
           href="/admin/activities/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="self-start rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700 sm:self-auto"
         >
           + Create New Album
         </Link>
