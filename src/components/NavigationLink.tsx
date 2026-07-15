@@ -3,7 +3,7 @@
 import { MouseEvent, useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 
-const navigationClassName = 'text-banner-dark/70 hover:text-banner-dark inline-flex min-h-9 items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-[color,border-color,transform,opacity] duration-100 active:scale-95 data-[navigating=true]:opacity-60'
+const navigationClassName = 'text-banner-dark hover:text-banner-dark inline-flex min-h-9 items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-[color,border-color,transform,opacity] duration-100 active:scale-95 data-[navigating=true]:opacity-80'
 
 export default function NavigationLink({ href, label }: { href: string; label: string }) {
   const router = useRouter()
@@ -31,6 +31,8 @@ export default function NavigationLink({ href, label }: { href: string; label: s
     }
 
     event.preventDefault()
+    if (pathname === href) return
+
     const link = event.currentTarget
     link.dataset.navigating = 'true'
 

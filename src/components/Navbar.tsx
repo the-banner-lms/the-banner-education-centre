@@ -106,7 +106,7 @@ export default async function Navbar() {
                   <span className="text-sm font-medium text-banner-dark whitespace-nowrap">{profile?.full_name || user.email}</span>
                 </div>
                 <form action={signout} className="hidden sm:block">
-                  <button type="submit" className="text-sm px-4 py-2 rounded-full bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:text-red-700 transition-colors duration-200">
+                  <button type="submit" className="text-sm px-4 py-2 rounded-full bg-red-50 text-red-700 font-semibold hover:bg-red-100 hover:text-red-800 transition-colors duration-200">
                     Sign Out
                   </button>
                 </form>

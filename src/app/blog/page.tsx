@@ -68,7 +68,7 @@ export default async function BlogPage({
                   {q || archive ? 'Try adjusting your filters.' : 'Check back later for new updates.'}
                 </p>
                 {(q || archive) && (
-                  <Link href="/blog" className="text-orange-500 hover:underline mt-4 inline-block">
+                  <Link href="/blog" className="text-orange-700 hover:text-orange-800 hover:underline mt-4 inline-block">
                     Clear Filters
                   </Link>
                 )}
@@ -93,7 +93,7 @@ export default async function BlogPage({
                           {post.tags && post.tags.length > 0 && (
                             <>
                               <span>&bull;</span>
-                              <span className="text-orange-500 font-medium">{post.tags[0]}</span>
+                              <span className="text-orange-700 font-medium">{post.tags[0]}</span>
                             </>
                           )}
                         </div>
@@ -119,7 +119,7 @@ export default async function BlogPage({
                           )}
                           <span className="text-sm font-medium text-gray-900">{post.profiles?.full_name || 'Admin'}</span>
                         </div>
-                        <Link href={`/blog/${post.id}`} className="text-sm font-semibold text-orange-500 hover:text-orange-600 flex items-center">
+                        <Link href={`/blog/${post.id}`} className="text-sm font-semibold text-orange-700 hover:text-orange-800 flex items-center">
                           Read More
                           <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

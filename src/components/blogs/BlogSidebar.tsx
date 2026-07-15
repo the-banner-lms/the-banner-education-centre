@@ -85,11 +85,12 @@ export default async function BlogSidebar() {
           <input 
             type="text" 
             name="q"
+            aria-label="Search blog"
             placeholder="Search keywords..." 
             className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all outline-none text-sm"
           />
-          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 group-hover:text-orange-500 transition-colors">
-            <MagnifyingGlassIcon className="w-5 h-5" />
+          <button type="submit" aria-label="Search blog" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-600 group-hover:text-orange-700 transition-colors">
+            <MagnifyingGlassIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </form>
       </div>
@@ -107,7 +108,7 @@ export default async function BlogSidebar() {
                 <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors line-clamp-2 leading-snug">
                   {post.title}
                 </span>
-                <span className="text-xs text-gray-400 mt-1.5 font-medium flex items-center">
+                <span className="text-xs text-gray-600 mt-1.5 font-medium flex items-center">
                   {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </Link>
@@ -132,9 +133,9 @@ export default async function BlogSidebar() {
                 <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors line-clamp-2 leading-snug">
                   {post.title}
                 </span>
-                <span className="text-xs text-gray-400 mt-1.5 font-medium flex items-center">
+                <span className="text-xs text-gray-600 mt-1.5 font-medium flex items-center">
                   {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  {(post as any).views !== undefined ? <span className="ml-2 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-md text-[10px] font-bold tracking-wider uppercase">{`${(post as any).views} views`}</span> : ''}
+                  {(post as any).views !== undefined ? <span className="ml-2 px-2 py-0.5 bg-orange-50 text-orange-800 rounded-md text-[10px] font-bold tracking-wider uppercase">{`${(post as any).views} views`}</span> : ''}
                 </span>
               </Link>
             </li>
@@ -157,7 +158,7 @@ export default async function BlogSidebar() {
               <span className="font-bold text-gray-800 text-xs tracking-wide uppercase">{(comment as any).profiles?.full_name || 'Anonymous'}</span>
               <p className="text-gray-600 line-clamp-2 italic mt-1 text-sm">&quot;{comment.content}&quot;</p>
               {comment.post_id && (
-                <Link href={`/blog/${comment.post_id}`} className="text-[11px] font-semibold text-orange-500 hover:text-orange-700 transition-colors mt-2 inline-flex items-center">
+                <Link href={`/blog/${comment.post_id}`} className="text-[11px] font-semibold text-orange-700 hover:text-orange-800 transition-colors mt-2 inline-flex items-center">
                   Read Context <span className="ml-1">→</span>
                 </Link>
               )}
