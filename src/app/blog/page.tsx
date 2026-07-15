@@ -99,8 +99,11 @@ export default async function BlogPage({
               </div>
             ) : (
               <div className="space-y-8">
-                {filteredPosts.map((post: any) => (
-                  <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row">
+                {filteredPosts.map((post: any) => {
+                  const postLabels = getBlogLabels(post.tags);
+
+                  return (
+                    <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row">
                     {post.cover_image_url && (
                       <div className="w-full md:w-1/3 h-48 md:h-auto shrink-0 relative">
                         <img 
@@ -114,11 +117,11 @@ export default async function BlogPage({
                       <div>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 mb-3">
                           <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                          {getBlogLabels(post.tags).length > 0 && (
+                          {postLabels.length > 0 && (
                             <>
                               <span>&bull;</span>
                               <div className="flex flex-wrap gap-1.5">
-                                {getBlogLabels(post.tags).slice(0, 3).map(postLabel => (
+                                {postLabels.slice(0, 2).map(postLabel => (
                                   <Link
                                     key={postLabel.toLocaleLowerCase()}
                                     href={`/blog?label=${encodeURIComponent(postLabel)}`}
@@ -127,9 +130,9 @@ export default async function BlogPage({
                                     #{postLabel}
                                   </Link>
                                 ))}
-                                {getBlogLabels(post.tags).length > 3 && (
+                                {postLabels.length > 2 && (
                                   <span className="px-1 py-1 text-xs font-medium text-gray-500">
-                                    +{getBlogLabels(post.tags).length - 3}
+                                    +{postLabels.length - 2}
                                   </span>
                                 )}
                               </div>
@@ -166,8 +169,9 @@ export default async function BlogPage({
                         </Link>
                       </div>
                     </div>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

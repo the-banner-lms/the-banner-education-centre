@@ -8,6 +8,7 @@ import {
   ChatBubbleLeftEllipsisIcon, 
   ArchiveBoxIcon,
   TagIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { getBlogLabels } from '@/utils/blogs';
 
@@ -120,38 +121,59 @@ export default async function BlogSidebar({ activeLabel = '', activeQuery = '' }
       </div>
 
       {/* Labels */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100/60 hover:shadow-md transition-shadow duration-300">
-        <h3 className="flex items-center text-lg font-bold text-banner-dark mb-4 pb-3 border-b border-gray-100">
-          <TagIcon className="w-5 h-5 mr-2 text-orange-500" />
-          Labels
-        </h3>
-        {labels.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {labels.map(item => {
-              const isActive = activeLabel.toLocaleLowerCase() === item.label.toLocaleLowerCase();
-              return (
-                <Link
-                  key={item.label.toLocaleLowerCase()}
-                  href={isActive ? '/blog' : `/blog?label=${encodeURIComponent(item.label)}`}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 transition-colors ${
-                    isActive
-                      ? 'bg-orange-700 text-white ring-orange-700 hover:bg-orange-800'
-                      : 'bg-orange-50 text-orange-800 ring-orange-200 hover:bg-orange-100 hover:text-orange-900'
-                  }`}
-                >
-                  <span>#{item.label}</span>
-                  <span className={`text-xs ${isActive ? 'text-orange-100' : 'text-orange-700'}`}>
-                    {item.count}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500 italic">No labels yet.</p>
-        )}
-      </div>
+      <details className="group overflow-hidden rounded-2xl border border-gray-100/60 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center text-lg font-bold text-banner-dark">
+            <TagIcon className="mr-2 h-5 w-5 shrink-0 text-orange-500" />
+            Labels
+            <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+              {labels.length}
+            </span>
+          </span>
+          <span className="flex min-w-0 items-center gap-2">
+            {activeLabel && (
+              <span className="max-w-28 truncate rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800 ring-1 ring-orange-200 sm:max-w-40">
+                #{activeLabel}
+              </span>
+            )}
+            <ChevronDownIcon className="h-5 w-5 shrink-0 text-gray-500 transition-transform duration-200 group-open:rotate-180" />
+          </span>
+        </summary>
+
+        <div className="border-t border-gray-100 px-6 py-4">
+          {labels.length > 0 ? (
+            <div
+              className="overflow-x-auto overscroll-x-contain pb-2 touch-pan-x"
+              aria-label="Blog labels"
+            >
+              <div className="flex w-max min-w-full flex-nowrap gap-2">
+                {labels.map(item => {
+                  const isActive = activeLabel.toLocaleLowerCase() === item.label.toLocaleLowerCase();
+                  return (
+                    <Link
+                      key={item.label.toLocaleLowerCase()}
+                      href={isActive ? '/blog' : `/blog?label=${encodeURIComponent(item.label)}`}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold ring-1 transition-colors ${
+                        isActive
+                          ? 'bg-orange-700 text-white ring-orange-700 hover:bg-orange-800'
+                          : 'bg-orange-50 text-orange-800 ring-orange-200 hover:bg-orange-100 hover:text-orange-900'
+                      }`}
+                    >
+                      <span>#{item.label}</span>
+                      <span className={`text-xs ${isActive ? 'text-orange-100' : 'text-orange-700'}`}>
+                        {item.count}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm italic text-gray-500">No labels yet.</p>
+          )}
+        </div>
+      </details>
 
       {/* Recent Posts */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100/60 hover:shadow-md transition-shadow duration-300">
