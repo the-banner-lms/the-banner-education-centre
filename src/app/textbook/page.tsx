@@ -14,11 +14,13 @@ export const metadata = {
 
 export default async function TextbookPage() {
   const supabase = await createClient()
-  const profile = await getUserProfile(supabase)
-  const { data, error } = await supabase
-    .from('textbooks')
-    .select('*')
-    .order('created_at', { ascending: true })
+  const [profile, { data, error }] = await Promise.all([
+    getUserProfile(supabase),
+    supabase
+      .from('textbooks')
+      .select('*')
+      .order('created_at', { ascending: true }),
+  ])
 
   const books = sortBooks(((data || []) as TextbookRow[]).map(hydrateBook))
     .filter(book => book.metadata.isPublished && canRoleReadBook(book.metadata, profile?.role))
@@ -56,7 +58,7 @@ export default async function TextbookPage() {
                   title={book.title}
                   gradeLevel={book.grade_level || 'General'}
                   coverUrl={book.cover_url}
-                  isRestricted={!book.metadata.accessRoles.includes('all')}
+                  isRestricted={!profile || !book.metadata.accessRoles.includes('all')}
                 />
               </div>
             ))}

@@ -193,7 +193,7 @@ export default function BookManager({ books, loadError }: { books: ManagedBook[]
     const signedUpload = await requestBookUpload(file.name, file.type, file.size, kind)
     const supabase = createClient()
     const { error: uploadError } = await supabase.storage
-      .from('textbooks')
+      .from(signedUpload.bucket)
       .uploadToSignedUrl(signedUpload.path, signedUpload.token, file, {
         contentType: file.type,
         cacheControl: '3600',

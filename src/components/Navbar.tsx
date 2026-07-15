@@ -5,6 +5,7 @@ import { getUserProfile } from '@/utils/supabase/queries'
 import SearchPopup from './SearchPopup'
 import NotificationBell from './NotificationBell'
 import MobileMenu from './MobileMenu'
+import NavigationLink from './NavigationLink'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 
 type NavbarAnnouncement = {
@@ -59,40 +60,22 @@ export default async function Navbar() {
               </Link>
             </div>
             <div className="hidden xl:ml-4 xl:flex xl:space-x-3 2xl:space-x-6">
-              <Link href="/" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Home
-              </Link>
-              <Link href="/textbook" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Bookshelf
-              </Link>
-              <Link href="/blog" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Blog
-              </Link>
-              <Link href="/activities" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Activities
-              </Link>
-              <Link href="/team" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                Our Team
-              </Link>
+              <NavigationLink href="/" label="Home" />
+              <NavigationLink href="/textbook" label="Bookshelf" />
+              <NavigationLink href="/blog" label="Blog" />
+              <NavigationLink href="/activities" label="Activities" />
+              <NavigationLink href="/team" label="Our Team" />
               {user && profile?.role === 'student' && (
-                  <Link href="/dashboard" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                    Dashboard
-                  </Link>
+                <NavigationLink href="/dashboard" label="Dashboard" />
               )}
               {user && profile?.role === 'teacher' && (
-                  <Link href="/teacher" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                    Teacher
-                  </Link>
+                <NavigationLink href="/teacher" label="Teacher" />
               )}
               {user && profile?.role === 'staff' && (
-                  <Link href="/staff" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                    Staff
-                  </Link>
+                <NavigationLink href="/staff" label="Staff" />
               )}
               {user && profile?.role === 'admin' && (
-                <Link href="/admin" className="text-banner-dark/70 hover:text-banner-dark inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-banner-light text-sm font-semibold whitespace-nowrap transition-colors duration-200">
-                  Admin
-                </Link>
+                <NavigationLink href="/admin" label="Admin" />
               )}
             </div>
           </div>

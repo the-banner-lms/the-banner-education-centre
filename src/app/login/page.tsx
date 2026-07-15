@@ -11,13 +11,18 @@ export default function LoginPage() {
 
   const supabase = createClient()
 
+  const getSafeNextPath = () => {
+    const next = new URLSearchParams(location.search).get('next')
+    return next?.startsWith('/') && !next.startsWith('//') ? next : ''
+  }
+
   const handleGoogleSignIn = async () => {
     setLoading(true)
     setError(null)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/auth/callback${getSafeNextPath() ? `?next=${encodeURIComponent(getSafeNextPath())}` : ''}`,
       }
     })
     
@@ -32,6 +37,8 @@ export default function LoginPage() {
     setError(null)
     
     try {
+      const next = getSafeNextPath()
+      if (next) formData.set('next', next)
       const response = isLogin ? await login(formData) : await signup(formData)
       if (response?.error) {
         setError(response.error)
@@ -170,4 +177,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

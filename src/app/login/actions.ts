@@ -4,6 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
+function getSafeNextPath(formData: FormData) {
+  const next = formData.get('next')
+  return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : ''
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
   
@@ -21,7 +26,7 @@ export async function login(formData: FormData) {
   }
 
   const { data: { user } } = await supabase.auth.getUser()
-  let redirectUrl = '/'
+  let redirectUrl = getSafeNextPath(formData) || '/'
   
   if (user) {
     const { data: userProfile } = await supabase
@@ -30,7 +35,7 @@ export async function login(formData: FormData) {
       .eq('id', user.id)
       .single()
       
-    if (userProfile) {
+    if (userProfile && !getSafeNextPath(formData)) {
       switch (userProfile.role) {
         case 'student':
           redirectUrl = '/dashboard'
@@ -76,7 +81,7 @@ export async function signup(formData: FormData) {
   }
 
   const { data: { user } } = await supabase.auth.getUser()
-  let redirectUrl = '/'
+  let redirectUrl = getSafeNextPath(formData) || '/'
   
   if (user) {
     const { data: userProfile } = await supabase
@@ -85,7 +90,7 @@ export async function signup(formData: FormData) {
       .eq('id', user.id)
       .single()
       
-    if (userProfile) {
+    if (userProfile && !getSafeNextPath(formData)) {
       switch (userProfile.role) {
         case 'student':
           redirectUrl = '/dashboard'

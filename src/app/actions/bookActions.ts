@@ -11,7 +11,8 @@ import {
   type TextbookRow,
 } from '@/types/books'
 
-const bucketName = 'textbooks'
+const pdfBucketName = 'textbook-pdfs'
+const coverBucketName = 'textbooks'
 const maximumPdfSize = 50 * 1024 * 1024
 const maximumCoverSize = 5 * 1024 * 1024
 
@@ -45,7 +46,7 @@ function normalizeRoles(value: BookAccessRole[]) {
 }
 
 function getPublicUrl(path: string) {
-  return supabaseAdmin.storage.from(bucketName).getPublicUrl(path).data.publicUrl
+  return supabaseAdmin.storage.from(coverBucketName).getPublicUrl(path).data.publicUrl
 }
 
 async function hasStructuredBookColumns() {
@@ -94,9 +95,10 @@ export async function requestBookUpload(
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || kind
   const path = `books/${crypto.randomUUID()}/${safeName}.${safeExtension}`
+  const bucket = isPdf ? pdfBucketName : coverBucketName
 
   const { data, error } = await supabaseAdmin.storage
-    .from(bucketName)
+    .from(bucket)
     .createSignedUploadUrl(path)
 
   if (error || !data?.token) {
@@ -104,7 +106,7 @@ export async function requestBookUpload(
     throw new Error('Unable to start the upload. Please try again.')
   }
 
-  return { path, token: data.token }
+  return { path, token: data.token, bucket }
 }
 
 export async function saveBook(input: SaveBookInput) {
@@ -133,10 +135,7 @@ export async function saveBook(input: SaveBookInput) {
   }
 
   const pdfPath = input.pdfPath || existing?.metadata.storagePath || null
-  const pdfUrl = input.pdfPath
-    ? getPublicUrl(input.pdfPath)
-    : existing?.metadata.pdfUrl || ''
-  if (!pdfPath || !pdfUrl) throw new Error('A PDF file is required.')
+  if (!pdfPath) throw new Error('A PDF file is required.')
 
   const coverPath = input.removeCover
     ? null
@@ -150,7 +149,7 @@ export async function saveBook(input: SaveBookInput) {
   const metadata = {
     version: 1 as const,
     description,
-    pdfUrl,
+    pdfUrl: '',
     storagePath: pdfPath,
     coverStoragePath: coverPath,
     originalFileName: cleanText(input.originalFileName, 220) || existing?.metadata.originalFileName || null,
@@ -203,18 +202,20 @@ export async function saveBook(input: SaveBookInput) {
     savedId = data.id
   }
 
-  const stalePaths = [
-    input.pdfPath && existing?.metadata.storagePath !== input.pdfPath
-      ? existing?.metadata.storagePath
-      : null,
-    (input.coverPath || input.removeCover) && existing?.metadata.coverStoragePath !== coverPath
-      ? existing?.metadata.coverStoragePath
-      : null,
-  ].filter((path): path is string => Boolean(path))
+  const stalePdfPath = input.pdfPath && existing?.metadata.storagePath !== input.pdfPath
+    ? existing?.metadata.storagePath
+    : null
+  const staleCoverPath = (input.coverPath || input.removeCover) && existing?.metadata.coverStoragePath !== coverPath
+    ? existing?.metadata.coverStoragePath
+    : null
 
-  if (stalePaths.length > 0) {
-    const { error } = await supabaseAdmin.storage.from(bucketName).remove(stalePaths)
-    if (error) console.error('Unable to remove replaced book files:', error)
+  if (stalePdfPath) {
+    const { error } = await supabaseAdmin.storage.from(pdfBucketName).remove([stalePdfPath])
+    if (error) console.error('Unable to remove replaced book PDF:', error)
+  }
+  if (staleCoverPath) {
+    const { error } = await supabaseAdmin.storage.from(coverBucketName).remove([staleCoverPath])
+    if (error) console.error('Unable to remove replaced book cover:', error)
   }
 
   revalidateBookPages(savedId)
@@ -236,11 +237,13 @@ export async function deleteBook(id: string) {
   const { error } = await supabaseAdmin.from('textbooks').delete().eq('id', id)
   if (error) throw new Error('Failed to delete the book.')
 
-  const paths = [book.metadata.storagePath, book.metadata.coverStoragePath]
-    .filter((path): path is string => Boolean(path))
-  if (paths.length > 0) {
-    const { error: storageError } = await supabaseAdmin.storage.from(bucketName).remove(paths)
-    if (storageError) console.error('Unable to remove deleted book files:', storageError)
+  if (book.metadata.storagePath) {
+    const { error: storageError } = await supabaseAdmin.storage.from(pdfBucketName).remove([book.metadata.storagePath])
+    if (storageError) console.error('Unable to remove deleted book PDF:', storageError)
+  }
+  if (book.metadata.coverStoragePath) {
+    const { error: storageError } = await supabaseAdmin.storage.from(coverBucketName).remove([book.metadata.coverStoragePath])
+    if (storageError) console.error('Unable to remove deleted book cover:', storageError)
   }
 
   revalidateBookPages(id)
