@@ -27,11 +27,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString()
 
-type FlipbookReaderProps = {
+export type FlipbookReaderProps = {
   bookId: string
   title: string
   gradeLevel: string
   pdfUrl: string
+  coverUrl: string | null
 }
 
 const CurrentPageContext = createContext(0)
@@ -39,11 +40,20 @@ const CurrentPageContext = createContext(0)
 type PdfBookPageContentProps = {
   pageNumber: number
   pageWidth: number
+  renderRadius: number
+  devicePixelRatio: number
+  onFirstPageRendered: () => void
 }
 
-function PdfBookPageContent({ pageNumber, pageWidth }: PdfBookPageContentProps) {
+function PdfBookPageContent({
+  pageNumber,
+  pageWidth,
+  renderRadius,
+  devicePixelRatio,
+  onFirstPageRendered,
+}: PdfBookPageContentProps) {
   const currentPageIndex = useContext(CurrentPageContext)
-  const shouldRender = Math.abs(pageNumber - 1 - currentPageIndex) <= 4
+  const shouldRender = Math.abs(pageNumber - 1 - currentPageIndex) <= renderRadius
 
   return (
     <div className="flipbook-page-paper">
@@ -51,14 +61,50 @@ function PdfBookPageContent({ pageNumber, pageWidth }: PdfBookPageContentProps) 
         <Page
           pageNumber={pageNumber}
           width={pageWidth}
+          devicePixelRatio={devicePixelRatio}
           renderAnnotationLayer={false}
           renderTextLayer={false}
+          onRenderSuccess={pageNumber === 1 ? onFirstPageRendered : undefined}
           loading={<PagePlaceholder pageNumber={pageNumber} />}
         />
       ) : (
         <PagePlaceholder pageNumber={pageNumber} />
       )}
       <span className="flipbook-page-number">{pageNumber}</span>
+    </div>
+  )
+}
+
+function BookLoadingPreview({
+  coverUrl,
+  message,
+}: {
+  coverUrl: string | null
+  message: string
+}) {
+  return (
+    <div className="flipbook-loading-preview" role="status">
+      <div className="flipbook-loading-book" aria-hidden="true">
+        <div className="flipbook-loading-page flipbook-loading-cover">
+          {coverUrl ? (
+            // The public cover is intentionally loaded directly while the private PDF initializes.
+            <img src={coverUrl} alt="" loading="eager" fetchPriority="high" />
+          ) : (
+            <div className="flipbook-loading-cover-placeholder">
+              <span>{message}</span>
+            </div>
+          )}
+        </div>
+        <div className="flipbook-loading-page flipbook-loading-paper">
+          <span className="flipbook-loading-line flipbook-loading-line-wide" />
+          <span className="flipbook-loading-line" />
+          <span className="flipbook-loading-line flipbook-loading-line-short" />
+        </div>
+      </div>
+      <div className="flipbook-loading-status">
+        <span className="flipbook-loading-spinner" aria-hidden="true" />
+        <span>{message}</span>
+      </div>
     </div>
   )
 }
@@ -82,7 +128,13 @@ function BookshelfLinkContent() {
   )
 }
 
-export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: FlipbookReaderProps) {
+export default function FlipbookReader({
+  bookId,
+  title,
+  gradeLevel,
+  pdfUrl,
+  coverUrl,
+}: FlipbookReaderProps) {
   const bookRef = useRef<PageFlip | null>(null)
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
@@ -94,17 +146,39 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isBookReady, setIsBookReady] = useState(false)
+  const [isFirstPageRendered, setIsFirstPageRendered] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [viewportWidth, setViewportWidth] = useState(1024)
   const storageKey = `banner-book-progress:${bookId}`
 
-  const pageWidth = 560
-  const pageHeight = Math.max(680, Math.round(pageWidth * pageAspectRatio))
-  const maxPageHeight = Math.max(860, Math.round(720 * pageAspectRatio))
+  const isMobile = viewportWidth < 640
+  const pageWidth = isMobile ? Math.max(260, Math.min(360, viewportWidth - 28)) : 560
+  const pageHeight = isMobile
+    ? Math.round(pageWidth * pageAspectRatio)
+    : Math.max(680, Math.round(pageWidth * pageAspectRatio))
+  const maxPageHeight = isMobile ? pageHeight : Math.max(860, Math.round(720 * pageAspectRatio))
+  const renderRadius = isMobile ? 1 : 3
+  const devicePixelRatio = isMobile
+    ? Math.min(window.devicePixelRatio || 1, 1.35)
+    : Math.min(window.devicePixelRatio || 1, 2)
+  const documentOptions = useMemo(
+    () => isMobile
+      ? { disableAutoFetch: true, disableStream: true, rangeChunkSize: 256 * 1024 }
+      : { rangeChunkSize: 256 * 1024 },
+    [isMobile]
+  )
 
   const pages = useMemo(
     () => Array.from({ length: numPages }, (_, index) => index + 1),
     [numPages]
   )
+
+  useEffect(() => {
+    const updateViewportWidth = () => setViewportWidth(window.innerWidth)
+    updateViewportWidth()
+    window.addEventListener('resize', updateViewportWidth, { passive: true })
+    return () => window.removeEventListener('resize', updateViewportWidth)
+  }, [])
 
   useEffect(() => {
     let secondFrame = 0
@@ -137,11 +211,14 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
 
   const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
     setLoadError('')
+    setIsFirstPageRendered(false)
     const firstPage = await pdf.getPage(1)
     const viewport = firstPage.getViewport({ scale: 1 })
     setPageAspectRatio(Math.min(1.75, Math.max(0.72, viewport.height / viewport.width)))
     setNumPages(pdf.numPages)
   }, [])
+
+  const onFirstPageRendered = useCallback(() => setIsFirstPageRendered(true), [])
 
   const updateCurrentPage = useCallback((index: number) => {
     const safeIndex = Math.max(0, Math.min(numPages - 1, index))
@@ -196,7 +273,7 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
         // The page container may already be removed during route transitions.
       }
     }
-  }, [maxPageHeight, numPages, pageAspectRatio, pageHeight, updateCurrentPage])
+  }, [maxPageHeight, numPages, pageAspectRatio, pageHeight, pageWidth, updateCurrentPage])
 
   const goToPage = () => {
     if (!numPages) return
@@ -327,17 +404,14 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
         {canLoadDocument ? <Document
           className="w-full max-w-[1320px] shrink-0"
           file={pdfUrl}
+          options={documentOptions}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={error => {
             console.error('Unable to load book PDF:', error)
             setLoadError('This book could not be opened. Please refresh or contact an administrator.')
           }}
           loading={(
-            <div className="rounded-2xl bg-white px-8 py-7 text-center shadow-xl">
-              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-banner-light border-t-banner-dark" />
-              <p className="mt-4 font-bold text-banner-brown">Loading book…</p>
-              <p className="mt-1 text-sm text-gray-500">Large books may take a moment on mobile.</p>
-            </div>
+            <BookLoadingPreview coverUrl={coverUrl} message="Loading book…" />
           )}
           error={(
             <div className="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700 shadow">
@@ -346,31 +420,41 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
           )}
         >
           {numPages > 0 && (
-            <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-              <CurrentPageContext.Provider value={currentPageIndex}>
-                <div
-                  ref={bookContainerRef}
-                  className="banner-flipbook"
-                  style={{ margin: '0 auto' }}
-                >
-                  {pages.map(pageNumber => (
-                    <div
-                      key={pageNumber}
-                      className="flipbook-page"
-                      data-density={pageNumber === 1 ? 'hard' : 'soft'}
-                    >
-                      <PdfBookPageContent pageNumber={pageNumber} pageWidth={pageWidth} />
-                    </div>
-                  ))}
+            <div className="relative w-full">
+              {!isFirstPageRendered && (
+                <div className="absolute inset-x-0 top-0 z-30">
+                  <BookLoadingPreview coverUrl={coverUrl} message="Preparing first page…" />
                 </div>
-              </CurrentPageContext.Provider>
+              )}
+              <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
+                <CurrentPageContext.Provider value={currentPageIndex}>
+                  <div
+                    ref={bookContainerRef}
+                    className="banner-flipbook"
+                    style={{ margin: '0 auto' }}
+                  >
+                    {pages.map(pageNumber => (
+                      <div
+                        key={pageNumber}
+                        className="flipbook-page"
+                        data-density={pageNumber === 1 ? 'hard' : 'soft'}
+                      >
+                        <PdfBookPageContent
+                          pageNumber={pageNumber}
+                          pageWidth={pageWidth}
+                          renderRadius={renderRadius}
+                          devicePixelRatio={devicePixelRatio}
+                          onFirstPageRendered={onFirstPageRendered}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CurrentPageContext.Provider>
+              </div>
             </div>
           )}
         </Document> : (
-          <div className="rounded-2xl bg-white px-8 py-7 text-center shadow-xl" role="status">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-banner-light border-t-banner-dark" />
-            <p className="mt-4 font-bold text-banner-brown">Opening book…</p>
-          </div>
+          <BookLoadingPreview coverUrl={coverUrl} message="Opening book…" />
         )}
 
         <button

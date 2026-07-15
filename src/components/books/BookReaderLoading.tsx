@@ -1,15 +1,23 @@
-import { BookOpenIcon } from '@heroicons/react/24/outline'
-
 export default function BookReaderLoading({ message = 'Preparing your book…' }: { message?: string }) {
   return (
-    <div className="flex min-h-[70vh] items-center justify-center bg-[#eef3ef] px-4" role="status" aria-live="polite">
-      <div className="rounded-2xl bg-white px-8 py-7 text-center shadow-lg">
-        <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-banner-dark text-white shadow-md">
-          <BookOpenIcon className="h-8 w-8" aria-hidden="true" />
-          <span className="absolute -inset-1 animate-ping rounded-2xl border-2 border-banner-light/55" aria-hidden="true" />
+    <div className="flipbook-stage" role="status" aria-live="polite">
+      <div className="flipbook-loading-preview">
+        <div className="flipbook-loading-book" aria-hidden="true">
+          <div className="flipbook-loading-page flipbook-loading-cover">
+            <div className="flipbook-loading-cover-placeholder">
+              <span>The Banner</span>
+            </div>
+          </div>
+          <div className="flipbook-loading-page flipbook-loading-paper">
+            <span className="flipbook-loading-line flipbook-loading-line-wide" />
+            <span className="flipbook-loading-line" />
+            <span className="flipbook-loading-line flipbook-loading-line-short" />
+          </div>
         </div>
-        <p className="mt-5 font-semibold text-banner-brown">{message}</p>
-        <p className="mt-1 text-sm text-gray-500">The first page will appear shortly.</p>
+        <div className="flipbook-loading-status">
+          <span className="flipbook-loading-spinner" aria-hidden="true" />
+          <span>{message}</span>
+        </div>
       </div>
     </div>
   )

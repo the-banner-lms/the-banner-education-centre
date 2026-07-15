@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { canRoleReadBook, hydrateBook } from '@/utils/books'
@@ -6,6 +7,19 @@ import type { TextbookRow } from '@/types/books'
 import BookReaderLoader from '@/components/books/BookReaderLoader'
 
 export const dynamic = 'force-dynamic'
+
+const getSignedPdfUrl = unstable_cache(
+  async (storagePath: string, _userId: string) => {
+    void _userId
+    const { data, error } = await supabaseAdmin.storage
+      .from('textbook-pdfs')
+      .createSignedUrl(storagePath, 60 * 60)
+
+    return error ? null : data?.signedUrl ?? null
+  },
+  ['textbook-reader-signed-url'],
+  { revalidate: 50 * 60 }
+)
 
 export default async function ReadTextbookPage({ params }: PageProps<'/textbook/read/[id]'>) {
   const { id } = await params
@@ -28,18 +42,17 @@ export default async function ReadTextbookPage({ params }: PageProps<'/textbook/
     notFound()
   }
 
-  const { data: signedPdf, error: signedPdfError } = await supabaseAdmin.storage
-    .from('textbook-pdfs')
-    .createSignedUrl(book.metadata.storagePath, 60 * 60)
+  const signedPdfUrl = await getSignedPdfUrl(book.metadata.storagePath, user.id)
 
-  if (signedPdfError || !signedPdf?.signedUrl) notFound()
+  if (!signedPdfUrl) notFound()
 
   return (
     <BookReaderLoader
       bookId={book.id}
       title={book.title}
       gradeLevel={book.grade_level || 'General'}
-      pdfUrl={signedPdf.signedUrl}
+      pdfUrl={signedPdfUrl}
+      coverUrl={book.cover_url}
     />
   )
 }
