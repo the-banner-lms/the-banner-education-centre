@@ -39,6 +39,13 @@ CREATE TABLE public.textbooks (
   description TEXT,
   cover_url TEXT,
   grade_level TEXT,
+  pdf_url TEXT,
+  storage_path TEXT,
+  cover_storage_path TEXT,
+  original_file_name TEXT,
+  order_index INTEGER NOT NULL DEFAULT 0,
+  is_published BOOLEAN NOT NULL DEFAULT true,
+  access_roles TEXT[] NOT NULL DEFAULT ARRAY['all']::TEXT[],
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

@@ -154,7 +154,7 @@ export default async function SearchPage(props: { searchParams: Promise<{ [key: 
         type: 'Textbook' as const,
         title: t.title,
         subtitle: t.grade_level || 'General',
-        link: `/textbook`,
+        link: `/textbook/read/${t.id}`,
         imageUrl: t.cover_url
       })))
     }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   AcademicCapIcon,
+  BookOpenIcon,
   BoltIcon,
   BriefcaseIcon,
   ChatBubbleLeftEllipsisIcon,
@@ -42,6 +43,7 @@ const navigationGroups = [
       { href: '/admin/blogs', label: 'Blogs', shortLabel: 'Blogs', icon: DocumentTextIcon },
       { href: '/admin/comments', label: 'Comments', shortLabel: 'Comments', icon: ChatBubbleLeftEllipsisIcon },
       { href: '/admin/activities', label: 'Activities', shortLabel: 'Activities', icon: StarIcon },
+      { href: '/admin/books', label: 'Manage Books', shortLabel: 'Books', icon: BookOpenIcon },
       { href: '/admin/messages', label: 'Messages', shortLabel: 'Messages', icon: EnvelopeIcon },
     ],
   },

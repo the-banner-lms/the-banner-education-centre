@@ -22,11 +22,13 @@
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "nextjs-toploader": "^3.9.17",
+    "page-flip": "^2.0.7",
     "pdfkit": "^0.19.1",
     "quill-image-resize-module-react": "^3.0.0",
     "react": "19.2.4",
     "react-calendar": "^6.0.1",
     "react-dom": "19.2.4",
+    "react-pdf": "^10.4.1",
     "react-quill-new": "^3.8.3"
   },
   "devDependencies": {
