@@ -151,7 +151,7 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
       height: pageHeight,
       size: 'stretch',
       minWidth: 260,
-      maxWidth: 720,
+      maxWidth: 660,
       minHeight: Math.round(260 * pageAspectRatio),
       maxHeight: maxPageHeight,
       startPage: 0,
@@ -303,8 +303,18 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
       </div>
 
       <div className="flipbook-stage" aria-live="polite">
+        <button
+          type="button"
+          onClick={() => bookRef.current?.flipPrev('bottom')}
+          disabled={!isBookReady || currentPageIndex <= 0}
+          className="flipbook-side-navigation flipbook-side-navigation-left"
+          aria-label="Previous page from left side"
+        >
+          <ChevronLeftIcon className="h-7 w-7" aria-hidden="true" />
+        </button>
+
         {canLoadDocument ? <Document
-          className="w-full max-w-[1440px] shrink-0"
+          className="w-full max-w-[1320px] shrink-0"
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={error => {
@@ -351,6 +361,16 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
             <p className="mt-4 font-bold text-banner-brown">Opening book…</p>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => bookRef.current?.flipNext('bottom')}
+          disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
+          className="flipbook-side-navigation flipbook-side-navigation-right"
+          aria-label="Next page from right side"
+        >
+          <ChevronRightIcon className="h-7 w-7" aria-hidden="true" />
+        </button>
       </div>
 
       <p className="px-4 pb-6 text-center text-xs font-medium text-gray-500 sm:text-sm">
