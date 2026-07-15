@@ -6,10 +6,17 @@ import {
   ClockIcon, 
   FireIcon, 
   ChatBubbleLeftEllipsisIcon, 
-  ArchiveBoxIcon 
+  ArchiveBoxIcon,
+  TagIcon,
 } from '@heroicons/react/24/outline';
+import { getBlogLabels } from '@/utils/blogs';
 
-export default async function BlogSidebar() {
+interface BlogSidebarProps {
+  activeLabel?: string;
+  activeQuery?: string;
+}
+
+export default async function BlogSidebar({ activeLabel = '', activeQuery = '' }: BlogSidebarProps) {
   const supabase = await createClient();
 
   // 1. Fetch recent posts
@@ -53,16 +60,16 @@ export default async function BlogSidebar() {
     .limit(5);
 
   // 4. Archive (Group by Month/Year)
-  const { data: allDates } = await supabase
+  const { data: allPostMetadata } = await supabase
     .from('blogs')
-    .select('created_at')
+    .select('created_at, tags')
     .eq('published', true)
     .order('created_at', { ascending: false });
 
   const archives: { label: string; count: number }[] = [];
-  if (allDates) {
+  if (allPostMetadata) {
     const archiveMap: { [key: string]: number } = {};
-    allDates.forEach(post => {
+    allPostMetadata.forEach(post => {
       const date = new Date(post.created_at);
       const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
       archiveMap[monthYear] = (archiveMap[monthYear] || 0) + 1;
@@ -73,6 +80,21 @@ export default async function BlogSidebar() {
     }
   }
 
+  const labelMap = new Map<string, { label: string; count: number }>();
+  allPostMetadata?.forEach(post => {
+    getBlogLabels(post.tags).forEach(label => {
+      const key = label.toLocaleLowerCase();
+      const existing = labelMap.get(key);
+      labelMap.set(key, {
+        label: existing?.label || label,
+        count: (existing?.count || 0) + 1,
+      });
+    });
+  });
+  const labels = Array.from(labelMap.values()).sort((a, b) =>
+    b.count - a.count || a.label.localeCompare(b.label)
+  );
+
   return (
     <div className="space-y-8 sticky top-24">
       {/* Widget: Search */}
@@ -82,9 +104,11 @@ export default async function BlogSidebar() {
           Search Blog
         </h3>
         <form action="/blog" method="GET" className="relative group">
+          {activeLabel && <input type="hidden" name="label" value={activeLabel} />}
           <input 
             type="text" 
             name="q"
+            defaultValue={activeQuery}
             aria-label="Search blog"
             placeholder="Search keywords..." 
             className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all outline-none text-sm"
@@ -93,6 +117,40 @@ export default async function BlogSidebar() {
             <MagnifyingGlassIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </form>
+      </div>
+
+      {/* Labels */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100/60 hover:shadow-md transition-shadow duration-300">
+        <h3 className="flex items-center text-lg font-bold text-banner-dark mb-4 pb-3 border-b border-gray-100">
+          <TagIcon className="w-5 h-5 mr-2 text-orange-500" />
+          Labels
+        </h3>
+        {labels.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {labels.map(item => {
+              const isActive = activeLabel.toLocaleLowerCase() === item.label.toLocaleLowerCase();
+              return (
+                <Link
+                  key={item.label.toLocaleLowerCase()}
+                  href={isActive ? '/blog' : `/blog?label=${encodeURIComponent(item.label)}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 transition-colors ${
+                    isActive
+                      ? 'bg-orange-700 text-white ring-orange-700 hover:bg-orange-800'
+                      : 'bg-orange-50 text-orange-800 ring-orange-200 hover:bg-orange-100 hover:text-orange-900'
+                  }`}
+                >
+                  <span>#{item.label}</span>
+                  <span className={`text-xs ${isActive ? 'text-orange-100' : 'text-orange-700'}`}>
+                    {item.count}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 italic">No labels yet.</p>
+        )}
       </div>
 
       {/* Recent Posts */}

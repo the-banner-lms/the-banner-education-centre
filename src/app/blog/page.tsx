@@ -1,17 +1,20 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import BlogSidebar from '@/components/blogs/BlogSidebar';
+import { getBlogLabels } from '@/utils/blogs';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BlogPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const supabase = await createClient();
-  const q = typeof searchParams.q === 'string' ? searchParams.q : '';
-  const archive = typeof searchParams.archive === 'string' ? searchParams.archive : '';
+  const resolvedSearchParams = await searchParams;
+  const q = typeof resolvedSearchParams.q === 'string' ? resolvedSearchParams.q : '';
+  const archive = typeof resolvedSearchParams.archive === 'string' ? resolvedSearchParams.archive : '';
+  const label = typeof resolvedSearchParams.label === 'string' ? resolvedSearchParams.label.trim() : '';
 
   let query = supabase
     .from('blogs')
@@ -44,6 +47,13 @@ export default async function BlogPage({
     });
   }
 
+  if (label) {
+    const normalizedLabel = label.toLocaleLowerCase();
+    filteredPosts = filteredPosts.filter(post =>
+      getBlogLabels(post.tags).some(postLabel => postLabel.toLocaleLowerCase() === normalizedLabel)
+    );
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -58,6 +68,20 @@ export default async function BlogPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8">
+            {label && (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4">
+                <p className="text-sm text-gray-700">
+                  Showing posts labelled{' '}
+                  <span className="font-bold text-orange-800">#{label}</span>
+                </p>
+                <Link
+                  href="/blog"
+                  className="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-orange-800 shadow-sm ring-1 ring-orange-200 transition-colors hover:bg-orange-100"
+                >
+                  View all posts
+                </Link>
+              </div>
+            )}
             {filteredPosts.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-lg border border-gray-200 shadow-sm">
                 <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,9 +89,9 @@ export default async function BlogPage({
                 </svg>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">No blogs found</h3>
                 <p className="text-gray-500">
-                  {q || archive ? 'Try adjusting your filters.' : 'Check back later for new updates.'}
+                  {q || archive || label ? 'Try adjusting your filters.' : 'Check back later for new updates.'}
                 </p>
-                {(q || archive) && (
+                {(q || archive || label) && (
                   <Link href="/blog" className="text-orange-700 hover:text-orange-800 hover:underline mt-4 inline-block">
                     Clear Filters
                   </Link>
@@ -88,12 +112,27 @@ export default async function BlogPage({
                     )}
                     <div className="p-6 flex flex-col justify-between flex-grow">
                       <div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 mb-3">
                           <span>{new Date(post.created_at).toLocaleDateString()}</span>
-                          {post.tags && post.tags.length > 0 && (
+                          {getBlogLabels(post.tags).length > 0 && (
                             <>
                               <span>&bull;</span>
-                              <span className="text-orange-700 font-medium">{post.tags[0]}</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {getBlogLabels(post.tags).slice(0, 3).map(postLabel => (
+                                  <Link
+                                    key={postLabel.toLocaleLowerCase()}
+                                    href={`/blog?label=${encodeURIComponent(postLabel)}`}
+                                    className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800 ring-1 ring-orange-200 transition-colors hover:bg-orange-100 hover:text-orange-900"
+                                  >
+                                    #{postLabel}
+                                  </Link>
+                                ))}
+                                {getBlogLabels(post.tags).length > 3 && (
+                                  <span className="px-1 py-1 text-xs font-medium text-gray-500">
+                                    +{getBlogLabels(post.tags).length - 3}
+                                  </span>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
@@ -133,7 +172,7 @@ export default async function BlogPage({
             )}
           </div>
           <div className="lg:col-span-4">
-            <BlogSidebar />
+            <BlogSidebar activeLabel={label} activeQuery={q} />
           </div>
         </div>
       </div>

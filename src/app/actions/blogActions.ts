@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { parseBlogLabels } from '@/utils/blogs';
 import { revalidatePath } from 'next/cache';
 
 export async function deleteBlog(id: string) {
@@ -30,7 +31,7 @@ export async function createBlog(formData: FormData) {
   const content = formData.get('content') as string;
   const published = formData.get('published') === 'true';
   const tagsString = formData.get('tags') as string || '';
-  const tags = tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  const tags = parseBlogLabels(tagsString);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +66,7 @@ export async function updateBlog(id: string, formData: FormData) {
   const content = formData.get('content') as string;
   const published = formData.get('published') === 'true';
   const tagsString = formData.get('tags') as string || '';
-  const tags = tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0);
+  const tags = parseBlogLabels(tagsString);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

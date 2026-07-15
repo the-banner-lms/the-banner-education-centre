@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import BlogComments from '@/components/blog/BlogComments'
 import BlogSidebar from '@/components/blogs/BlogSidebar'
+import { getBlogLabels } from '@/utils/blogs'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,6 +57,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
 
 
   const coverImageUrl = getCoverImage(blog.content);
+  const labels = getBlogLabels(blog.tags);
 
   return (
     <div className="bg-white min-h-screen">
@@ -105,20 +107,17 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
           
-          {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+          {labels.length > 0 && (
             <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
-              {blog.tags.map((tag: string, index: number) => (
-                <span key={index} className="px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm shadow-sm hover:bg-white/20 transition-colors">
+              {labels.map(tag => (
+                <Link
+                  key={tag.toLocaleLowerCase()}
+                  href={`/blog?label=${encodeURIComponent(tag)}`}
+                  className="px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm shadow-sm hover:bg-white/20 transition-colors"
+                >
                   #{tag}
-                </span>
+                </Link>
               ))}
-            </div>
-          )}
-          {typeof blog.tags === 'string' && blog.tags && (
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
-              <span className="px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 backdrop-blur-sm shadow-sm hover:bg-white/20 transition-colors">
-                #{blog.tags}
-              </span>
             </div>
           )}
         </div>
