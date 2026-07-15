@@ -1,2 +1,4 @@
 /books/
 check-schema.ts
+/output/
+/tmp/
