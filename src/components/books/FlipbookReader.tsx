@@ -76,6 +76,7 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const [numPages, setNumPages] = useState(0)
+  const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [pageAspectRatio, setPageAspectRatio] = useState(1.414)
   const [pageInput, setPageInput] = useState('1')
@@ -93,6 +94,18 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
     () => Array.from({ length: numPages }, (_, index) => index + 1),
     [numPages]
   )
+
+  useEffect(() => {
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setCanLoadDocument(true))
+    })
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+    }
+  }, [])
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === readerRef.current)
@@ -148,7 +161,7 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
       startZIndex: 0,
       autoSize: true,
       maxShadowOpacity: 0.45,
-      showCover: true,
+      showCover: false,
       mobileScrollSupport: true,
       clickEventForward: true,
       useMouseEvents: true,
@@ -290,7 +303,8 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
       </div>
 
       <div className="flipbook-stage" aria-live="polite">
-        <Document
+        {canLoadDocument ? <Document
+          className="w-full max-w-[1440px] shrink-0"
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={error => {
@@ -331,7 +345,12 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
               </CurrentPageContext.Provider>
             </div>
           )}
-        </Document>
+        </Document> : (
+          <div className="rounded-2xl bg-white px-8 py-7 text-center shadow-xl" role="status">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-banner-light border-t-banner-dark" />
+            <p className="mt-4 font-bold text-banner-brown">Opening book…</p>
+          </div>
+        )}
       </div>
 
       <p className="px-4 pb-6 text-center text-xs font-medium text-gray-500 sm:text-sm">
