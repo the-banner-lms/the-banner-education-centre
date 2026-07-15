@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { PageFlip } from 'page-flip'
 import { Document, Page, pdfjs } from 'react-pdf'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
@@ -68,6 +68,17 @@ function PagePlaceholder({ pageNumber }: { pageNumber: number }) {
     <div className="flex h-full min-h-72 w-full items-center justify-center bg-[#fffef9] text-sm font-semibold text-gray-300">
       Page {pageNumber}
     </div>
+  )
+}
+
+function BookshelfLinkContent() {
+  const { pending } = useLinkStatus()
+
+  return (
+    <>
+      <ArrowLeftIcon className={`h-4 w-4 ${pending ? 'animate-pulse' : ''}`} aria-hidden="true" />
+      <span className="hidden sm:inline">{pending ? 'Opening…' : 'Bookshelf'}</span>
+    </>
   )
 }
 
@@ -215,10 +226,10 @@ export default function FlipbookReader({ bookId, title, gradeLevel, pdfUrl }: Fl
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/textbook"
+              prefetch
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-banner-light/40 px-3 py-2 text-sm font-bold text-banner-dark transition-colors hover:bg-banner-light/10"
             >
-              <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Bookshelf</span>
+              <BookshelfLinkContent />
             </Link>
             <div className="min-w-0">
               <h1 className="truncate text-base font-black text-banner-brown sm:text-lg">{title}</h1>
