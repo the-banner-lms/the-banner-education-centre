@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, createContext, useContext, useRef } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { useEffect, useState, createContext, useContext, useRef, startTransition } from 'react'
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { usePathname } from 'next/navigation'
 
 export type OnlineUser = {
@@ -17,15 +17,25 @@ export type OnlineUser = {
 const PresenceContext = createContext<OnlineUser[]>([])
 
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
-  const [supabase] = useState(() => createClient())
   const [onlineUsers, setOnlineUsers] = useState<Map<string, OnlineUser>>(new Map())
   const pathname = usePathname()
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const supabaseRef = useRef<SupabaseClient | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const trackDataRef = useRef<any>(null)
 
   useEffect(() => {
+    let cancelled = false
+    let idleCallbackId: number | null = null
+    let fallbackTimerId: number | null = null
+
     const initPresence = async () => {
+      const { createClient } = await import('@/utils/supabase/client')
+      if (cancelled) return
+
+      const supabase = createClient()
+      supabaseRef.current = supabase
       const { data: { user } } = await supabase.auth.getUser()
+      if (cancelled) return
       
       const channel = supabase.channel('online-users', {
         config: {
@@ -46,8 +56,9 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
             newOnlineUsers.set(id, presences[0] as OnlineUser)
           }
         }
-        
-        setOnlineUsers(newOnlineUsers)
+
+        // Presence updates must never compete with a user's click or tap.
+        startTransition(() => setOnlineUsers(newOnlineUsers))
       })
 
       channel.subscribe(async (status) => {
@@ -90,14 +101,25 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
       })
     }
 
-    initPresence()
+    if ('requestIdleCallback' in window) {
+      idleCallbackId = window.requestIdleCallback(() => void initPresence(), { timeout: 3000 })
+    } else {
+      fallbackTimerId = globalThis.setTimeout(() => void initPresence(), 0) as unknown as number
+    }
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
+      cancelled = true
+      if (idleCallbackId !== null) {
+        window.cancelIdleCallback(idleCallbackId)
+      }
+      if (fallbackTimerId !== null) {
+        window.clearTimeout(fallbackTimerId)
+      }
+      if (supabaseRef.current && channelRef.current) {
+        void supabaseRef.current.removeChannel(channelRef.current)
       }
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (channelRef.current && trackDataRef.current) {
