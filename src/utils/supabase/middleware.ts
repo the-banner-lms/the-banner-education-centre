@@ -1,10 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { hasSupabaseAuthCookie } from '@/utils/supabase/cookies'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
+
+  // There is no session to refresh when the request has no Supabase auth
+  // cookie. This removes an unnecessary network round-trip for public pages.
+  if (!hasSupabaseAuthCookie(request.cookies.getAll())) {
+    if (request.nextUrl.pathname.startsWith('/admin')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
