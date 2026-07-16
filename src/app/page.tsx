@@ -70,7 +70,7 @@ export default function Home() {
         {/* Curriculum */}
         <section id="home-curriculum" className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Curriculum <span className="text-banner-light text-2xl block mt-2">သင်ရိုးညွှန်းတမ်း</span></h2>
+            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Curriculum <span className="text-banner-dark text-2xl block mt-2">သင်ရိုးညွှန်းတမ်း</span></h2>
             <p className="text-gray-700 leading-relaxed mb-6">
               In our pre-kindergarten and kindergarten classes, we utilize age-appropriate methods for teaching. We recognize that every child is unique and has their own pace. Our curriculum is grounded in Rudolf Steiner&apos;s philosophy and approaches, while also emphasizing the EYFS curriculum in Myanmar. Our goal is to nurture children for healthy and holistic development.
             </p>
@@ -102,7 +102,7 @@ export default function Home() {
         {/* Seasonal Activities */}
         <section id="home-seasonal" className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Seasonal Activities <span className="text-banner-light text-2xl block mt-2">ရာသီအလိုက် လှုပ်ရှားမှုများ</span></h2>
+            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Seasonal Activities <span className="text-banner-dark text-2xl block mt-2">ရာသီအလိုက် လှုပ်ရှားမှုများ</span></h2>
             <p className="text-gray-700 leading-relaxed mb-6">
               We go through the three seasons in Myanmar with seasonal activities like gardening, preparing a nature table, looking at flowers in our school yards and seasonal crafts and so on. We want them to be aware of the environment and change the seasons and climate in their environment.
             </p>
@@ -133,7 +133,7 @@ export default function Home() {
 
         {/* Storytelling and Singing */}
         <section id="home-storytelling" className="bg-banner-light/10 rounded-3xl p-8 md:p-12 shadow-sm border border-banner-light/20">
-          <h2 className="text-3xl font-bold mb-8 text-center text-banner-dark">Storytelling and Singing <span className="text-banner-light text-2xl block mt-2">ပုံပြင်ပြောခြင်းနှင့် သီချင်းဆိုခြင်း</span></h2>
+          <h2 className="text-3xl font-bold mb-8 text-center text-banner-dark">Storytelling and Singing <span className="text-banner-dark text-2xl block mt-2">ပုံပြင်ပြောခြင်းနှင့် သီချင်းဆိုခြင်း</span></h2>
           <div className="grid md:grid-cols-2 gap-12">
             <div>
               <p className="text-gray-700 leading-relaxed mb-6">
@@ -163,7 +163,7 @@ export default function Home() {
         {/* Sustainability and Nature-based Environment */}
         <section id="home-sustainability" className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Sustainability and Nature-based Environment <span className="text-banner-light text-2xl block mt-2">ရေရှည်တည်တံ့မှုနှင့် သဘာဝအခြေခံ ပတ်ဝန်းကျင်</span></h2>
+            <h2 className="text-3xl font-bold mb-6 text-banner-dark">Sustainability and Nature-based Environment <span className="text-banner-dark text-2xl block mt-2">ရေရှည်တည်တံ့မှုနှင့် သဘာဝအခြေခံ ပတ်ဝန်းကျင်</span></h2>
             <p className="text-gray-700 leading-relaxed mb-6">
               Our school is located in Myanmar,Asia. Our school setting is surrounded by nature in the community. And the materials and products used are mainly natural, human and environmental friendly, fed with healthy food, and playing with toys from natural materials- wooden blocks, shells, cloth, pinecones and wood..etc, contribute to the children&apos;s connection with as well as appreciation of nature.
             </p>
@@ -197,14 +197,14 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-banner-dark text-banner-light py-12">
+      <footer className="bg-banner-dark text-white py-12">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col items-center justify-center text-center">
           <div className="bg-white p-4 rounded-full mb-6">
             <Image src="/logo.png" alt="The Banner Logo" width={80} height={80} />
           </div>
           <h2 className="text-2xl font-bold mb-2 text-white">The Banner</h2>
-          <p className="text-banner-light font-semibold tracking-widest uppercase">Nature-Based Education</p>
-          <div className="mt-8 border-t border-banner-light/20 pt-8 w-full max-w-2xl text-sm text-banner-light/60">
+          <p className="text-white font-semibold tracking-widest uppercase">Nature-Based Education</p>
+          <div className="mt-8 border-t border-white/25 pt-8 w-full max-w-2xl text-sm text-white">
             <p>&copy; {new Date().getFullYear()} The Banner Education Centre. All rights reserved.</p>
           </div>
         </div>
