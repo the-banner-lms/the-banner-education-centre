@@ -1,6 +1,5 @@
 import { BookOpenIcon } from '@heroicons/react/24/outline'
-import { createClient } from '@/utils/supabase/server'
-import { getUserProfile } from '@/utils/supabase/queries'
+import { getCurrentAuth } from '@/utils/supabase/auth'
 import { canRoleReadBook, hydrateBook, sortBooks } from '@/utils/books'
 import type { TextbookRow } from '@/types/books'
 import BookCoverLink from '@/components/books/BookCoverLink'
@@ -13,14 +12,11 @@ export const metadata = {
 }
 
 export default async function TextbookPage() {
-  const supabase = await createClient()
-  const [profile, { data, error }] = await Promise.all([
-    getUserProfile(supabase),
-    supabase
-      .from('textbooks')
-      .select('*')
-      .order('created_at', { ascending: true }),
-  ])
+  const { supabase, profile } = await getCurrentAuth()
+  const { data, error } = await supabase
+    .from('textbooks')
+    .select('*')
+    .order('created_at', { ascending: true })
 
   const books = sortBooks(((data || []) as TextbookRow[]).map(hydrateBook))
     .filter(book => book.metadata.isPublished && canRoleReadBook(book.metadata, profile?.role))

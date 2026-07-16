@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
 import { signout } from '@/app/login/actions'
-import { getUserProfile } from '@/utils/supabase/queries'
+import { getCurrentAuth } from '@/utils/supabase/auth'
 import SearchPopup from './SearchPopup'
 import NotificationBell from './NotificationBell'
 import MobileMenu from './MobileMenu'
@@ -15,9 +14,7 @@ type NavbarAnnouncement = {
 }
 
 export default async function Navbar() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const profile = await getUserProfile(supabase)
+  const { supabase, user, profile } = await getCurrentAuth()
 
   let unreadAnnouncements: NavbarAnnouncement[] = [];
 

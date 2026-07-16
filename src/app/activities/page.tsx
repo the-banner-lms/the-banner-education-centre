@@ -6,8 +6,10 @@ import StandaloneVideoPlayer from '@/components/activities/StandaloneVideoPlayer
 export const dynamic = 'force-dynamic';
 
 export default async function ActivitiesPage() {
-  const albums = await getAlbums()
-  const videos = await getStandaloneVideos()
+  const [albums, videos] = await Promise.all([
+    getAlbums(),
+    getStandaloneVideos(),
+  ])
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-banner-dark">

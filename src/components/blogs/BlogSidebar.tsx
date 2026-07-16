@@ -20,52 +20,43 @@ interface BlogSidebarProps {
 export default async function BlogSidebar({ activeLabel = '', activeQuery = '' }: BlogSidebarProps) {
   const supabase = await createClient();
 
-  // 1. Fetch recent posts
-  const { data: recentPosts } = await supabase
-    .from('blogs')
-    .select('id, title, created_at')
-    .eq('published', true)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  // 2. Fetch popular posts (fallback if views column not exist yet)
-  const { data: popularPosts, error: popError } = await supabase
-    .from('blogs')
-    .select('id, title, created_at, views')
-    .eq('published', true)
-    .order('views', { ascending: false, nullsFirst: false })
-    .limit(5);
-
-  let actualPopular = popularPosts;
-  if (popError) {
-    const { data: fallbackPosts } = await supabase
+  const [recentResult, popularResult, commentsResult, metadataResult] = await Promise.all([
+    supabase
       .from('blogs')
       .select('id, title, created_at')
       .eq('published', true)
       .order('created_at', { ascending: false })
-      .limit(5);
-    actualPopular = fallbackPosts as any;
-  }
+      .limit(5),
+    supabase
+      .from('blogs')
+      .select('id, title, created_at, views')
+      .eq('published', true)
+      .order('views', { ascending: false, nullsFirst: false })
+      .limit(5),
+    supabase
+      .from('blog_comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        post_id,
+        profiles (full_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('blogs')
+      .select('created_at, tags')
+      .eq('published', true)
+      .order('created_at', { ascending: false }),
+  ]);
 
-  // 3. Fetch recent comments
-  const { data: recentComments } = await supabase
-    .from('blog_comments')
-    .select(`
-      id,
-      content,
-      created_at,
-      post_id,
-      profiles (full_name)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  // 4. Archive (Group by Month/Year)
-  const { data: allPostMetadata } = await supabase
-    .from('blogs')
-    .select('created_at, tags')
-    .eq('published', true)
-    .order('created_at', { ascending: false });
+  const recentPosts = recentResult.data;
+  const recentComments = commentsResult.data;
+  const allPostMetadata = metadataResult.data;
+  const actualPopular = popularResult.error
+    ? recentPosts
+    : popularResult.data;
 
   const archives: { label: string; count: number }[] = [];
   if (allPostMetadata) {
