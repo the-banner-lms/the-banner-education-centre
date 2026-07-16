@@ -1,7 +1,9 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import BlogSidebar from '@/components/blogs/BlogSidebar';
+import BlogSidebarSkeleton from '@/components/blogs/BlogSidebarSkeleton';
 import { getBlogLabels } from '@/utils/blogs';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -176,7 +178,9 @@ export default async function BlogPage({
             )}
           </div>
           <div className="lg:col-span-4">
-            <BlogSidebar activeLabel={label} activeQuery={q} />
+            <Suspense fallback={<BlogSidebarSkeleton />}>
+              <BlogSidebar activeLabel={label} activeQuery={q} />
+            </Suspense>
           </div>
         </div>
       </div>

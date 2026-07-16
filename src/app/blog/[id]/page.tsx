@@ -4,7 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import BlogComments from '@/components/blog/BlogComments'
 import BlogSidebar from '@/components/blogs/BlogSidebar'
+import BlogSidebarSkeleton from '@/components/blogs/BlogSidebarSkeleton'
 import { getBlogLabels } from '@/utils/blogs'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 
@@ -193,7 +195,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
           </div>
           
           <div className="lg:col-span-4">
-            <BlogSidebar />
+            <Suspense fallback={<BlogSidebarSkeleton />}>
+              <BlogSidebar />
+            </Suspense>
           </div>
         </div>
       </div>
