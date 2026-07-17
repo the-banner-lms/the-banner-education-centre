@@ -67,7 +67,7 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
         <div className="flex">
           <div className="ml-3">
             <p className="text-sm text-blue-700">
-              Enter monthly fees, remarks and Paid / Unpaid / Scholar status. Class totals and the monthly summary update automatically.
+              Enter Base and YLE fees separately with one Paid / Unpaid / Scholar status. Per-class and monthly accounting totals update automatically.
             </p>
           </div>
         </div>

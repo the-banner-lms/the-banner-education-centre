@@ -3,7 +3,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
-import { splitTuitionAmount } from '@/lib/tuition'
 
 export type AttendanceEntry = {
   student_id: string
@@ -16,6 +15,8 @@ export type TuitionEntry = {
   student_id: string
   status: 'paid' | 'unpaid' | 'scholar'
   amount: number
+  base_amount: number
+  yle_amount: number
   remarks?: string
   recorded?: boolean
 }
@@ -43,7 +44,7 @@ export async function bulkSaveMonthlyTuition(
   }
 
   const entriesToSave = tuitionData.filter(entry =>
-    entry.recorded || entry.amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks?.trim())
+    entry.recorded || entry.base_amount > 0 || entry.yle_amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks?.trim())
   )
   const studentIds = [...new Set(entriesToSave.map(entry => entry.student_id))]
   if (studentIds.length !== entriesToSave.length) {
@@ -51,21 +52,26 @@ export async function bulkSaveMonthlyTuition(
   }
 
   const invalidEntry = entriesToSave.find(entry => {
-    const amount = Number(entry.amount)
+    const baseAmount = Number(entry.base_amount)
+    const yleAmount = Number(entry.yle_amount)
+    const amount = baseAmount + yleAmount
     return !entry.student_id
       || !['paid', 'unpaid', 'scholar'].includes(entry.status)
-      || !Number.isFinite(amount)
+      || !Number.isFinite(baseAmount)
+      || !Number.isFinite(yleAmount)
       || amount < 0
       || amount > 100000000
+      || baseAmount < 0
+      || yleAmount < 0
       || (entry.remarks?.length || 0) > 500
   })
   if (invalidEntry) return { error: 'One or more tuition records are invalid' }
 
-  let studentsById = new Map<string, { assigned_class: string | null; assigned_subclass: string | null; yle_monthly_fee: number | string | null }>()
+  let studentsById = new Map<string, { assigned_class: string | null; assigned_subclass: string | null }>()
   if (studentIds.length > 0) {
     const { data: validStudents, error: studentError } = await supabase
       .from('profiles')
-      .select('id, assigned_class, assigned_subclass, yle_monthly_fee')
+      .select('id, assigned_class, assigned_subclass')
       .eq('role', 'student')
       .in('id', studentIds)
 
@@ -74,6 +80,13 @@ export async function bulkSaveMonthlyTuition(
     }
     studentsById = new Map(validStudents.map(student => [student.id, student]))
   }
+
+  const assignmentMismatch = entriesToSave.some(entry => {
+    const student = studentsById.get(entry.student_id)
+    return (student?.assigned_class === 'yle' && Number(entry.base_amount) !== 0)
+      || (!student?.assigned_subclass && Number(entry.yle_amount) !== 0)
+  })
+  if (assignmentMismatch) return { error: 'Base or YLE payment does not match the student assignment' }
 
   const { data: existingFees, error: existingFeeError } = studentIds.length > 0
     ? await supabase
@@ -90,14 +103,9 @@ export async function bulkSaveMonthlyTuition(
   const tuitionUpserts = entriesToSave.map(entry => {
     const existing = existingByStudent.get(entry.student_id)
     const emailAlreadySent = existing?.email_status === 'sent' && Boolean(existing.email_sent_at)
-    const student = studentsById.get(entry.student_id)
-    const totalAmount = Math.round(Number(entry.amount) * 100) / 100
-    const { baseAmount, yleAmount } = splitTuitionAmount({
-      total: totalAmount,
-      assignedClass: student?.assigned_class,
-      assignedSubclass: student?.assigned_subclass,
-      yleMonthlyFee: student?.yle_monthly_fee,
-    })
+    const baseAmount = Math.round(Number(entry.base_amount) * 100) / 100
+    const yleAmount = Math.round(Number(entry.yle_amount) * 100) / 100
+    const totalAmount = Math.round((baseAmount + yleAmount) * 100) / 100
     return {
       student_id: entry.student_id,
       month_year: monthYear,
