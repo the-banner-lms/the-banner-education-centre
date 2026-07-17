@@ -303,7 +303,7 @@ export default function StudentManager({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-800">
-                        <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} yleSubclass={student.assigned_subclass} />
+                        <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} assignedClass={student.assigned_class} yleSubclass={student.assigned_subclass} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">

@@ -7,7 +7,7 @@ import { PAYMENT_METHODS } from '@/lib/paymentMethods'
 import { STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
 
 const initialState: EnrollmentFormState = { status: 'idle', message: '' }
-const inputClass = 'mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none transition focus:border-banner-dark focus:ring-4 focus:ring-banner-light/20'
+const inputClass = 'mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 outline-none focus:border-banner-dark focus-visible:ring-2 focus-visible:ring-banner-light/30'
 const labelClass = 'block text-sm font-bold text-gray-800'
 
 function PaymentQrPanel() {

@@ -127,7 +127,7 @@ export default function AcademicSetupPanel({
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 id="generate-invoices-title" className="text-xl font-black text-gray-950">Generate Monthly Invoices</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">Creates one unpaid invoice for every approved student. A YLE dual fee is added separately from the student&apos;s base class fee. Existing invoices for the selected month are kept unchanged.</p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">Creates one unpaid invoice for every approved student. YLE works as either a standalone class or a dual fee added separately to KG–Primary 6. Existing invoices for the selected month are kept unchanged.</p>
           </div>
           <form action={generateMonthlyInvoices} className="grid shrink-0 gap-3 sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
             <ReturnPath value={returnPath} />

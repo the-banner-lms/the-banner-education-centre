@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
+import { splitTuitionAmount } from '@/lib/tuition'
 import {
   analyzePaymentSlip,
   hashSubmissionFingerprint,
@@ -331,11 +332,11 @@ export async function updateEnrollmentStatus(
 
   let paidFeeId: string | null = null
   if (status === 'completed' && submission.submission_type === 'monthly_payment') {
-    let student: { id: string; email: string; assigned_subclass: string | null; yle_monthly_fee: number | string | null } | null = null
+    let student: { id: string; email: string; assigned_class: string | null; assigned_subclass: string | null; yle_monthly_fee: number | string | null } | null = null
     if (submission.student_number) {
       const { data } = await supabaseAdmin
         .from('profiles')
-        .select('id, email, assigned_subclass, yle_monthly_fee')
+        .select('id, email, assigned_class, assigned_subclass, yle_monthly_fee')
         .eq('role', 'student')
         .eq('student_number', submission.student_number)
         .maybeSingle()
@@ -344,7 +345,7 @@ export async function updateEnrollmentStatus(
     if (!student) {
       const { data } = await supabaseAdmin
         .from('profiles')
-        .select('id, email, assigned_subclass, yle_monthly_fee')
+        .select('id, email, assigned_class, assigned_subclass, yle_monthly_fee')
         .eq('role', 'student')
         .ilike('email', submission.email)
         .maybeSingle()
@@ -370,9 +371,12 @@ export async function updateEnrollmentStatus(
 
     const shouldQueueEmail = !existingFee?.email_sent_at || existingFee.email_status !== 'sent'
     const totalAmount = Math.round(Number(submission.payment_amount) * 100) / 100
-    const yleAmount = student.assigned_subclass && student.yle_monthly_fee !== null
-      ? Math.min(totalAmount, Math.max(0, Number(student.yle_monthly_fee)))
-      : 0
+    const { baseAmount, yleAmount } = splitTuitionAmount({
+      total: totalAmount,
+      assignedClass: student.assigned_class,
+      assignedSubclass: student.assigned_subclass,
+      yleMonthlyFee: student.yle_monthly_fee,
+    })
     const { data: paidFee, error: tuitionError } = await supabaseAdmin
       .from('monthly_tuition_fees')
       .upsert({
@@ -380,7 +384,7 @@ export async function updateEnrollmentStatus(
         month_year: submission.payment_month,
         status: 'paid',
         amount: totalAmount,
-        base_amount: totalAmount - yleAmount,
+        base_amount: baseAmount,
         yle_amount: yleAmount,
         remarks: reviewReason || `Online payment verified · Transaction ${submission.transaction_id || 'recorded'}`,
         staff_id: reviewerId,

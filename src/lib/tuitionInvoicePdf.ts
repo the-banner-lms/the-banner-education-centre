@@ -158,7 +158,14 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     const baseAmount = Number(data.fee.base_amount || 0)
     const yleAmount = Number(data.fee.yle_amount || 0)
     const hasYle = Boolean(data.student.assigned_subclass)
-    const invoiceLines = hasYle
+    const isYleStandalone = data.student.assigned_class === 'yle'
+    const invoiceLines = isYleStandalone
+      ? [{
+        title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
+        detail: 'YLE standalone tuition',
+        amount: yleAmount || Number(data.fee.amount),
+      }]
+      : hasYle
       ? [
         ...(baseAmount > 0 ? [{ title: `${classLabel} Tuition`, detail: 'Base class tuition', amount: baseAmount }] : []),
         {

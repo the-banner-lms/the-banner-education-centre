@@ -213,7 +213,7 @@ export default async function UniversalUserDashboardView(props: {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-800">
-                      <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} yleSubclass={profile.assigned_subclass} />
+                      <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} assignedClass={profile.assigned_class} yleSubclass={profile.assigned_subclass} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">

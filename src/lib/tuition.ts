@@ -19,3 +19,38 @@ export function formatTuitionAmount(amount: number | string | null | undefined) 
   const value = Number(amount || 0)
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value)} MMK`
 }
+
+export function splitTuitionAmount({
+  total,
+  assignedClass,
+  assignedSubclass,
+  yleMonthlyFee,
+}: {
+  total: number | string
+  assignedClass?: string | null
+  assignedSubclass?: string | null
+  yleMonthlyFee?: number | string | null
+}) {
+  const totalAmount = Math.max(0, Math.round(Number(total || 0) * 100) / 100)
+
+  // YLE can be the student's only class. In that case the whole invoice is YLE tuition.
+  if (assignedClass === 'yle') {
+    return { baseAmount: 0, yleAmount: totalAmount }
+  }
+
+  if (!assignedSubclass) {
+    return { baseAmount: totalAmount, yleAmount: 0 }
+  }
+
+  const configuredYleAmount = Number(yleMonthlyFee)
+  const yleAmount = yleMonthlyFee !== null
+    && yleMonthlyFee !== undefined
+    && Number.isFinite(configuredYleAmount)
+    ? Math.min(totalAmount, Math.max(0, configuredYleAmount))
+    : 0
+
+  return {
+    baseAmount: Math.round((totalAmount - yleAmount) * 100) / 100,
+    yleAmount: Math.round(yleAmount * 100) / 100,
+  }
+}

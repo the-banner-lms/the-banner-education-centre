@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
+import { splitTuitionAmount } from '@/lib/tuition'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -426,13 +427,16 @@ export async function recordMonthlyTuitionFee(data: {
   const now = new Date().toISOString()
   const { data: tuitionStudent } = await supabaseAdmin
     .from('profiles')
-    .select('assigned_subclass, yle_monthly_fee')
+    .select('assigned_class, assigned_subclass, yle_monthly_fee')
     .eq('id', data.student_id)
     .eq('role', 'student')
     .maybeSingle()
-  const yleAmount = tuitionStudent?.assigned_subclass && tuitionStudent.yle_monthly_fee !== null
-    ? Math.min(amount, Math.max(0, Number(tuitionStudent.yle_monthly_fee)))
-    : 0
+  const { baseAmount, yleAmount } = splitTuitionAmount({
+    total: amount,
+    assignedClass: tuitionStudent?.assigned_class,
+    assignedSubclass: tuitionStudent?.assigned_subclass,
+    yleMonthlyFee: tuitionStudent?.yle_monthly_fee,
+  })
 
   const { data: savedFee, error } = await supabaseAdmin
     .from('monthly_tuition_fees')
@@ -441,8 +445,8 @@ export async function recordMonthlyTuitionFee(data: {
       month_year: data.month_year,
       status: data.status,
       amount: Math.round(amount * 100) / 100,
-      base_amount: Math.round((amount - yleAmount) * 100) / 100,
-      yle_amount: Math.round(yleAmount * 100) / 100,
+      base_amount: baseAmount,
+      yle_amount: yleAmount,
       remarks: data.remarks,
       staff_id: staffId,
       verified_by: data.status === 'paid' ? staffId : null,

@@ -22,7 +22,7 @@ export default function EnrollmentPage() {
           </p>
         </header>
 
-        <main className="rounded-[2rem] border border-banner-light/30 bg-white/90 p-4 shadow-[0_24px_70px_rgba(15,102,48,0.10)] backdrop-blur sm:p-8 lg:p-12">
+        <main className="rounded-[2rem] border border-banner-light/30 bg-white p-4 shadow-[0_24px_70px_rgba(15,102,48,0.10)] sm:p-8 lg:p-12">
           <section aria-labelledby="new-enrollment-title" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
             <p className="font-bold text-banner-dark">သင်တန်းအပ်နှံရန်</p>
             <h2 id="new-enrollment-title" className="mb-3 mt-3 text-2xl font-black text-banner-brown sm:text-4xl">New Student Enrollment</h2>

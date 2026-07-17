@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
+import { splitTuitionAmount } from '@/lib/tuition'
 
 export type AttendanceEntry = {
   student_id: string
@@ -60,11 +61,11 @@ export async function bulkSaveMonthlyTuition(
   })
   if (invalidEntry) return { error: 'One or more tuition records are invalid' }
 
-  let studentsById = new Map<string, { assigned_subclass: string | null; yle_monthly_fee: number | string | null }>()
+  let studentsById = new Map<string, { assigned_class: string | null; assigned_subclass: string | null; yle_monthly_fee: number | string | null }>()
   if (studentIds.length > 0) {
     const { data: validStudents, error: studentError } = await supabase
       .from('profiles')
-      .select('id, assigned_subclass, yle_monthly_fee')
+      .select('id, assigned_class, assigned_subclass, yle_monthly_fee')
       .eq('role', 'student')
       .in('id', studentIds)
 
@@ -91,15 +92,18 @@ export async function bulkSaveMonthlyTuition(
     const emailAlreadySent = existing?.email_status === 'sent' && Boolean(existing.email_sent_at)
     const student = studentsById.get(entry.student_id)
     const totalAmount = Math.round(Number(entry.amount) * 100) / 100
-    const yleAmount = student?.assigned_subclass && student.yle_monthly_fee !== null
-      ? Math.min(totalAmount, Math.max(0, Number(student.yle_monthly_fee)))
-      : 0
+    const { baseAmount, yleAmount } = splitTuitionAmount({
+      total: totalAmount,
+      assignedClass: student?.assigned_class,
+      assignedSubclass: student?.assigned_subclass,
+      yleMonthlyFee: student?.yle_monthly_fee,
+    })
     return {
       student_id: entry.student_id,
       month_year: monthYear,
       status: entry.status,
       amount: totalAmount,
-      base_amount: totalAmount - yleAmount,
+      base_amount: baseAmount,
       yle_amount: yleAmount,
       remarks: entry.remarks?.trim() || '',
       staff_id: user.id,
