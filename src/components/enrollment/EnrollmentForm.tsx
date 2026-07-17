@@ -137,7 +137,7 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
           </div>
           <div>
             <label htmlFor={`${fieldPrefix}-payment-amount`} className={labelClass}>Amount (MMK)</label>
-            <input id={`${fieldPrefix}-payment-amount`} name="payment_amount" type="number" inputMode="decimal" min="1" max="100000000" step="100" required placeholder="150000" className={inputClass} />
+            <input id={`${fieldPrefix}-payment-amount`} name="payment_amount" type="number" inputMode="numeric" min="100" max="100000000" step="100" required placeholder="150000" className={inputClass} />
           </div>
           <div>
             <label htmlFor={`${fieldPrefix}-payment-date`} className={labelClass}>Payment Date</label>
