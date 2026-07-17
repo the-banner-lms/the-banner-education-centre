@@ -14,6 +14,7 @@ export type EnrollmentSubmission = {
   viber_number: string | null
   address: string | null
   student_number: string | null
+  student_profile_id: string | null
   payment_month: string | null
   payment_method: string | null
   payment_amount: number | string | null
@@ -121,7 +122,7 @@ export default function EnrollmentSubmissionsList({ submissions }: { submissions
                 {submission.submission_type === 'new_enrollment' ? 'New Enrollment' : 'Monthly Payment'} · {formatDate(submission.created_at)}
               </p>
             </div>
-            <EnrollmentReviewForm submissionId={submission.id} currentStatus={submission.status} currentReason={submission.review_reason} />
+            <EnrollmentReviewForm submissionId={submission.id} submissionType={submission.submission_type} currentStatus={submission.status} currentReason={submission.review_reason} />
           </div>
 
           <div className="grid gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
@@ -141,6 +142,11 @@ export default function EnrollmentSubmissionsList({ submissions }: { submissions
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Payment</p>
               {submission.student_number && <p className="mt-1 text-sm text-gray-800">Student ID: {submission.student_number}</p>}
+              {submission.student_profile_id && (
+                <Link href={`/admin/students/${submission.student_profile_id}`} className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-800 ring-1 ring-inset ring-blue-200 hover:bg-blue-100">
+                  Open Student Profile
+                </Link>
+              )}
               {submission.payment_month && <p className="mt-1 text-sm text-gray-800">Month: {submission.payment_month}</p>}
               <p className="mt-1 text-sm text-gray-800">Method: {getPaymentMethodLabel(submission.payment_method)}</p>
               {submission.payment_amount && <p className="mt-1 text-sm font-bold text-gray-900">Claimed amount: {amountFormatter.format(Number(submission.payment_amount))} MMK</p>}

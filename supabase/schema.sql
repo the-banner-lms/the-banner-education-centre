@@ -69,6 +69,7 @@ CREATE TABLE public.enrollment_submissions (
   review_reason TEXT CHECK (review_reason IS NULL OR char_length(review_reason) <= 500),
   reviewed_at TIMESTAMP WITH TIME ZONE,
   reviewed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  student_profile_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   notice_read_at TIMESTAMP WITH TIME ZONE,
   submitter_fingerprint TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'completed', 'rejected')),

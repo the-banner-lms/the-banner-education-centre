@@ -8,6 +8,7 @@ import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
 import { splitTuitionAmount } from '@/lib/tuition'
 import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
+import { provisionStudentFromEnrollment, type EnrollmentStudentResult } from '@/lib/enrollmentStudentProvisioning'
 import {
   analyzePaymentSlip,
   hashSubmissionFingerprint,
@@ -311,7 +312,7 @@ export async function submitEnrollment(
   return {
     status: 'success',
     message: submissionType === 'new_enrollment'
-      ? 'Enrollment submitted successfully. Keep the reference code to check the admin decision.'
+      ? 'သင်တန်းအပ်နှံမှု ပေးပို့ပြီးပါပြီ။ Admin အတည်ပြုပြီးပါက Student ID နှင့် account ဖွင့်ရန် link ကို Email မှပို့ပေးပါမည်။ Email Inbox နှင့် Spam folder ကို စစ်ပေးပါ။ Tracking Reference ကို သိမ်းထားပါ။'
       : `${isDirectPayment ? 'Direct payment' : 'Monthly payment slip'} submitted for admin review. Keep the reference code.`,
     referenceCode: insertedSubmission?.tracking_code || trackingCode,
   }
@@ -335,7 +336,7 @@ export async function updateEnrollmentStatus(
 
   const { data: submission, error: lookupError } = await supabaseAdmin
     .from('enrollment_submissions')
-    .select('id, submission_type, assigned_class, student_name, email, student_number, payment_month, payment_method, payment_amount, transaction_id, status')
+    .select('id, submission_type, assigned_class, assigned_subclass, student_name, email, address, student_number, student_profile_id, payment_month, payment_method, payment_amount, transaction_id, status')
     .eq('id', submissionId)
     .maybeSingle()
 
@@ -345,6 +346,24 @@ export async function updateEnrollmentStatus(
 
   let paidFeeId: string | null = null
   let paidStudentId: string | null = null
+  let enrollmentStudent: EnrollmentStudentResult | null = null
+  if (status === 'completed' && submission.submission_type === 'new_enrollment') {
+    try {
+      enrollmentStudent = await provisionStudentFromEnrollment({
+        submissionId: submission.id,
+        fullName: submission.student_name,
+        email: submission.email,
+        assignedClass: submission.assigned_class,
+        assignedSubclass: submission.assigned_subclass,
+        address: submission.address,
+      })
+    } catch (provisionError) {
+      const message = provisionError instanceof Error ? provisionError.message : 'The student account could not be created.'
+      console.error('Approved enrollment provisioning failed:', provisionError)
+      return { status: 'error', message }
+    }
+  }
+
   if (status === 'completed' && submission.submission_type === 'monthly_payment') {
     let student: { id: string; email: string; assigned_class: string | null; assigned_subclass: string | null; yle_monthly_fee: number | string | null } | null = null
     if (submission.student_number) {
@@ -429,6 +448,8 @@ export async function updateEnrollmentStatus(
       reviewed_at: ['completed', 'rejected'].includes(status) ? new Date().toISOString() : null,
       reviewed_by: ['completed', 'rejected'].includes(status) ? reviewerId : null,
       notice_read_at: ['completed', 'rejected'].includes(status) ? null : undefined,
+      student_profile_id: enrollmentStudent?.studentId || submission.student_profile_id || undefined,
+      student_number: enrollmentStudent?.studentNumber || submission.student_number || undefined,
     })
     .eq('id', submissionId)
 
@@ -453,7 +474,17 @@ export async function updateEnrollmentStatus(
   revalidatePath('/staff/enrollments')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/[id]', 'page')
-  revalidateStudentApprovalViews(paidStudentId ? [paidStudentId] : [])
+  const affectedStudentIds = [paidStudentId, enrollmentStudent?.studentId].filter((id): id is string => Boolean(id))
+  revalidateStudentApprovalViews(affectedStudentIds)
+
+  if (enrollmentStudent) {
+    return {
+      status: 'success',
+      message: enrollmentStudent.emailStatus === 'sent'
+        ? `Enrollment approved. Student ${enrollmentStudent.studentNumber} was created and the account email was sent.`
+        : `Enrollment approved. Student ${enrollmentStudent.studentNumber} was created. ${enrollmentStudent.emailMessage}`,
+    }
+  }
 
   if (paidFeeId) {
     const delivery = await sendPaidTuitionInvoiceEmail(paidFeeId)

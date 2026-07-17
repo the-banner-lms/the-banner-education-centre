@@ -16,10 +16,12 @@ const rejectionTemplates = [
 
 export default function EnrollmentReviewForm({
   submissionId,
+  submissionType,
   currentStatus,
   currentReason,
 }: {
   submissionId: string
+  submissionType: 'new_enrollment' | 'monthly_payment'
   currentStatus: 'pending' | 'contacted' | 'completed' | 'rejected'
   currentReason: string | null
 }) {
@@ -36,7 +38,7 @@ export default function EnrollmentReviewForm({
           <select id={`status-${submissionId}`} name="status" value={selectedStatus} onChange={event => setSelectedStatus(event.target.value as typeof selectedStatus)} className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-800">
             <option value="pending">Pending Review</option>
             <option value="contacted">Contacted</option>
-            <option value="completed">Verified</option>
+            <option value="completed">{submissionType === 'new_enrollment' ? 'Approve & Create Student' : 'Verified'}</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
@@ -48,7 +50,7 @@ export default function EnrollmentReviewForm({
           </select>
         </div>
         <button type="submit" disabled={pending} className="min-h-10 rounded-lg bg-banner-dark px-4 text-sm font-bold text-white hover:bg-[#0b5226] disabled:cursor-wait disabled:opacity-60">
-          {pending ? 'Saving…' : 'Save Review'}
+          {pending ? 'Saving…' : selectedStatus === 'completed' && submissionType === 'new_enrollment' ? 'Approve Student' : 'Save Review'}
         </button>
       </div>
       <label htmlFor={`review-reason-${submissionId}`} className="sr-only">Admin notice</label>

@@ -57,7 +57,7 @@ export default async function AdminEnrollmentsPage(props: {
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-banner-dark">{isMonthlyPayments ? 'Student Payments' : 'Admissions'}</p>
           <h1 className="mt-2 text-3xl font-black text-gray-900">{isMonthlyPayments ? 'Monthly Payments' : 'New Enrollments'}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            {isMonthlyPayments ? 'Review direct and online monthly tuition payments by class and status.' : 'Review new student enrollment submissions.'}
+            {isMonthlyPayments ? 'Review direct and online monthly tuition payments by class and status.' : 'Approve an enrollment to create its Student ID, login account and invitation email automatically.'}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
