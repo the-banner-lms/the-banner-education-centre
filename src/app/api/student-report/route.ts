@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { canViewDashboard } from '@/utils/supabase/queries'
 import PDFDocument from 'pdfkit'
 import path from 'node:path'
+import { writeMixedPdfText } from '@/lib/pdfMixedText'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -61,10 +62,6 @@ function formatDisplayDate(dateString: string) {
   const [year, month, day] = dateString.slice(0, 10).split('-')
   if (!year || !month || !day) return dateString
   return `${day}/${month}/${year.slice(-2)}`
-}
-
-function hasMyanmarText(value: string) {
-  return /[\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff]/.test(value)
 }
 
 function isPrivateHostname(hostname: string) {
@@ -160,23 +157,6 @@ function drawCenteredProfilePicture(
   doc.y = y + size + 14
 }
 
-function writeMixedText(
-  doc: PDFKit.PDFDocument,
-  value: string,
-  options: PDFKit.Mixins.TextOptions = {},
-) {
-  const text = value || '-'
-  const runs = text.split(/([\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff]+)/).filter(Boolean)
-
-  runs.forEach((run, index) => {
-    doc.font(hasMyanmarText(run) ? 'Myanmar' : 'Latin')
-    doc.text(run, {
-      ...options,
-      continued: index < runs.length - 1,
-    })
-  })
-}
-
 function ensureSpace(doc: PDFKit.PDFDocument, height: number) {
   if (doc.y + height > bottomLimit) {
     doc.addPage()
@@ -215,7 +195,7 @@ function row(
     if (column.myanmar) {
       doc.x = x + 6
       doc.y = y + 7
-      writeMixedText(doc, column.text, { width: column.width - 12, height: 18 })
+      writeMixedPdfText(doc, column.text, x + 6, y + 7, { width: column.width - 12, height: 18 })
     } else {
       doc.font('Latin').text(column.text || '-', x + 6, y + 7, {
         width: column.width - 12,
@@ -274,7 +254,7 @@ export function buildStudentReportPdf(options: {
     doc.moveDown(1)
 
     doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text('Student: ', { continued: true })
-    writeMixedText(doc, options.profile.full_name || 'No Name')
+    writeMixedPdfText(doc, options.profile.full_name || 'No Name')
     doc.font('LatinBold').text('Student ID: ', { continued: true })
     doc.font('Latin').text(options.profile.student_number || 'Pending assignment')
     doc.font('LatinBold').text('Email: ', { continued: true })
@@ -317,7 +297,7 @@ export function buildStudentReportPdf(options: {
         ensureSpace(doc, 55)
         doc.moveDown(0.8).fillColor('#92400e').font('LatinBold').fontSize(10).text("Teacher's Remarks")
         doc.moveDown(0.2).fillColor('#334155').fontSize(10)
-        writeMixedText(doc, performance.remarks, { width: contentWidth, lineGap: 3 })
+        writeMixedPdfText(doc, performance.remarks, pageMargin, doc.y, { width: contentWidth, lineGap: 3 })
       }
     } else {
       doc.fillColor('#64748b').font('Latin').fontSize(10).text('No performance data recorded for this week.')

@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit'
 import path from 'node:path'
 import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
+import { writeMixedPdfText } from '@/lib/pdfMixedText'
 
 export type TuitionInvoiceData = {
   fee: {
@@ -47,28 +48,6 @@ function formatDate(value: string | null) {
 
 function formatAmount(value: number | string) {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value || 0))} MMK`
-}
-
-function hasMyanmarText(value: string) {
-  return /[\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff]/.test(value)
-}
-
-function writeMixedText(
-  doc: PDFKit.PDFDocument,
-  value: string,
-  x?: number,
-  y?: number,
-  options: PDFKit.Mixins.TextOptions = {},
-) {
-  const runs = (value || '-').split(/([\u1000-\u109f\uaa60-\uaa7f\ua9e0-\ua9ff]+)/).filter(Boolean)
-  runs.forEach((run, index) => {
-    doc.font(hasMyanmarText(run) ? 'Myanmar' : 'Latin')
-    if (index === 0 && typeof x === 'number' && typeof y === 'number') {
-      doc.text(run, x, y, { ...options, continued: runs.length > 1 })
-    } else {
-      doc.text(run, { ...options, continued: index < runs.length - 1 })
-    }
-  })
 }
 
 export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
@@ -132,7 +111,7 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
 
     doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('STUDENT', left, 238)
     doc.fillColor('#0f172a').fontSize(15)
-    writeMixedText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
+    writeMixedPdfText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
     doc.fillColor('#475569').font('Latin').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
     doc.text(data.student.email, left, 303, { width: 250 })
     const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
@@ -198,7 +177,7 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     if (data.fee.remarks) {
       doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('REMARK', left, totalTop + 54)
       doc.fillColor('#334155').fontSize(10)
-      writeMixedText(doc, data.fee.remarks, left, totalTop + 72, { width: contentWidth, lineGap: 3 })
+      writeMixedPdfText(doc, data.fee.remarks, left, totalTop + 72, { width: contentWidth, lineGap: 3 })
     }
 
     doc.roundedRect(left, 670, contentWidth, 70, 10).fill('#f8fafc')
