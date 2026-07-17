@@ -54,6 +54,7 @@ const validationLabels = {
 }
 
 const validationFlagLabels: Record<string, string> = {
+  direct_payment_no_slip: 'Direct payment — no slip required',
   pdf_requires_manual_review: 'PDF requires visual review',
   low_resolution: 'Low-resolution image',
   low_detail: 'Image may be unclear',
@@ -149,6 +150,8 @@ export default function EnrollmentSubmissionsList({ submissions }: { submissions
                 <Link href={submission.payment_slip_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-green-50 px-3 py-1.5 text-sm font-bold text-banner-dark ring-1 ring-inset ring-green-200 hover:bg-green-100">
                   View Payment Slip
                 </Link>
+              ) : submission.payment_method === 'direct' ? (
+                <p className="mt-2 text-sm font-semibold text-blue-700">No slip required for direct payment</p>
               ) : (
                 <p className="mt-2 text-sm text-red-600">Slip unavailable</p>
               )}

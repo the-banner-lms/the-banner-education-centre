@@ -130,19 +130,20 @@ export async function submitEnrollment(
   if (!isPaymentMethod(paymentMethod)) {
     return { status: 'error', message: 'Please choose the payment method.' }
   }
+  const isDirectPayment = paymentMethod === 'direct'
   if (!Number.isFinite(paymentAmount) || paymentAmount <= 0 || paymentAmount > 100000000) {
     return { status: 'error', message: 'Please enter a valid payment amount.' }
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(new Date(`${paymentDate}T00:00:00Z`).getTime())) {
     return { status: 'error', message: 'Please enter a valid payment date.' }
   }
-  if (!/^\d{5}$/.test(transactionId)) {
+  if (!isDirectPayment && !/^\d{5}$/.test(transactionId)) {
     return { status: 'error', message: 'Enter the last 5 digits of the Transaction ID.' }
   }
-  if (!(paymentSlip instanceof File) || paymentSlip.size === 0) {
+  if (!isDirectPayment && (!(paymentSlip instanceof File) || paymentSlip.size === 0)) {
     return { status: 'error', message: 'Please attach the payment slip.' }
   }
-  if (paymentSlip.size > 4 * 1024 * 1024 || !allowedFileTypes[paymentSlip.type]) {
+  if (!isDirectPayment && paymentSlip instanceof File && (paymentSlip.size > 4 * 1024 * 1024 || !allowedFileTypes[paymentSlip.type])) {
     return { status: 'error', message: 'Payment slip must be a JPG, PNG, WebP or PDF file under 4 MB.' }
   }
 
@@ -189,70 +190,80 @@ export async function submitEnrollment(
     }
   }
 
-  const { data: duplicateTransaction } = await supabaseAdmin
-    .from('enrollment_submissions')
-    .select('id')
-    .eq('payment_method', paymentMethod)
-    .eq('payment_date', paymentDate)
-    .ilike('transaction_id', transactionId)
-    .limit(1)
-    .maybeSingle()
+  let analysis: Awaited<ReturnType<typeof analyzePaymentSlip>> | null = null
+  let paymentSlipPath: string | null = null
+  const validationFlags: string[] = isDirectPayment ? ['direct_payment_no_slip'] : []
 
-  if (duplicateTransaction) {
-    return { status: 'error', message: 'These Transaction ID last 5 digits have already been submitted for this payment method and date. Upload rejected.' }
-  }
+  if (!isDirectPayment) {
+    if (!(paymentSlip instanceof File)) {
+      return { status: 'error', message: 'Please attach the payment slip.' }
+    }
 
-  const analysis = await analyzePaymentSlip(paymentSlip)
-  if (analysis.hardError) {
-    return { status: 'error', message: analysis.hardError }
-  }
-
-  const { data: exactDuplicate } = await supabaseAdmin
-    .from('enrollment_submissions')
-    .select('id')
-    .eq('slip_sha256', analysis.sha256)
-    .limit(1)
-    .maybeSingle()
-
-  if (exactDuplicate) {
-    return { status: 'error', message: 'This exact payment slip has already been submitted. Upload rejected.' }
-  }
-
-  const validationFlags = [...analysis.flags]
-  if (analysis.perceptualHash) {
-    const { data: recentHashes } = await supabaseAdmin
+    const { data: duplicateTransaction } = await supabaseAdmin
       .from('enrollment_submissions')
-      .select('slip_perceptual_hash')
-      .not('slip_perceptual_hash', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(300)
+      .select('id')
+      .eq('payment_method', paymentMethod)
+      .eq('payment_date', paymentDate)
+      .ilike('transaction_id', transactionId)
+      .limit(1)
+      .maybeSingle()
 
-    const possibleDuplicate = (recentHashes || []).some(record =>
-      record.slip_perceptual_hash
-      && perceptualHashDistance(analysis.perceptualHash!, record.slip_perceptual_hash) <= 5
-    )
-    if (possibleDuplicate) validationFlags.push('possible_near_duplicate')
+    if (duplicateTransaction) {
+      return { status: 'error', message: 'These Transaction ID last 5 digits have already been submitted for this payment method and date. Upload rejected.' }
+    }
+
+    analysis = await analyzePaymentSlip(paymentSlip)
+    if (analysis.hardError) {
+      return { status: 'error', message: analysis.hardError }
+    }
+
+    const { data: exactDuplicate } = await supabaseAdmin
+      .from('enrollment_submissions')
+      .select('id')
+      .eq('slip_sha256', analysis.sha256)
+      .limit(1)
+      .maybeSingle()
+
+    if (exactDuplicate) {
+      return { status: 'error', message: 'This exact payment slip has already been submitted. Upload rejected.' }
+    }
+
+    validationFlags.push(...analysis.flags)
+    if (analysis.perceptualHash) {
+      const { data: recentHashes } = await supabaseAdmin
+        .from('enrollment_submissions')
+        .select('slip_perceptual_hash')
+        .not('slip_perceptual_hash', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(300)
+
+      const possibleDuplicate = (recentHashes || []).some(record =>
+        record.slip_perceptual_hash
+        && perceptualHashDistance(analysis!.perceptualHash!, record.slip_perceptual_hash) <= 5
+      )
+      if (possibleDuplicate) validationFlags.push('possible_near_duplicate')
+    }
+
+    const extension = allowedFileTypes[paymentSlip.type]
+    paymentSlipPath = `${submissionType}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('enrollment-slips')
+      .upload(paymentSlipPath, analysis.buffer, {
+        contentType: analysis.detectedMimeType,
+        cacheControl: '3600',
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.error('Enrollment payment slip upload failed:', uploadError)
+      return { status: 'error', message: 'Payment slip upload failed. Please try again.' }
+    }
   }
 
   const submittedPaymentDate = new Date(`${paymentDate}T00:00:00Z`)
   const paymentAgeDays = Math.floor((Date.now() - submittedPaymentDate.getTime()) / 86_400_000)
   if (paymentAgeDays > 7) validationFlags.push('payment_date_older_than_7_days')
   if (paymentAgeDays < -1) validationFlags.push('payment_date_in_future')
-
-  const extension = allowedFileTypes[paymentSlip.type]
-  const paymentSlipPath = `${submissionType}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`
-  const { error: uploadError } = await supabaseAdmin.storage
-    .from('enrollment-slips')
-    .upload(paymentSlipPath, analysis.buffer, {
-      contentType: analysis.detectedMimeType,
-      cacheControl: '3600',
-      upsert: false,
-    })
-
-  if (uploadError) {
-    console.error('Enrollment payment slip upload failed:', uploadError)
-    return { status: 'error', message: 'Payment slip upload failed. Please try again.' }
-  }
 
   const trackingCode = crypto.randomUUID().replace(/-/g, '')
   const { data: insertedSubmission, error: insertError } = await supabaseAdmin
@@ -271,16 +282,16 @@ export async function submitEnrollment(
       payment_method: paymentMethod,
       payment_amount: Math.round(paymentAmount * 100) / 100,
       payment_date: paymentDate,
-      transaction_id: transactionId,
+      transaction_id: isDirectPayment ? null : transactionId,
       note: note || null,
       payment_slip_path: paymentSlipPath,
       tracking_code: trackingCode,
-      slip_sha256: analysis.sha256,
-      slip_perceptual_hash: analysis.perceptualHash,
-      slip_mime_type: analysis.detectedMimeType,
-      slip_size_bytes: analysis.buffer.length,
-      slip_width: analysis.width,
-      slip_height: analysis.height,
+      slip_sha256: analysis?.sha256 || null,
+      slip_perceptual_hash: analysis?.perceptualHash || null,
+      slip_mime_type: analysis?.detectedMimeType || null,
+      slip_size_bytes: analysis?.buffer.length || null,
+      slip_width: analysis?.width || null,
+      slip_height: analysis?.height || null,
       validation_status: validationFlags.length > 0 ? 'needs_review' : 'clear',
       validation_flags: validationFlags,
       submitter_fingerprint: fingerprint,
@@ -290,7 +301,7 @@ export async function submitEnrollment(
 
   if (insertError) {
     console.error('Enrollment submission failed:', insertError)
-    await supabaseAdmin.storage.from('enrollment-slips').remove([paymentSlipPath])
+    if (paymentSlipPath) await supabaseAdmin.storage.from('enrollment-slips').remove([paymentSlipPath])
     return { status: 'error', message: 'Submission failed. Please try again.' }
   }
 
@@ -301,7 +312,7 @@ export async function submitEnrollment(
     status: 'success',
     message: submissionType === 'new_enrollment'
       ? 'Enrollment submitted successfully. Keep the reference code to check the admin decision.'
-      : 'Monthly payment slip submitted for admin review. Keep the reference code.',
+      : `${isDirectPayment ? 'Direct payment' : 'Monthly payment slip'} submitted for admin review. Keep the reference code.`,
     referenceCode: insertedSubmission?.tracking_code || trackingCode,
   }
 }
@@ -324,7 +335,7 @@ export async function updateEnrollmentStatus(
 
   const { data: submission, error: lookupError } = await supabaseAdmin
     .from('enrollment_submissions')
-    .select('id, submission_type, assigned_class, student_name, email, student_number, payment_month, payment_amount, transaction_id, status')
+    .select('id, submission_type, assigned_class, student_name, email, student_number, payment_month, payment_method, payment_amount, transaction_id, status')
     .eq('id', submissionId)
     .maybeSingle()
 
@@ -389,7 +400,9 @@ export async function updateEnrollmentStatus(
         amount: totalAmount,
         base_amount: baseAmount,
         yle_amount: yleAmount,
-        remarks: reviewReason || `Online payment verified · Transaction ${submission.transaction_id || 'recorded'}`,
+        remarks: reviewReason || (submission.payment_method === 'direct'
+          ? 'Direct payment verified by admin'
+          : `Online payment verified · Transaction ${submission.transaction_id || 'recorded'}`),
         staff_id: reviewerId,
         verified_by: reviewerId,
         verified_at: new Date().toISOString(),

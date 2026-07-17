@@ -40,14 +40,17 @@ function PaymentQrPanel() {
 export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'monthly_payment' }) {
   const [state, formAction, pending] = useActionState(submitEnrollment, initialState)
   const [selectedClass, setSelectedClass] = useState('')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
   const isNewEnrollment = type === 'new_enrollment'
   const fieldPrefix = isNewEnrollment ? 'enrollment' : 'monthly-payment'
+  const isDirectPayment = selectedPaymentMethod === 'direct'
 
   useEffect(() => {
     if (state.status === 'success') {
       formRef.current?.reset()
       setSelectedClass('')
+      setSelectedPaymentMethod('')
     }
   }, [state.status])
 
@@ -130,7 +133,14 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor={`${fieldPrefix}-payment-method`} className={labelClass}>Payment Method</label>
-            <select id={`${fieldPrefix}-payment-method`} name="payment_method" required defaultValue="" className={inputClass}>
+            <select
+              id={`${fieldPrefix}-payment-method`}
+              name="payment_method"
+              required
+              value={selectedPaymentMethod}
+              onChange={event => setSelectedPaymentMethod(event.target.value)}
+              className={inputClass}
+            >
               <option value="" disabled>Choose payment method</option>
               {PAYMENT_METHODS.map(method => <option key={method.value} value={method.value}>{method.label}</option>)}
             </select>
@@ -143,24 +153,31 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
             <label htmlFor={`${fieldPrefix}-payment-date`} className={labelClass}>Payment Date</label>
             <input id={`${fieldPrefix}-payment-date`} name="payment_date" type="date" required className={inputClass} />
           </div>
-          <div>
-            <label htmlFor={`${fieldPrefix}-transaction-id`} className={labelClass}>Transaction ID (Last 5 digits)</label>
-            <input
-              id={`${fieldPrefix}-transaction-id`}
-              name="transaction_id"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{5}"
-              minLength={5}
-              maxLength={5}
-              required
-              autoComplete="off"
-              placeholder="e.g. 48219"
-              className={inputClass}
-            />
-            <p className="mt-1.5 text-xs font-medium text-gray-500">Enter only the final 5 digits shown on the payment slip.</p>
-          </div>
+          {!isDirectPayment && (
+            <div>
+              <label htmlFor={`${fieldPrefix}-transaction-id`} className={labelClass}>Transaction ID (Last 5 digits)</label>
+              <input
+                id={`${fieldPrefix}-transaction-id`}
+                name="transaction_id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{5}"
+                minLength={5}
+                maxLength={5}
+                required
+                autoComplete="off"
+                placeholder="e.g. 48219"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs font-medium text-gray-500">Enter only the final 5 digits shown on the payment slip.</p>
+            </div>
+          )}
         </div>
+        {isDirectPayment && (
+          <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+            Direct payment does not require a Transaction ID or payment slip. Admin will confirm the payment manually.
+          </p>
+        )}
       </fieldset>
 
       <div>
@@ -168,20 +185,22 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
         <textarea id={`${fieldPrefix}-note`} name="note" rows={4} maxLength={1000} placeholder="Optional note for admin" className={inputClass} />
       </div>
 
-      <div>
-        <label htmlFor={`${fieldPrefix}-slip`} className={labelClass}>Payment Slip</label>
-        <input
-          id={`${fieldPrefix}-slip`}
-          name="payment_slip"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          required
-          className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-gray-300 bg-white text-sm text-gray-700 file:mr-4 file:min-h-12 file:border-0 file:bg-banner-light/20 file:px-4 file:font-bold file:text-banner-dark hover:file:bg-banner-light/30"
-        />
-        <p className="mt-2 text-xs leading-5 text-gray-500">JPG, PNG, WebP or PDF — maximum 4 MB. Corrupt, blank, exact duplicate and reused transaction slips are rejected automatically. Unclear slips are sent to admin review.</p>
-      </div>
+      {!isDirectPayment && (
+        <div>
+          <label htmlFor={`${fieldPrefix}-slip`} className={labelClass}>Payment Slip</label>
+          <input
+            id={`${fieldPrefix}-slip`}
+            name="payment_slip"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            required
+            className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-gray-300 bg-white text-sm text-gray-700 file:mr-4 file:min-h-12 file:border-0 file:bg-banner-light/20 file:px-4 file:font-bold file:text-banner-dark hover:file:bg-banner-light/30"
+          />
+          <p className="mt-2 text-xs leading-5 text-gray-500">JPG, PNG, WebP or PDF — maximum 4 MB. Corrupt, blank, exact duplicate and reused transaction slips are rejected automatically. Unclear slips are sent to admin review.</p>
+        </div>
+      )}
 
-      <PaymentQrPanel />
+      {!isDirectPayment && <PaymentQrPanel />}
 
       {state.message && (
         <div
@@ -204,7 +223,7 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
         disabled={pending}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-banner-dark px-7 py-3 font-bold text-white shadow-lg transition hover:bg-[#0b5226] focus:outline-none focus-visible:ring-4 focus-visible:ring-banner-light/50 disabled:cursor-wait disabled:opacity-65 sm:w-auto"
       >
-        {pending ? 'Submitting…' : isNewEnrollment ? 'Submit Enrollment' : 'Submit Payment Slip'}
+        {pending ? 'Submitting…' : isNewEnrollment ? 'Submit Enrollment' : isDirectPayment ? 'Submit Direct Payment' : 'Submit Payment Slip'}
       </button>
     </form>
   )

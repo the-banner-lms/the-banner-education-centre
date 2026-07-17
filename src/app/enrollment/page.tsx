@@ -4,7 +4,7 @@ import EnrollmentStatusLookup from '@/components/enrollment/EnrollmentStatusLook
 
 export const metadata: Metadata = {
   title: 'Enrollment | The Banner Education Centre',
-  description: 'Enroll a new student or submit a monthly payment slip to The Banner Education Centre.',
+  description: 'Enroll a new student or submit a monthly payment to The Banner Education Centre.',
 }
 
 export default function EnrollmentPage() {
@@ -18,7 +18,7 @@ export default function EnrollmentPage() {
           </p>
           <h1 className="text-4xl font-black tracking-tight text-banner-brown sm:text-6xl">Enrollment Form</h1>
           <p className="mt-5 text-base leading-7 text-gray-600 sm:text-lg">
-            New student enrollment and monthly tuition payment slip submissions.
+            New student enrollment and monthly tuition payment submissions.
           </p>
         </header>
 
@@ -27,16 +27,16 @@ export default function EnrollmentPage() {
             <p className="font-bold text-banner-dark">သင်တန်းအပ်နှံရန်</p>
             <h2 id="new-enrollment-title" className="mb-3 mt-3 text-2xl font-black text-banner-brown sm:text-4xl">New Student Enrollment</h2>
             <p className="mb-8 max-w-3xl text-sm leading-6 text-gray-600 sm:text-base">
-              Form ဖြည့်ပြီး payment slip ပူးတွဲပေးပို့ပါ။ ကျောင်းဘက်မှ အတည်ပြုရန် ပြန်လည်ဆက်သွယ်ပါမည်။
+              Form ဖြည့်ပြီး payment method ရွေးပါ။ Online payment ဖြစ်ပါက slip ပူးတွဲပြီး Direct payment ဖြစ်ပါက slip မလိုပါ။
             </p>
             <EnrollmentForm type="new_enrollment" />
           </section>
 
           <section aria-labelledby="monthly-payment-title" className="mt-10 border-t border-gray-200 pt-10 sm:mt-14 sm:pt-14">
             <div className="mb-6">
-              <p className="font-bold text-banner-dark">လစဉ် payment slip ပို့ရန်</p>
+              <p className="font-bold text-banner-dark">လစဉ်သင်တန်းကြေး ပေးသွင်းရန်</p>
               <h2 id="monthly-payment-title" className="mt-3 text-2xl font-black leading-tight text-banner-brown sm:text-4xl">
-                Monthly Payment Slip
+                Monthly Payment
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-600 sm:text-base">
                 သင်တန်းတွင် တက်ရောက်နေသော ကျောင်းသားများ လစဉ်သင်တန်းကြေးပေးသွင်းပြီးကြောင်း slip ပို့ပေးရန်။

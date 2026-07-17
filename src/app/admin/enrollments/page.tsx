@@ -32,9 +32,11 @@ export default async function AdminEnrollmentsPage(props: {
   if (error) console.error('Failed to load enrollment submissions:', error)
 
   const submissions = await Promise.all((data || []).map(async (submission) => {
-    const { data: signedData } = await supabaseAdmin.storage
-      .from('enrollment-slips')
-      .createSignedUrl(submission.payment_slip_path, 3600)
+    const { data: signedData } = submission.payment_slip_path
+      ? await supabaseAdmin.storage
+        .from('enrollment-slips')
+        .createSignedUrl(submission.payment_slip_path, 3600)
+      : { data: null }
 
     return {
       ...submission,
@@ -55,7 +57,7 @@ export default async function AdminEnrollmentsPage(props: {
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-banner-dark">{isMonthlyPayments ? 'Student Payments' : 'Admissions'}</p>
           <h1 className="mt-2 text-3xl font-black text-gray-900">{isMonthlyPayments ? 'Monthly Payments' : 'New Enrollments'}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            {isMonthlyPayments ? 'Review monthly tuition payment slips by class and status.' : 'Review new student enrollment submissions.'}
+            {isMonthlyPayments ? 'Review direct and online monthly tuition payments by class and status.' : 'Review new student enrollment submissions.'}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

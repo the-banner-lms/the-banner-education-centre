@@ -59,7 +59,7 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
           href="/admin/enrollments?type=monthly_payment&status=all&class=all"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-banner-dark bg-white px-4 py-2.5 text-sm font-bold text-banner-dark hover:bg-green-50"
         >
-          Review Online Payment Slips
+          Review Payment Submissions
         </Link>
       </div>
 
