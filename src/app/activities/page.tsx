@@ -13,7 +13,7 @@ export default async function ActivitiesPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-banner-dark">
-      <main className="flex-grow">
+      <div className="flex-grow">
         {/* Hero Section */}
         <section className="relative isolate px-6 pt-24 pb-24 lg:px-8 bg-banner-light/10 flex flex-col items-center justify-center">
           <div className="mx-auto max-w-4xl text-center z-10">
@@ -70,7 +70,7 @@ export default async function ActivitiesPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Standalone Videos Section */}
       {videos.length > 0 && (

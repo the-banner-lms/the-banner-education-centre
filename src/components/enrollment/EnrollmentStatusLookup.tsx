@@ -43,9 +43,9 @@ export default function EnrollmentStatusLookup() {
       </div>
 
       <form action={formAction} className="mt-6 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-        <div className="absolute -left-[9999px]" aria-hidden="true">
+        <div hidden>
           <label htmlFor="lookup-website">Website</label>
-          <input id="lookup-website" name="lookup_website" tabIndex={-1} autoComplete="off" />
+          <input id="lookup-website" name="lookup_website" autoComplete="off" />
         </div>
         <div>
           <label htmlFor="reference-code" className="block text-sm font-bold text-gray-800">Tracking Reference</label>

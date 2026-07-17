@@ -57,9 +57,9 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
   return (
     <form ref={formRef} action={formAction} className="space-y-6">
       <input type="hidden" name="submission_type" value={type} />
-      <div className="absolute -left-[9999px]" aria-hidden="true">
+      <div hidden>
         <label htmlFor={`${fieldPrefix}-website`}>Website</label>
-        <input id={`${fieldPrefix}-website`} name="website" type="text" tabIndex={-1} autoComplete="off" />
+        <input id={`${fieldPrefix}-website`} name="website" type="text" autoComplete="off" />
       </div>
 
       <div>

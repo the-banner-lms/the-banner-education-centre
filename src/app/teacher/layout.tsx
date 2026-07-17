@@ -59,9 +59,9 @@ export default async function TeacherLayout({
         </div>
       </aside>
 
-      <main className="flex-1 p-8">
+      <div className="flex-1 p-8">
         {children}
-      </main>
+      </div>
     </div>
   )
 }

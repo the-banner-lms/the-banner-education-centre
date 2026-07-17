@@ -26,7 +26,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-banner-dark">
-      <main className="flex-grow">
+      <div className="flex-grow">
         {/* Header Section */}
         <section className="relative px-6 pt-12 pb-16 lg:px-8 bg-banner-light/5 border-b border-banner-light/20">
           <div className="max-w-7xl mx-auto">
@@ -68,7 +68,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ id: stri
             <PublicGallery media={media} />
           )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }
