@@ -77,7 +77,7 @@ CREATE TABLE public.enrollment_submissions (
 ALTER TABLE public.enrollment_submissions ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX enrollment_submissions_tracking_code_uidx ON public.enrollment_submissions (tracking_code);
 CREATE UNIQUE INDEX enrollment_submissions_slip_sha256_uidx ON public.enrollment_submissions (slip_sha256) WHERE slip_sha256 IS NOT NULL;
-CREATE UNIQUE INDEX enrollment_submissions_transaction_uidx ON public.enrollment_submissions (payment_method, lower(transaction_id)) WHERE payment_method IS NOT NULL AND transaction_id IS NOT NULL;
+CREATE UNIQUE INDEX enrollment_submissions_transaction_uidx ON public.enrollment_submissions (payment_method, payment_date, lower(transaction_id)) WHERE payment_method IS NOT NULL AND payment_date IS NOT NULL AND transaction_id IS NOT NULL;
 
 -- 2. Bookshelf (Textbooks, Chapters, Lessons)
 CREATE TABLE public.textbooks (

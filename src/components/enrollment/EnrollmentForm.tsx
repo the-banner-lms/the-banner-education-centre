@@ -144,8 +144,21 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
             <input id={`${fieldPrefix}-payment-date`} name="payment_date" type="date" required className={inputClass} />
           </div>
           <div>
-            <label htmlFor={`${fieldPrefix}-transaction-id`} className={labelClass}>Transaction ID</label>
-            <input id={`${fieldPrefix}-transaction-id`} name="transaction_id" minLength={6} maxLength={80} required autoCapitalize="characters" placeholder="Enter ID shown on the slip" className={inputClass} />
+            <label htmlFor={`${fieldPrefix}-transaction-id`} className={labelClass}>Transaction ID (Last 5 digits)</label>
+            <input
+              id={`${fieldPrefix}-transaction-id`}
+              name="transaction_id"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{5}"
+              minLength={5}
+              maxLength={5}
+              required
+              autoComplete="off"
+              placeholder="e.g. 48219"
+              className={inputClass}
+            />
+            <p className="mt-1.5 text-xs font-medium text-gray-500">Enter only the final 5 digits shown on the payment slip.</p>
           </div>
         </div>
       </fieldset>

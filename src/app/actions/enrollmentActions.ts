@@ -135,8 +135,8 @@ export async function submitEnrollment(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(new Date(`${paymentDate}T00:00:00Z`).getTime())) {
     return { status: 'error', message: 'Please enter a valid payment date.' }
   }
-  if (!/^[A-Z0-9._/-]{6,80}$/.test(transactionId)) {
-    return { status: 'error', message: 'Transaction ID must be 6–80 letters or numbers.' }
+  if (!/^\d{5}$/.test(transactionId)) {
+    return { status: 'error', message: 'Enter the last 5 digits of the Transaction ID.' }
   }
   if (!(paymentSlip instanceof File) || paymentSlip.size === 0) {
     return { status: 'error', message: 'Please attach the payment slip.' }
@@ -192,12 +192,13 @@ export async function submitEnrollment(
     .from('enrollment_submissions')
     .select('id')
     .eq('payment_method', paymentMethod)
+    .eq('payment_date', paymentDate)
     .ilike('transaction_id', transactionId)
     .limit(1)
     .maybeSingle()
 
   if (duplicateTransaction) {
-    return { status: 'error', message: 'This transaction ID has already been submitted. Upload rejected.' }
+    return { status: 'error', message: 'These Transaction ID last 5 digits have already been submitted for this payment method and date. Upload rejected.' }
   }
 
   const analysis = await analyzePaymentSlip(paymentSlip)
