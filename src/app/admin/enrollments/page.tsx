@@ -58,9 +58,16 @@ export default async function AdminEnrollmentsPage(props: {
             {isMonthlyPayments ? 'Review monthly tuition payment slips by class and status.' : 'Review new student enrollment submissions.'}
           </p>
         </div>
-        <Link href="/enrollment" target="_blank" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-banner-dark px-4 py-2 text-sm font-bold text-banner-dark hover:bg-green-50">
-          Open Public Form
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {isMonthlyPayments && (
+            <Link href="/admin/students/fast-entry" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-banner-dark px-4 py-2 text-sm font-bold text-white hover:bg-[#0b5226]">
+              Open Student Payment Roster
+            </Link>
+          )}
+          <Link href="/enrollment" target="_blank" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-banner-dark px-4 py-2 text-sm font-bold text-banner-dark hover:bg-green-50">
+            Open Public Form
+          </Link>
+        </div>
       </div>
 
       <div className="mb-6 space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

@@ -6,7 +6,6 @@ import {
   AcademicCapIcon,
   BanknotesIcon,
   BookOpenIcon,
-  BoltIcon,
   BriefcaseIcon,
   BuildingLibraryIcon,
   ChatBubbleLeftEllipsisIcon,
@@ -22,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 
 const enrollmentsHref = '/admin/enrollments'
-const monthlyPaymentsHref = '/admin/enrollments?type=monthly_payment&status=all&class=all'
+const monthlyPaymentsHref = '/admin/students/fast-entry'
 
 const navigationGroups = [
   {
@@ -58,7 +57,6 @@ const navigationGroups = [
       { href: '/admin/academic-setup', label: 'Academic Setup', shortLabel: 'Academic', icon: BuildingLibraryIcon },
       { href: enrollmentsHref, label: 'Enrollments', shortLabel: 'Enrollments', icon: ClipboardDocumentCheckIcon },
       { href: monthlyPaymentsHref, label: 'Monthly Payment', shortLabel: 'Payments', icon: BanknotesIcon },
-      { href: '/admin/students/fast-entry', label: 'Fast Data Entry', shortLabel: 'Fast Entry', icon: BoltIcon },
       { href: '/admin/teacher-reports', label: 'Teacher Reports', shortLabel: 'Reports', icon: ClipboardDocumentCheckIcon },
     ],
   },
@@ -75,7 +73,8 @@ export default function AdminNavigation({ isFullAdmin }: { isFullAdmin: boolean 
   const activeHref = visibleItems
     .filter(item => {
       if (item.href === monthlyPaymentsHref) {
-        return pathname === enrollmentsHref && searchParams.get('type') === 'monthly_payment'
+        return pathname === monthlyPaymentsHref
+          || (pathname === enrollmentsHref && searchParams.get('type') === 'monthly_payment')
       }
       if (item.href === enrollmentsHref) {
         return pathname === enrollmentsHref && searchParams.get('type') !== 'monthly_payment'

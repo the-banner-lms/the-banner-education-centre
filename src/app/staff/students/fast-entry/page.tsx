@@ -34,7 +34,7 @@ export default async function StaffFastEntryPage(props: { searchParams: Promise<
 
   const { data: students } = await supabase
     .from('profiles')
-    .select('id, full_name, email, student_number, assigned_class, assigned_subclass, address')
+    .select('id, full_name, email, student_number, assigned_class, assigned_subclass, address, approval_status')
     .eq('role', 'student')
     .order('assigned_class')
     .order('full_name')

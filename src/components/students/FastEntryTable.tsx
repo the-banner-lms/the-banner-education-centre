@@ -13,6 +13,7 @@ type Student = {
   assigned_class: string | null
   assigned_subclass: string | null
   address: string | null
+  approval_status: 'pending' | 'approved' | 'rejected' | null
 }
 
 type ExistingTuition = {
@@ -233,7 +234,14 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                         <tr key={student.id} className={`${rowTone} hover:bg-gray-50`}>
                           <td className={`sticky left-0 z-10 min-w-52 px-4 py-3 sm:min-w-64 ${rowTone}`}>
                             <p className="font-bold text-gray-900">{student.full_name || 'No Name'}</p>
-                            <p className="mt-1 text-xs font-semibold text-gray-500">{student.student_number || 'Pending ID'}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <p className="text-xs font-semibold text-gray-500">{student.student_number || 'Pending ID'}</p>
+                              {student.approval_status !== 'approved' && (
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${student.approval_status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>
+                                  {student.approval_status || 'pending'}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           {showsYleDual && (
                             <td className="min-w-40 px-4 py-3 text-sm font-semibold text-blue-700">

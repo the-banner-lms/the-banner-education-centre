@@ -35,7 +35,7 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
   // Fetch all students
   const { data: students } = await supabase
     .from('profiles')
-    .select('id, full_name, email, student_number, assigned_class, assigned_subclass, address')
+    .select('id, full_name, email, student_number, assigned_class, assigned_subclass, address, approval_status')
     .eq('role', 'student')
     .order('assigned_class')
     .order('full_name')
@@ -47,13 +47,20 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col items-start gap-2">
           <Link href="/admin/students" className="text-indigo-600 hover:text-indigo-800 mr-4 font-medium flex items-center">
             &larr; Manage Students
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Monthly Payment Data Entry</h1>
+          <p className="text-sm text-gray-600">Every student account appears here immediately, including newly created and pending accounts.</p>
         </div>
+        <Link
+          href="/admin/enrollments?type=monthly_payment&status=all&class=all"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-banner-dark bg-white px-4 py-2.5 text-sm font-bold text-banner-dark hover:bg-green-50"
+        >
+          Review Online Payment Slips
+        </Link>
       </div>
 
       <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
