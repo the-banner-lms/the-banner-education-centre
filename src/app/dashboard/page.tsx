@@ -7,6 +7,7 @@ import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAt
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import { getRoleBadgeStyle } from '@/utils/theme'
 import { formatTuitionAmount, getTuitionStatusStyle } from '@/lib/tuition'
+import { getEnrollmentReviewNotices } from '@/lib/enrollmentNotices'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,9 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
 
   const { getRecentAnnouncementsForRole } = await import('@/utils/supabase/announcements');
   const recentAnnouncements = await getRecentAnnouncementsForRole(supabase, 'student', 5);
+  const paymentReviewNotices = profile.role === 'student'
+    ? await getEnrollmentReviewNotices(profile.email, profile.student_number, { limit: 5 })
+    : []
 
   const getStartOfCurrentWeek = () => {
     const d = new Date();
@@ -96,6 +100,33 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
       <div className="mb-8">
         <RecentAnnouncementsInbox announcements={recentAnnouncements || []} viewAllHref="/announcements" />
       </div>
+
+      {paymentReviewNotices.length > 0 && (
+        <section className="mb-8 space-y-3" aria-labelledby="payment-review-notices-title">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="payment-review-notices-title" className="text-lg font-black text-gray-900">Payment Review Notices</h2>
+            <Link href="/enrollment" className="text-sm font-bold text-banner-dark hover:underline">Check by reference</Link>
+          </div>
+          {paymentReviewNotices.map(notice => (
+            <article key={notice.id} className={`rounded-xl border p-4 ${notice.status === 'rejected' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className={`text-sm font-black ${notice.status === 'rejected' ? 'text-red-800' : 'text-green-800'}`}>
+                    {notice.status === 'rejected' ? 'Payment Slip Rejected' : 'Payment Slip Verified'}
+                    {notice.payment_month ? ` · ${notice.payment_month}` : ''}
+                  </p>
+                  {notice.review_reason && <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-gray-800">{notice.review_reason}</p>}
+                  <p className="mt-2 break-all text-xs text-gray-600">Reference: <span className="font-mono font-semibold">{notice.tracking_code}</span></p>
+                </div>
+                <time className="shrink-0 text-xs font-semibold text-gray-600" dateTime={notice.reviewed_at}>
+                  {new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'Asia/Yangon' }).format(new Date(notice.reviewed_at))}
+                </time>
+              </div>
+              {notice.status === 'rejected' && <p className="mt-3 text-sm font-bold text-red-800">Please correct the issue and submit a new payment slip.</p>}
+            </article>
+          ))}
+        </section>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0 bg-white p-6 rounded-lg shadow border border-gray-100">
         <div className="flex items-center space-x-6">

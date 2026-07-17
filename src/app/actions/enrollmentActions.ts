@@ -1,11 +1,39 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
+import {
+  analyzePaymentSlip,
+  hashSubmissionFingerprint,
+  isPaymentMethod,
+  normalizeTransactionId,
+  perceptualHashDistance,
+} from '@/lib/slipValidation'
 
 export type EnrollmentFormState = {
+  status: 'idle' | 'success' | 'error'
+  message: string
+  referenceCode?: string
+}
+
+export type EnrollmentLookupState = {
+  status: 'idle' | 'success' | 'error'
+  message: string
+  submission?: {
+    studentName: string
+    submissionType: 'new_enrollment' | 'monthly_payment'
+    status: 'pending' | 'contacted' | 'completed' | 'rejected'
+    paymentMonth: string | null
+    reviewReason: string | null
+    submittedAt: string
+    reviewedAt: string | null
+  }
+}
+
+export type EnrollmentReviewState = {
   status: 'idle' | 'success' | 'error'
   message: string
 }
@@ -31,9 +59,11 @@ async function verifyStaffAccess() {
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin' && profile?.role !== 'staff') {
+  if (!profile || !['super_admin', 'admin', 'staff'].includes(profile.role)) {
     throw new Error('Unauthorized')
   }
+
+  return user.id
 }
 
 export async function submitEnrollment(
@@ -50,6 +80,11 @@ export async function submitEnrollment(
   const address = cleanText(formData, 'address')
   const studentNumber = cleanText(formData, 'student_number').toLowerCase()
   const paymentMonth = cleanText(formData, 'payment_month')
+  const paymentMethod = cleanText(formData, 'payment_method')
+  const paymentAmountText = cleanText(formData, 'payment_amount').replace(/,/g, '')
+  const paymentAmount = Number(paymentAmountText)
+  const paymentDate = cleanText(formData, 'payment_date')
+  const transactionId = normalizeTransactionId(cleanText(formData, 'transaction_id'))
   const note = cleanText(formData, 'note')
   const website = cleanText(formData, 'website')
   const paymentSlip = formData.get('payment_slip')
@@ -86,6 +121,18 @@ export async function submitEnrollment(
   if (studentNumber && !/^[a-z0-9-]{5,40}$/.test(studentNumber)) {
     return { status: 'error', message: 'Please enter a valid Student ID.' }
   }
+  if (!isPaymentMethod(paymentMethod)) {
+    return { status: 'error', message: 'Please choose the payment method.' }
+  }
+  if (!Number.isFinite(paymentAmount) || paymentAmount <= 0 || paymentAmount > 100000000) {
+    return { status: 'error', message: 'Please enter a valid payment amount.' }
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(new Date(`${paymentDate}T00:00:00Z`).getTime())) {
+    return { status: 'error', message: 'Please enter a valid payment date.' }
+  }
+  if (!/^[A-Z0-9._/-]{6,80}$/.test(transactionId)) {
+    return { status: 'error', message: 'Transaction ID must be 6–80 letters or numbers.' }
+  }
   if (!(paymentSlip instanceof File) || paymentSlip.size === 0) {
     return { status: 'error', message: 'Please attach the payment slip.' }
   }
@@ -93,12 +140,104 @@ export async function submitEnrollment(
     return { status: 'error', message: 'Payment slip must be a JPG, PNG, WebP or PDF file under 4 MB.' }
   }
 
+  const requestHeaders = await headers()
+  const ipAddress = (requestHeaders.get('x-forwarded-for') || requestHeaders.get('x-real-ip') || 'unknown')
+    .split(',')[0]
+    .trim()
+  const fingerprint = hashSubmissionFingerprint(ipAddress, requestHeaders.get('user-agent') || 'unknown')
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const { count: recentSubmissionCount } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('submitter_fingerprint', fingerprint)
+    .gte('created_at', fifteenMinutesAgo)
+
+  if ((recentSubmissionCount || 0) >= 3) {
+    return { status: 'error', message: 'Too many recent submissions. Please wait 15 minutes and try again.' }
+  }
+
+  let duplicateSubmissionQuery = supabaseAdmin
+    .from('enrollment_submissions')
+    .select('id')
+    .eq('submission_type', submissionType)
+    .neq('status', 'rejected')
+    .limit(1)
+
+  if (submissionType === 'monthly_payment') {
+    duplicateSubmissionQuery = duplicateSubmissionQuery
+      .eq('payment_month', paymentMonth)
+      .eq(studentNumber ? 'student_number' : 'email', studentNumber || email)
+  } else {
+    duplicateSubmissionQuery = duplicateSubmissionQuery
+      .ilike('email', email)
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+  }
+
+  const { data: duplicateSubmission } = await duplicateSubmissionQuery.maybeSingle()
+  if (duplicateSubmission) {
+    return {
+      status: 'error',
+      message: submissionType === 'monthly_payment'
+        ? 'A payment submission already exists for this student and month. Check its status before submitting again.'
+        : 'An enrollment submission already exists for this email. Please check its status.',
+    }
+  }
+
+  const { data: duplicateTransaction } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('id')
+    .eq('payment_method', paymentMethod)
+    .ilike('transaction_id', transactionId)
+    .limit(1)
+    .maybeSingle()
+
+  if (duplicateTransaction) {
+    return { status: 'error', message: 'This transaction ID has already been submitted. Upload rejected.' }
+  }
+
+  const analysis = await analyzePaymentSlip(paymentSlip)
+  if (analysis.hardError) {
+    return { status: 'error', message: analysis.hardError }
+  }
+
+  const { data: exactDuplicate } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('id')
+    .eq('slip_sha256', analysis.sha256)
+    .limit(1)
+    .maybeSingle()
+
+  if (exactDuplicate) {
+    return { status: 'error', message: 'This exact payment slip has already been submitted. Upload rejected.' }
+  }
+
+  const validationFlags = [...analysis.flags]
+  if (analysis.perceptualHash) {
+    const { data: recentHashes } = await supabaseAdmin
+      .from('enrollment_submissions')
+      .select('slip_perceptual_hash')
+      .not('slip_perceptual_hash', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(300)
+
+    const possibleDuplicate = (recentHashes || []).some(record =>
+      record.slip_perceptual_hash
+      && perceptualHashDistance(analysis.perceptualHash!, record.slip_perceptual_hash) <= 5
+    )
+    if (possibleDuplicate) validationFlags.push('possible_near_duplicate')
+  }
+
+  const submittedPaymentDate = new Date(`${paymentDate}T00:00:00Z`)
+  const paymentAgeDays = Math.floor((Date.now() - submittedPaymentDate.getTime()) / 86_400_000)
+  if (paymentAgeDays > 7) validationFlags.push('payment_date_older_than_7_days')
+  if (paymentAgeDays < -1) validationFlags.push('payment_date_in_future')
+
   const extension = allowedFileTypes[paymentSlip.type]
   const paymentSlipPath = `${submissionType}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`
   const { error: uploadError } = await supabaseAdmin.storage
     .from('enrollment-slips')
-    .upload(paymentSlipPath, paymentSlip, {
-      contentType: paymentSlip.type,
+    .upload(paymentSlipPath, analysis.buffer, {
+      contentType: analysis.detectedMimeType,
       cacheControl: '3600',
       upsert: false,
     })
@@ -108,7 +247,8 @@ export async function submitEnrollment(
     return { status: 'error', message: 'Payment slip upload failed. Please try again.' }
   }
 
-  const { error: insertError } = await supabaseAdmin
+  const trackingCode = crypto.randomUUID().replace(/-/g, '')
+  const { data: insertedSubmission, error: insertError } = await supabaseAdmin
     .from('enrollment_submissions')
     .insert({
       submission_type: submissionType,
@@ -121,9 +261,25 @@ export async function submitEnrollment(
       address: submissionType === 'new_enrollment' ? address || null : null,
       student_number: submissionType === 'monthly_payment' ? studentNumber || null : null,
       payment_month: submissionType === 'monthly_payment' ? paymentMonth : null,
+      payment_method: paymentMethod,
+      payment_amount: Math.round(paymentAmount * 100) / 100,
+      payment_date: paymentDate,
+      transaction_id: transactionId,
       note: note || null,
       payment_slip_path: paymentSlipPath,
+      tracking_code: trackingCode,
+      slip_sha256: analysis.sha256,
+      slip_perceptual_hash: analysis.perceptualHash,
+      slip_mime_type: analysis.detectedMimeType,
+      slip_size_bytes: analysis.buffer.length,
+      slip_width: analysis.width,
+      slip_height: analysis.height,
+      validation_status: validationFlags.length > 0 ? 'needs_review' : 'clear',
+      validation_flags: validationFlags,
+      submitter_fingerprint: fingerprint,
     })
+    .select('tracking_code')
+    .single()
 
   if (insertError) {
     console.error('Enrollment submission failed:', insertError)
@@ -137,28 +293,123 @@ export async function submitEnrollment(
   return {
     status: 'success',
     message: submissionType === 'new_enrollment'
-      ? 'Enrollment submitted successfully. Our team will contact you soon.'
-      : 'Monthly payment slip submitted successfully.',
+      ? 'Enrollment submitted successfully. Keep the reference code to check the admin decision.'
+      : 'Monthly payment slip submitted for admin review. Keep the reference code.',
+    referenceCode: insertedSubmission?.tracking_code || trackingCode,
   }
 }
 
-export async function updateEnrollmentStatus(submissionId: string, formData: FormData) {
-  await verifyStaffAccess()
+export async function updateEnrollmentStatus(
+  submissionId: string,
+  _previousState: EnrollmentReviewState,
+  formData: FormData,
+): Promise<EnrollmentReviewState> {
+  const reviewerId = await verifyStaffAccess()
   const status = cleanText(formData, 'status')
+  const reviewReason = cleanText(formData, 'review_reason')
   if (!['pending', 'contacted', 'completed', 'rejected'].includes(status)) {
-    throw new Error('Invalid status')
+    return { status: 'error', message: 'Invalid review status.' }
   }
+  if (status === 'rejected' && (reviewReason.length < 5 || reviewReason.length > 500)) {
+    return { status: 'error', message: 'A rejection reason between 5 and 500 characters is required.' }
+  }
+  if (reviewReason.length > 500) return { status: 'error', message: 'Review notice is too long.' }
 
   const { error } = await supabaseAdmin
     .from('enrollment_submissions')
-    .update({ status })
+    .update({
+      status,
+      review_reason: reviewReason || null,
+      reviewed_at: ['completed', 'rejected'].includes(status) ? new Date().toISOString() : null,
+      reviewed_by: ['completed', 'rejected'].includes(status) ? reviewerId : null,
+      notice_read_at: ['completed', 'rejected'].includes(status) ? null : undefined,
+    })
     .eq('id', submissionId)
 
   if (error) {
     console.error('Enrollment status update failed:', error)
-    throw new Error('Failed to update submission status.')
+    return { status: 'error', message: 'Failed to update submission status.' }
   }
 
   revalidatePath('/admin/enrollments')
   revalidatePath('/staff/enrollments')
+  revalidatePath('/dashboard')
+  return { status: 'success', message: status === 'rejected' ? 'Rejected notice saved.' : 'Review status saved.' }
+}
+
+export async function markEnrollmentReviewNoticeAsRead(submissionId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(submissionId)) return { error: 'Invalid notice.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email, student_number')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) return { error: 'Unauthorized' }
+
+  const { data: submission } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('email, student_number, status')
+    .eq('id', submissionId)
+    .in('status', ['completed', 'rejected'])
+    .maybeSingle()
+
+  const ownsNotice = submission
+    && (submission.email.toLowerCase() === profile.email.toLowerCase()
+      || Boolean(profile.student_number && submission.student_number === profile.student_number))
+
+  if (!ownsNotice) return { error: 'Forbidden' }
+
+  const { error } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .update({ notice_read_at: new Date().toISOString() })
+    .eq('id', submissionId)
+
+  if (error) return { error: 'Unable to mark notice as read.' }
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
+
+export async function checkEnrollmentStatus(
+  _previousState: EnrollmentLookupState,
+  formData: FormData,
+): Promise<EnrollmentLookupState> {
+  const referenceCode = cleanText(formData, 'reference_code').toLowerCase()
+  const email = cleanText(formData, 'lookup_email').toLowerCase()
+  const website = cleanText(formData, 'lookup_website')
+
+  if (website) return { status: 'error', message: 'Submission not found.' }
+  if (!/^[a-f0-9]{32}$/.test(referenceCode) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { status: 'error', message: 'Enter the reference code and email used for the submission.' }
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('student_name, submission_type, status, payment_month, review_reason, created_at, reviewed_at')
+    .eq('tracking_code', referenceCode)
+    .ilike('email', email)
+    .maybeSingle()
+
+  if (error || !data) {
+    return { status: 'error', message: 'Submission not found. Check the reference code and email.' }
+  }
+
+  return {
+    status: 'success',
+    message: 'Submission found.',
+    submission: {
+      studentName: data.student_name,
+      submissionType: data.submission_type,
+      status: data.status,
+      paymentMonth: data.payment_month,
+      reviewReason: data.review_reason,
+      submittedAt: data.created_at,
+      reviewedAt: data.reviewed_at,
+    },
+  }
 }

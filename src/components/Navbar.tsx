@@ -6,17 +6,20 @@ import NotificationBell from './NotificationBell'
 import MobileMenu from './MobileMenu'
 import NavigationLink from './NavigationLink'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
+import { getEnrollmentReviewNotices } from '@/lib/enrollmentNotices'
 
-type NavbarAnnouncement = {
+type NavbarNotification = {
   id: string
   title: string
   created_at: string
+  href: string
+  kind: 'announcement' | 'enrollment_review'
 }
 
 export default async function Navbar() {
   const { supabase, user, profile } = await getCurrentAuth()
 
-  let unreadAnnouncements: NavbarAnnouncement[] = [];
+  let unreadNotifications: NavbarNotification[] = [];
 
   if (user && profile) {
     // Fetch relevant announcements
@@ -39,8 +42,29 @@ export default async function Navbar() {
         
       const readIds = new Set(readRecords?.map(r => r.announcement_id) || []);
       
-      unreadAnnouncements = relevantAnnouncements.filter(a => !readIds.has(a.id));
+      unreadNotifications = relevantAnnouncements
+        .filter(a => !readIds.has(a.id))
+        .map(announcement => ({
+          ...announcement,
+          href: `/announcements/${announcement.id}`,
+          kind: 'announcement' as const,
+        }));
     }
+
+    if (profile.role === 'student') {
+      const reviewNotices = await getEnrollmentReviewNotices(profile.email, profile.student_number, { unreadOnly: true, limit: 10 })
+      unreadNotifications.push(...reviewNotices.map(notice => ({
+        id: notice.id,
+        title: notice.status === 'rejected'
+          ? `Payment slip rejected${notice.payment_month ? ` · ${notice.payment_month}` : ''}: ${notice.review_reason || 'See admin notice'}`
+          : `Payment slip verified${notice.payment_month ? ` · ${notice.payment_month}` : ''}`,
+        created_at: notice.reviewed_at,
+        href: '/dashboard',
+        kind: 'enrollment_review' as const,
+      })))
+    }
+
+    unreadNotifications.sort((first, second) => new Date(second.created_at).getTime() - new Date(first.created_at).getTime())
   }
 
   return (
@@ -81,8 +105,8 @@ export default async function Navbar() {
             {user && <SearchPopup />}
             {user && (
               <NotificationBell
-                key={unreadAnnouncements.map(announcement => announcement.id).join(',')}
-                unreadAnnouncements={unreadAnnouncements}
+                key={unreadNotifications.map(notification => `${notification.kind}:${notification.id}`).join(',')}
+                unreadNotifications={unreadNotifications}
               />
             )}
             {user && (

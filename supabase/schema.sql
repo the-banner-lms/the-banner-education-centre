@@ -50,12 +50,33 @@ CREATE TABLE public.enrollment_submissions (
   address TEXT,
   student_number TEXT,
   payment_month TEXT,
+  payment_method TEXT CHECK (payment_method IS NULL OR payment_method IN ('kbzpay', 'wavepay', 'ayapay', 'bank_transfer', 'other')),
+  payment_amount NUMERIC(12, 2) CHECK (payment_amount IS NULL OR (payment_amount > 0 AND payment_amount <= 100000000)),
+  payment_date DATE,
+  transaction_id TEXT,
   note TEXT,
   payment_slip_path TEXT NOT NULL,
+  tracking_code TEXT NOT NULL DEFAULT lower(replace(gen_random_uuid()::TEXT, '-', '')),
+  slip_sha256 TEXT,
+  slip_perceptual_hash TEXT,
+  slip_mime_type TEXT,
+  slip_size_bytes BIGINT CHECK (slip_size_bytes IS NULL OR (slip_size_bytes > 0 AND slip_size_bytes <= 4194304)),
+  slip_width INTEGER,
+  slip_height INTEGER,
+  validation_status TEXT NOT NULL DEFAULT 'needs_review' CHECK (validation_status IN ('clear', 'needs_review', 'blocked')),
+  validation_flags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  review_reason TEXT CHECK (review_reason IS NULL OR char_length(review_reason) <= 500),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  reviewed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  notice_read_at TIMESTAMP WITH TIME ZONE,
+  submitter_fingerprint TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'completed', 'rejected')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::TEXT, now())
 );
 ALTER TABLE public.enrollment_submissions ENABLE ROW LEVEL SECURITY;
+CREATE UNIQUE INDEX enrollment_submissions_tracking_code_uidx ON public.enrollment_submissions (tracking_code);
+CREATE UNIQUE INDEX enrollment_submissions_slip_sha256_uidx ON public.enrollment_submissions (slip_sha256) WHERE slip_sha256 IS NOT NULL;
+CREATE UNIQUE INDEX enrollment_submissions_transaction_uidx ON public.enrollment_submissions (payment_method, lower(transaction_id)) WHERE payment_method IS NOT NULL AND transaction_id IS NOT NULL;
 
 -- 2. Bookshelf (Textbooks, Chapters, Lessons)
 CREATE TABLE public.textbooks (

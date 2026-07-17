@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { submitEnrollment, type EnrollmentFormState } from '@/app/actions/enrollmentActions'
+import { PAYMENT_METHODS } from '@/lib/paymentMethods'
 import { STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
 
 const initialState: EnrollmentFormState = { status: 'idle', message: '' }
@@ -124,6 +125,31 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
         </div>
       )}
 
+      <fieldset className="rounded-2xl border border-green-200 bg-green-50/50 p-4 sm:p-5">
+        <legend className="px-2 text-sm font-black uppercase tracking-[0.12em] text-banner-dark">Payment Details</legend>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor={`${fieldPrefix}-payment-method`} className={labelClass}>Payment Method</label>
+            <select id={`${fieldPrefix}-payment-method`} name="payment_method" required defaultValue="" className={inputClass}>
+              <option value="" disabled>Choose payment method</option>
+              {PAYMENT_METHODS.map(method => <option key={method.value} value={method.value}>{method.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`${fieldPrefix}-payment-amount`} className={labelClass}>Amount (MMK)</label>
+            <input id={`${fieldPrefix}-payment-amount`} name="payment_amount" type="number" inputMode="decimal" min="1" max="100000000" step="100" required placeholder="150000" className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor={`${fieldPrefix}-payment-date`} className={labelClass}>Payment Date</label>
+            <input id={`${fieldPrefix}-payment-date`} name="payment_date" type="date" required className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor={`${fieldPrefix}-transaction-id`} className={labelClass}>Transaction ID</label>
+            <input id={`${fieldPrefix}-transaction-id`} name="transaction_id" minLength={6} maxLength={80} required autoCapitalize="characters" placeholder="Enter ID shown on the slip" className={inputClass} />
+          </div>
+        </div>
+      </fieldset>
+
       <div>
         <label htmlFor={`${fieldPrefix}-note`} className={labelClass}>Optional Note (admin ဖတ်ရန်)</label>
         <textarea id={`${fieldPrefix}-note`} name="note" rows={4} maxLength={1000} placeholder="Optional note for admin" className={inputClass} />
@@ -139,18 +165,25 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
           required
           className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-gray-300 bg-white text-sm text-gray-700 file:mr-4 file:min-h-12 file:border-0 file:bg-banner-light/20 file:px-4 file:font-bold file:text-banner-dark hover:file:bg-banner-light/30"
         />
-        <p className="mt-2 text-xs text-gray-500">JPG, PNG, WebP or PDF — maximum 4 MB.</p>
+        <p className="mt-2 text-xs leading-5 text-gray-500">JPG, PNG, WebP or PDF — maximum 4 MB. Corrupt, blank, exact duplicate and reused transaction slips are rejected automatically. Unclear slips are sent to admin review.</p>
       </div>
 
       <PaymentQrPanel />
 
       {state.message && (
-        <p
+        <div
           aria-live="polite"
           className={`rounded-xl border px-4 py-3 text-sm font-semibold ${state.status === 'success' ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-700'}`}
         >
-          {state.message}
-        </p>
+          <p>{state.message}</p>
+          {state.referenceCode && (
+            <div className="mt-3 rounded-lg border border-green-200 bg-white p-3">
+              <p className="text-xs font-black uppercase tracking-wide text-gray-600">Tracking Reference</p>
+              <p className="mt-1 break-all font-mono text-base font-black text-banner-dark">{state.referenceCode}</p>
+              <p className="mt-1 text-xs font-medium text-gray-600">Save this code. Use it with your email in “Check Submission Status” below.</p>
+            </div>
+          )}
+        </div>
       )}
 
       <button

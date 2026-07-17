@@ -5,7 +5,11 @@ export type Profile = {
   email: string
   full_name: string | null
   avatar_url: string | null
-  role: 'admin' | 'editor' | 'teacher' | 'student' | 'staff' | 'guest'
+  assigned_class: string | null
+  assigned_subclass: string | null
+  address: string | null
+  student_number: string | null
+  role: 'super_admin' | 'admin' | 'editor' | 'teacher' | 'student' | 'staff' | 'guest'
   approval_status: 'pending' | 'approved' | 'rejected'
   created_at: string
 }

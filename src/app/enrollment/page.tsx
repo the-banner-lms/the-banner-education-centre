@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import EnrollmentForm from '@/components/enrollment/EnrollmentForm'
+import EnrollmentStatusLookup from '@/components/enrollment/EnrollmentStatusLookup'
 
 export const metadata: Metadata = {
   title: 'Enrollment | The Banner Education Centre',
@@ -46,6 +47,10 @@ export default function EnrollmentPage() {
             </div>
           </section>
         </main>
+
+        <section className="mt-10 sm:mt-14" aria-label="Check enrollment or payment review status">
+          <EnrollmentStatusLookup />
+        </section>
       </div>
     </div>
   )
