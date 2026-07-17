@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import {
   formatReportPeriod,
   formatReportRelease,
@@ -16,13 +15,12 @@ type Props = {
 
 function DownloadLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link
+    <a
       href={href}
-      prefetch={false}
       className="inline-flex min-h-11 items-center justify-center rounded-lg bg-banner-dark px-4 py-2 text-sm font-black text-white hover:bg-[#0b5226]"
     >
       {label}
-    </Link>
+    </a>
   )
 }
 

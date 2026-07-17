@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
 import {
@@ -75,8 +74,8 @@ export default async function StudentReportsAdminPage(props: {
                 <tr key={student.id} className="align-top">
                   <td className="px-4 py-4"><p className="font-black text-gray-950">{student.full_name || 'No name'}</p><p className="mt-1 text-xs text-gray-500">{student.student_number || student.email}</p></td>
                   <td className="px-4 py-4 font-bold text-gray-700">{getStudentClassLabel(student.assigned_class)}</td>
-                  <td className="px-4 py-4"><p className="mb-2 text-xs text-gray-500">{formatReportPeriod('weekly', week)}</p><Link prefetch={false} href={`/api/student-report?studentId=${student.id}&type=weekly&week=${week}`} className="font-black text-banner-dark hover:underline">Preview PDF</Link></td>
-                  <td className="px-4 py-4"><p className="mb-2 text-xs text-gray-500">{formatReportPeriod('monthly', month)}</p><Link prefetch={false} href={`/api/student-report?studentId=${student.id}&type=monthly&month=${month}`} className="font-black text-banner-dark hover:underline">Preview PDF</Link></td>
+                  <td className="px-4 py-4"><p className="mb-2 text-xs text-gray-500">{formatReportPeriod('weekly', week)}</p><a href={`/api/student-report?studentId=${student.id}&type=weekly&week=${week}`} className="font-black text-banner-dark hover:underline">Preview PDF</a></td>
+                  <td className="px-4 py-4"><p className="mb-2 text-xs text-gray-500">{formatReportPeriod('monthly', month)}</p><a href={`/api/student-report?studentId=${student.id}&type=monthly&month=${month}`} className="font-black text-banner-dark hover:underline">Preview PDF</a></td>
                   <td className="px-4 py-4">
                     {[weeklyDelivery, monthlyDelivery].map((delivery, index) => delivery ? (
                       <div key={delivery.id} className={index ? 'mt-3 border-t border-gray-100 pt-3' : ''}>
