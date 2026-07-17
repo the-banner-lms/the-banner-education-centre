@@ -63,7 +63,7 @@ export default function StudentManager({
                 referrerPolicy="no-referrer"
               />
               <div className="mt-3">
-                <ProfilePictureUpload studentId={studentId} uploadAction={uploadProfilePicture} />
+                <ProfilePictureUpload studentId={studentId} uploadAction={uploadProfilePicture} existingImageUrl={student.avatar_url} />
               </div>
             </div>
           </div>

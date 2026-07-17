@@ -8,9 +8,11 @@ type ImageSize = { width: number; height: number }
 export default function ProfilePictureUpload({
   studentId,
   uploadAction,
+  existingImageUrl,
 }: {
   studentId: string
   uploadAction: (studentId: string, formData: FormData) => Promise<unknown>
+  existingImageUrl?: string | null
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
@@ -35,9 +37,7 @@ export default function ProfilePictureUpload({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const prepareSource = async (file: File) => {
     setIsPreparing(true)
     try {
       const prepared = await imageCompression(file, {
@@ -64,6 +64,29 @@ export default function ProfilePictureUpload({
       console.error('Image preparation failed', error)
       setIsPreparing(false)
       alert('Failed to prepare this picture.')
+    }
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    await prepareSource(file)
+  }
+
+  const editCurrentPicture = async () => {
+    if (!existingImageUrl) return
+    setIsPreparing(true)
+    try {
+      const response = await fetch(existingImageUrl, { cache: 'no-store' })
+      if (!response.ok) throw new Error(`Image request failed (${response.status})`)
+      const blob = await response.blob()
+      if (!blob.type.startsWith('image/')) throw new Error('Current profile URL is not an image.')
+      const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'
+      await prepareSource(new File([blob], `current-profile.${extension}`, { type: blob.type }))
+    } catch (error) {
+      console.error('Existing image could not be loaded', error)
+      setIsPreparing(false)
+      alert('Current profile picture could not be opened. Please download it and choose it again.')
     }
   }
 
@@ -130,10 +153,17 @@ export default function ProfilePictureUpload({
 
   return (
     <div className="flex flex-col items-center space-y-2">
-      <label className={`inline-flex min-h-11 cursor-pointer items-center rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}>
-        <span>{isPreparing ? 'Preparing…' : isPending ? 'Uploading…' : 'Change Picture'}</span>
-        <input ref={fileInputRef} type="file" name="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleFileChange} disabled={isLoading} />
-      </label>
+      <div className="flex flex-wrap justify-center gap-2">
+        {existingImageUrl && (
+          <button type="button" onClick={editCurrentPicture} disabled={isLoading} className="inline-flex min-h-11 items-center rounded-full border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50">
+            {isPreparing ? 'Preparing…' : 'Edit Current Picture'}
+          </button>
+        )}
+        <label className={`inline-flex min-h-11 cursor-pointer items-center rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}>
+          <span>{isPreparing ? 'Preparing…' : isPending ? 'Uploading…' : existingImageUrl ? 'Choose New Picture' : 'Add Picture'}</span>
+          <input ref={fileInputRef} type="file" name="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleFileChange} disabled={isLoading} />
+        </label>
+      </div>
 
       {sourceUrl && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="profile-crop-title">
