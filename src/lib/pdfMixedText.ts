@@ -35,6 +35,10 @@ function escapeXml(value: string) {
     .replaceAll("'", '&apos;')
 }
 
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value))
+}
+
 function measure(value: string, fontSize: number, bold: boolean) {
   const font = bold ? boldFont : regularFont
   return (font.layout(value).advanceWidth / font.unitsPerEm) * fontSize
@@ -118,20 +122,60 @@ async function renderMyanmarText(
     const height = Math.max(lineHeight, lines.length * lineHeight) + (padding * 2)
     const pixelWidth = Math.max(1, Math.ceil(width * scale))
     const pixelHeight = Math.max(1, Math.ceil(height * scale))
-    const fontBuffer = bold ? boldFontBuffer : regularFontBuffer
-    const family = bold ? 'Walone Bold' : 'Walone Regular'
-    const anchor = align === 'center' ? 'middle' : align === 'right' ? 'end' : 'start'
-    const x = align === 'center' ? pixelWidth / 2 : align === 'right' ? pixelWidth - (padding * scale) : padding * scale
-    const baseline = (padding + (fontSize * 0.95)) * scale
-    const tspans = lines.map((line, index) => (
-      `<text x="${x}" y="${baseline + (index * lineHeight * scale)}" text-anchor="${anchor}" fill="${escapeXml(color)}" font-family="${family}" font-size="${fontSize * scale}">${escapeXml(line)}</text>`
-    )).join('')
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${pixelHeight}">
-      <style>@font-face{font-family:'${family}';src:url(data:font/ttf;base64,${fontBuffer.toString('base64')}) format('truetype');}</style>
-      ${tspans}
-    </svg>`
+    const fontFile = bold ? boldFontPath : regularFontPath
+    const font = bold ? `Z06-Walone Bold ${fontSize}` : `Z06-Walone ${fontSize}`
+    const innerWidth = Math.max(1, pixelWidth - (padding * scale * 2))
+    const lineSlotHeight = Math.max(1, Math.floor(lineHeight * scale))
+    const overlays: sharp.OverlayOptions[] = []
+
+    for (const [index, line] of lines.entries()) {
+      if (!line) continue
+
+      const renderedLine = await sharp({
+        text: {
+          text: `<span foreground="${escapeXml(color)}">${escapeXml(line)}</span>`,
+          font,
+          fontfile: fontFile,
+          dpi: 72 * scale,
+          rgba: true,
+        },
+      })
+        .resize({
+          width: innerWidth,
+          height: lineSlotHeight,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer({ resolveWithObject: true })
+
+      const left = align === 'center'
+        ? Math.round((pixelWidth - renderedLine.info.width) / 2)
+        : align === 'right'
+          ? pixelWidth - (padding * scale) - renderedLine.info.width
+          : padding * scale
+      const top = (padding * scale) + (index * lineSlotHeight)
+      overlays.push({
+        input: renderedLine.data,
+        left: clamp(left, 0, Math.max(0, pixelWidth - renderedLine.info.width)),
+        top: clamp(top, 0, Math.max(0, pixelHeight - renderedLine.info.height)),
+      })
+    }
+
+    const png = await sharp({
+      create: {
+        width: pixelWidth,
+        height: pixelHeight,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite(overlays)
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+
     return {
-      png: await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer(),
+      png,
       height,
     }
   })()
