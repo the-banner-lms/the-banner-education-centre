@@ -7,6 +7,7 @@ export type Profile = {
   avatar_url: string | null
   assigned_class: string | null
   assigned_subclass: string | null
+  yle_monthly_fee: number | string | null
   address: string | null
   student_number: string | null
   role: 'super_admin' | 'admin' | 'editor' | 'teacher' | 'student' | 'staff' | 'guest'

@@ -14,6 +14,7 @@ type Student = {
   avatar_url?: string | null
   assigned_class?: string | null
   assigned_subclass?: string | null
+  yle_monthly_fee?: number | string | null
   address?: string | null
   student_number?: string | null
 }
@@ -24,6 +25,7 @@ function StudentDetailsForm({ student }: { student: Student }) {
       studentId={student.id}
       assignedClass={student.assigned_class}
       assignedSubclass={student.assigned_subclass}
+      yleMonthlyFee={student.yle_monthly_fee}
       address={student.address}
       compact
     />

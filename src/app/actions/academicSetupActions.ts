@@ -126,7 +126,7 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   const { data: students, error: studentError } = await access.supabase
     .from('profiles')
-    .select('id, assigned_class, assigned_subclass')
+    .select('id, assigned_class, assigned_subclass, yle_monthly_fee')
     .eq('role', 'student')
     .eq('approval_status', 'approved')
   if (studentError) finish(formData, 'error', 'Students could not be loaded.')
@@ -146,7 +146,9 @@ export async function generateMonthlyInvoices(formData: FormData) {
     const basePlan = feesByClass.get(student.assigned_class)
     const ylePlan = student.assigned_subclass ? yleFees.get(student.assigned_subclass) : undefined
     const baseAmount = Number(basePlan?.amount || 0)
-    const yleAmount = Number(ylePlan?.amount || 0)
+    const yleAmount = student.assigned_subclass
+      ? Number(student.yle_monthly_fee ?? ylePlan?.amount ?? 0)
+      : 0
     const totalAmount = baseAmount + yleAmount
     if (totalAmount <= 0) return []
 

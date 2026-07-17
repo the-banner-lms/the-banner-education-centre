@@ -88,6 +88,7 @@ export default function StudentManager({
                 studentId={studentId}
                 assignedClass={student.assigned_class}
                 assignedSubclass={student.assigned_subclass}
+                yleMonthlyFee={student.yle_monthly_fee}
                 address={student.address}
               />
             )}

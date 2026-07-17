@@ -13,12 +13,14 @@ export default function StudentAssignmentForm({
   studentId,
   assignedClass: initialClass,
   assignedSubclass,
+  yleMonthlyFee,
   address,
   compact = false,
 }: {
   studentId: string
   assignedClass?: string | null
   assignedSubclass?: string | null
+  yleMonthlyFee?: number | string | null
   address?: string | null
   compact?: boolean
 }) {
@@ -78,6 +80,27 @@ export default function StudentAssignmentForm({
           ))}
         </select>
       </div>
+
+      {allowsYle && selectedSubclass && (
+        <div className="min-w-0">
+          <label htmlFor={`yle-monthly-fee-${studentId}`} className={compact ? 'mb-1 block text-xs font-semibold text-gray-600' : 'block text-sm font-semibold text-gray-800'}>
+            YLE Tuition Fee (MMK)
+          </label>
+          <input
+            id={`yle-monthly-fee-${studentId}`}
+            name="yle_monthly_fee"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            max="100000000"
+            step="100"
+            defaultValue={yleMonthlyFee ?? ''}
+            placeholder="Use section default fee"
+            className={`${compact ? 'min-h-10 px-3 py-1.5 text-sm' : 'mt-2 min-h-11 px-3 py-2'} w-full rounded-lg border border-gray-300 bg-white text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20`}
+          />
+          {!compact && <p className="mt-1 text-xs text-gray-500">Leave blank to use the YLE section fee from Academic Setup.</p>}
+        </div>
+      )}
 
       <div className="min-w-0">
         <label htmlFor={`address-${studentId}`} className={compact ? 'mb-1 block text-xs font-semibold text-gray-600' : 'block text-sm font-semibold text-gray-800'}>Address</label>

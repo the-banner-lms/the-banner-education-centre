@@ -88,6 +88,7 @@ export async function createManualStudent(
   const confirmPassword = String(formData.get('confirm_password') || '')
   const assignedClass = String(formData.get('assigned_class') || '')
   const requestedSubclass = String(formData.get('assigned_subclass') || '')
+  const yleMonthlyFeeText = String(formData.get('yle_monthly_fee') || '').trim().replace(/,/g, '')
   const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   const requestedStatus = String(formData.get('approval_status') || 'approved')
   const approvalStatus = requestedStatus === 'pending' ? 'pending' : 'approved'
@@ -125,6 +126,11 @@ export async function createManualStudent(
   }
 
   const assignedSubclass = assignedClass === 'pre-kg' ? null : requestedSubclass || null
+  const yleMonthlyFee = assignedSubclass && yleMonthlyFeeText !== '' ? Number(yleMonthlyFeeText) : null
+
+  if (yleMonthlyFee !== null && (!Number.isFinite(yleMonthlyFee) || yleMonthlyFee < 0 || yleMonthlyFee > 100000000)) {
+    return { error: 'Enter a valid YLE monthly tuition fee.' }
+  }
 
   if (address.length < 3 || address.length > 300) {
     return { error: 'Address must be between 3 and 300 characters.' }
@@ -138,6 +144,7 @@ export async function createManualStudent(
       full_name: fullName,
       assigned_class: assignedClass,
       assigned_subclass: assignedSubclass,
+      yle_monthly_fee: yleMonthlyFee,
       address,
     },
   })
@@ -165,6 +172,7 @@ export async function createManualStudent(
       full_name: fullName,
       assigned_class: assignedClass,
       assigned_subclass: assignedSubclass,
+      yle_monthly_fee: yleMonthlyFee,
       address,
       student_number: studentNumber,
       role: 'student',
@@ -199,6 +207,7 @@ export async function updateStudentDetails(
 
   const assignedClass = String(formData.get('assigned_class') || '')
   const requestedSubclass = String(formData.get('assigned_subclass') || '')
+  const yleMonthlyFeeText = String(formData.get('yle_monthly_fee') || '').trim().replace(/,/g, '')
   const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   if (!isStudentClass(assignedClass)) {
     return { error: 'Select a valid student class.', success: null }
@@ -213,6 +222,11 @@ export async function updateStudentDetails(
   }
 
   const assignedSubclass = assignedClass === 'pre-kg' ? null : requestedSubclass || null
+  const yleMonthlyFee = assignedSubclass && yleMonthlyFeeText !== '' ? Number(yleMonthlyFeeText) : null
+
+  if (yleMonthlyFee !== null && (!Number.isFinite(yleMonthlyFee) || yleMonthlyFee < 0 || yleMonthlyFee > 100000000)) {
+    return { error: 'Enter a valid YLE monthly tuition fee.', success: null }
+  }
 
   if (address.length < 3 || address.length > 300) {
     return { error: 'Address must be between 3 and 300 characters.', success: null }
@@ -243,6 +257,7 @@ export async function updateStudentDetails(
     .update({
       assigned_class: assignedClass,
       assigned_subclass: assignedSubclass,
+      yle_monthly_fee: yleMonthlyFee,
       address,
       student_number: studentNumber,
     })
@@ -263,7 +278,7 @@ export async function updateStudentDetails(
   revalidatePath(`/staff/students/${studentId}`)
   revalidatePath(`/teacher/students/${studentId}`)
   revalidatePath(`/dashboard/${studentId}`)
-  return { error: null, success: 'Student assignment and address saved.' }
+  return { error: null, success: 'Student assignment, YLE tuition fee and address saved.' }
 }
 
 export async function uploadProfilePicture(studentId: string, formData: FormData) {
