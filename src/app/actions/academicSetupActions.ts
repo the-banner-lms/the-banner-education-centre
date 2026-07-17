@@ -101,24 +101,34 @@ export async function generateMonthlyInvoices(formData: FormData) {
 
   const { data: schoolClasses, error: classError } = await access.supabase
     .from('school_classes')
-    .select('code, name, monthly_fee')
+    .select('code, name, monthly_fee, class_sections(name, monthly_fee, is_active)')
     .eq('academic_year', settings.academic_year)
     .eq('is_active', true)
-    .gt('monthly_fee', 0)
   if (classError) finish(formData, 'error', 'Class fee plans could not be loaded.')
 
   const feesByClass = new Map((schoolClasses || []).map(item => [item.code, {
     name: item.name,
-    amount: Number(item.monthly_fee),
+    amount: item.code === 'yle' ? 0 : Number(item.monthly_fee),
   }]))
-  if (!feesByClass.size) finish(formData, 'error', 'Set a monthly fee greater than 0 for at least one active class first.')
+  const yleClass = (schoolClasses || []).find(item => item.code === 'yle')
+  const normalizeSection = (value: string) => value.trim().toLowerCase().replace(/\s+/g, '-')
+  const yleFees = new Map(
+    (yleClass?.class_sections || [])
+      .filter(section => section.is_active)
+      .map(section => [normalizeSection(section.name), {
+        name: section.name,
+        amount: Number(section.monthly_fee),
+      }]),
+  )
+  const hasConfiguredFee = [...feesByClass.values()].some(plan => plan.amount > 0)
+    || [...yleFees.values()].some(plan => plan.amount > 0)
+  if (!hasConfiguredFee) finish(formData, 'error', 'Set a base class fee or YLE section fee greater than 0 first.')
 
   const { data: students, error: studentError } = await access.supabase
     .from('profiles')
-    .select('id, assigned_class')
+    .select('id, assigned_class, assigned_subclass')
     .eq('role', 'student')
     .eq('approval_status', 'approved')
-    .in('assigned_class', [...feesByClass.keys()])
   if (studentError) finish(formData, 'error', 'Students could not be loaded.')
   if (!students?.length) finish(formData, 'error', 'No approved students match the configured classes.')
 
@@ -133,14 +143,23 @@ export async function generateMonthlyInvoices(formData: FormData) {
   const existingStudentIds = new Set((existing || []).map(row => row.student_id))
   const rows = students.flatMap(student => {
     if (!student.assigned_class || existingStudentIds.has(student.id)) return []
-    const plan = feesByClass.get(student.assigned_class)
-    if (!plan) return []
+    const basePlan = feesByClass.get(student.assigned_class)
+    const ylePlan = student.assigned_subclass ? yleFees.get(student.assigned_subclass) : undefined
+    const baseAmount = Number(basePlan?.amount || 0)
+    const yleAmount = Number(ylePlan?.amount || 0)
+    const totalAmount = baseAmount + yleAmount
+    if (totalAmount <= 0) return []
+
+    const breakdown = [
+      ...(baseAmount > 0 && basePlan ? [`${basePlan.name} ${baseAmount.toLocaleString('en-US')} MMK`] : []),
+      ...(yleAmount > 0 && ylePlan ? [`YLE ${ylePlan.name} ${yleAmount.toLocaleString('en-US')} MMK`] : []),
+    ].join(' + ')
     return [{
       student_id: student.id,
       month_year: monthYear,
       status: 'unpaid',
-      amount: plan.amount,
-      remarks: `${settings.current_term} · ${plan.name} monthly tuition`,
+      amount: totalAmount,
+      remarks: `${settings.current_term} · ${breakdown}`,
       staff_id: access.userId,
       email_status: 'not_applicable',
     }]
@@ -265,13 +284,16 @@ export async function createClassSection(classId: string, formData: FormData) {
   if (!/^[0-9a-f-]{36}$/i.test(classId)) finish(formData, 'error', 'Invalid class record.')
 
   const name = cleanText(formData, 'name')
+  const monthlyFee = Number(cleanText(formData, 'monthly_fee').replace(/,/g, ''))
   const sortOrder = Number(cleanText(formData, 'sort_order') || '0')
   if (name.length < 1 || name.length > 60) finish(formData, 'error', 'Section name must be between 1 and 60 characters.')
+  if (!Number.isFinite(monthlyFee) || monthlyFee < 0 || monthlyFee > 100000000) finish(formData, 'error', 'Enter a valid section monthly fee.')
   if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) finish(formData, 'error', 'Enter a valid display order.')
 
   const { error } = await access.supabase.from('class_sections').insert({
     class_id: classId,
     name,
+    monthly_fee: Math.round(monthlyFee * 100) / 100,
     sort_order: sortOrder,
     created_by: access.userId,
   })
@@ -291,13 +313,16 @@ export async function updateClassSection(sectionId: string, formData: FormData) 
   if (!/^[0-9a-f-]{36}$/i.test(sectionId)) finish(formData, 'error', 'Invalid section record.')
 
   const name = cleanText(formData, 'name')
+  const monthlyFee = Number(cleanText(formData, 'monthly_fee').replace(/,/g, ''))
   const sortOrder = Number(cleanText(formData, 'sort_order') || '0')
   const isActive = cleanText(formData, 'is_active') === 'true'
   if (name.length < 1 || name.length > 60) finish(formData, 'error', 'Section name must be between 1 and 60 characters.')
+  if (!Number.isFinite(monthlyFee) || monthlyFee < 0 || monthlyFee > 100000000) finish(formData, 'error', 'Enter a valid section monthly fee.')
   if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) finish(formData, 'error', 'Enter a valid display order.')
 
   const { error } = await access.supabase.from('class_sections').update({
     name,
+    monthly_fee: Math.round(monthlyFee * 100) / 100,
     sort_order: sortOrder,
     is_active: isActive,
     updated_at: new Date().toISOString(),

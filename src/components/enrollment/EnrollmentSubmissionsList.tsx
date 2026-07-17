@@ -128,7 +128,7 @@ export default function EnrollmentSubmissionsList({ submissions }: { submissions
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Class</p>
               <p className="mt-1 font-semibold text-gray-900">
                 {getStudentClassLabel(submission.assigned_class)}
-                {submission.assigned_class === 'yle' ? ` · ${getYleSubclassLabel(submission.assigned_subclass)}` : ''}
+                {submission.assigned_subclass ? ` · YLE ${getYleSubclassLabel(submission.assigned_subclass)}` : ''}
               </p>
             </div>
             <div>

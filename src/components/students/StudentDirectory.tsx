@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { updateStudentDetails } from '@/app/actions/studentActions'
 import {
   getStudentClassLabel,
   getYleSubclassLabel,
-  STUDENT_CLASSES,
   YLE_SUBCLASSES,
+  STUDENT_CLASSES,
 } from '@/lib/studentClasses'
+import StudentAssignmentForm from '@/components/students/StudentAssignmentForm'
 
 type Student = {
   id: string
@@ -19,63 +19,14 @@ type Student = {
 }
 
 function StudentDetailsForm({ student }: { student: Student }) {
-  const fieldId = `assigned-class-${student.id}`
-  const subclassId = `assigned-subclass-${student.id}`
-  const addressId = `address-${student.id}`
-
   return (
-    <form action={updateStudentDetails.bind(null, student.id)} className="grid min-w-0 gap-3 xl:grid-cols-[minmax(8rem,0.6fr)_minmax(10rem,0.75fr)_minmax(14rem,1.2fr)_auto] xl:items-end">
-      <div>
-        <label htmlFor={fieldId} className="mb-1 block text-xs font-semibold text-gray-600">Class</label>
-        <select
-          id={fieldId}
-          name="assigned_class"
-          required
-          defaultValue={student.assigned_class || ''}
-          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
-        >
-          <option value="" disabled>Select class</option>
-          {STUDENT_CLASSES.map((studentClass) => (
-            <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label htmlFor={subclassId} className="mb-1 block text-xs font-semibold text-gray-600">YLE Sub-class</label>
-        <select
-          id={subclassId}
-          name="assigned_subclass"
-          defaultValue={student.assigned_subclass || ''}
-          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
-        >
-          <option value="">Not applicable / select for YLE</option>
-          {YLE_SUBCLASSES.map((subclass) => (
-            <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label htmlFor={addressId} className="mb-1 block text-xs font-semibold text-gray-600">Address</label>
-        <input
-          id={addressId}
-          name="address"
-          type="text"
-          required
-          minLength={3}
-          maxLength={300}
-          defaultValue={student.address || ''}
-          placeholder="Enter student address"
-          autoComplete="street-address"
-          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
-        />
-      </div>
-      <button
-        type="submit"
-        className="min-h-10 shrink-0 rounded-lg bg-[#0f6630] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#0b5226] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6630] focus-visible:ring-offset-1"
-      >
-        Save
-      </button>
-    </form>
+    <StudentAssignmentForm
+      studentId={student.id}
+      assignedClass={student.assigned_class}
+      assignedSubclass={student.assigned_subclass}
+      address={student.address}
+      compact
+    />
   )
 }
 
@@ -112,9 +63,9 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                   <span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
                     {getStudentClassLabel(student.assigned_class)}
                   </span>
-                  {student.assigned_class === 'yle' && (
+                  {student.assigned_subclass && (
                     <span className="ml-1 mt-1 inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
-                      {getYleSubclassLabel(student.assigned_subclass)}
+                      YLE: {getYleSubclassLabel(student.assigned_subclass)}
                     </span>
                   )}
                 </div>
@@ -130,9 +81,9 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned Class</p>
                     <p className="mt-1 font-semibold text-[#0f6630]">{getStudentClassLabel(student.assigned_class)}</p>
-                    {student.assigned_class === 'yle' && (
+                    {student.assigned_subclass && (
                       <>
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">YLE Sub-class</p>
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">YLE Dual / Sub-class</p>
                         <p className="mt-1 font-semibold text-blue-700">{getYleSubclassLabel(student.assigned_subclass)}</p>
                       </>
                     )}

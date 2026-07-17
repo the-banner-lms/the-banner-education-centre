@@ -18,6 +18,7 @@ export type AcademicSettings = {
 export type AcademicSection = {
   id: string
   name: string
+  monthly_fee: number | string
   sort_order: number
   is_active: boolean
 }
@@ -59,7 +60,15 @@ export default function AcademicSetupPanel({
   const activeClasses = classes.filter(schoolClass => schoolClass.is_active).length
   const totalMonthlyFees = classes
     .filter(schoolClass => schoolClass.is_active)
-    .reduce((sum, schoolClass) => sum + Number(schoolClass.monthly_fee || 0), 0)
+    .reduce((sum, schoolClass) => (
+      sum
+      + (schoolClass.code === 'yle' ? 0 : Number(schoolClass.monthly_fee || 0))
+      + (schoolClass.code === 'yle'
+        ? (schoolClass.class_sections || [])
+          .filter(section => section.is_active)
+          .reduce((sectionSum, section) => sectionSum + Number(section.monthly_fee || 0), 0)
+        : 0)
+    ), 0)
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -118,7 +127,7 @@ export default function AcademicSetupPanel({
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 id="generate-invoices-title" className="text-xl font-black text-gray-950">Generate Monthly Invoices</h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">Creates one unpaid invoice for every approved student whose class has a monthly fee. Existing invoices for the selected month are kept unchanged.</p>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">Creates one unpaid invoice for every approved student. A YLE dual fee is added separately from the student&apos;s base class fee. Existing invoices for the selected month are kept unchanged.</p>
           </div>
           <form action={generateMonthlyInvoices} className="grid shrink-0 gap-3 sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
             <ReturnPath value={returnPath} />
@@ -186,7 +195,14 @@ export default function AcademicSetupPanel({
                   <input name="code" required minLength={2} maxLength={32} defaultValue={schoolClass.code} className={inputClass} />
                 </label>
                 <label className={labelClass}>Monthly Fee
-                  <input name="monthly_fee" type="number" min="0" max="100000000" step="100" required defaultValue={Number(schoolClass.monthly_fee)} className={inputClass} />
+                  {schoolClass.code === 'yle' ? (
+                    <>
+                      <input type="hidden" name="monthly_fee" value="0" />
+                      <input type="number" value="0" disabled aria-label="YLE parent fee is set per sub-class" className={`${inputClass} cursor-not-allowed bg-gray-100 text-gray-500`} />
+                    </>
+                  ) : (
+                    <input name="monthly_fee" type="number" min="0" max="100000000" step="100" required defaultValue={Number(schoolClass.monthly_fee)} className={inputClass} />
+                  )}
                 </label>
                 <label className={labelClass}>Order
                   <input name="sort_order" type="number" min="0" max="10000" required defaultValue={schoolClass.sort_order} className={inputClass} />
@@ -204,7 +220,7 @@ export default function AcademicSetupPanel({
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="font-black text-gray-900">Sections</h3>
-                    <p className="text-xs text-gray-500">Examples: A, B, Morning, Weekend</p>
+                    <p className="text-xs text-gray-500">YLE sections use their own monthly fees; students in KG–Primary 6 can take YLE as a dual class.</p>
                   </div>
                   <p className="text-xs font-bold text-gray-500">{sections.filter(section => section.is_active).length} active</p>
                 </div>
@@ -214,13 +230,16 @@ export default function AcademicSetupPanel({
                     {sections.map(section => {
                       const updateSectionAction = updateClassSection.bind(null, section.id)
                       return (
-                        <form key={section.id} action={updateSectionAction} className="grid gap-2 rounded-xl border border-gray-200 p-3 sm:grid-cols-[1fr_.5fr_.8fr_auto] sm:items-end">
+                        <form key={section.id} action={updateSectionAction} className="grid gap-2 rounded-xl border border-gray-200 p-3 sm:grid-cols-2 lg:grid-cols-[1fr_.8fr_.5fr_.8fr_auto] lg:items-end">
                           <ReturnPath value={returnPath} />
                           <label className={labelClass}>Section Name
                             <input name="name" required minLength={1} maxLength={60} defaultValue={section.name} className={compactInputClass} />
                           </label>
                           <label className={labelClass}>Order
                             <input name="sort_order" type="number" min="0" max="10000" required defaultValue={section.sort_order} className={compactInputClass} />
+                          </label>
+                          <label className={labelClass}>Monthly Fee (MMK)
+                            <input name="monthly_fee" type="number" min="0" max="100000000" step="100" required defaultValue={Number(section.monthly_fee || 0)} className={compactInputClass} />
                           </label>
                           <label className={labelClass}>Status
                             <select name="is_active" defaultValue={String(section.is_active)} className={compactInputClass}>
@@ -235,10 +254,13 @@ export default function AcademicSetupPanel({
                   </div>
                 )}
 
-                <form action={createSectionAction} className="mt-4 grid gap-2 rounded-xl border border-dashed border-green-300 bg-green-50/40 p-3 sm:grid-cols-[1fr_.5fr_auto] sm:items-end">
+                <form action={createSectionAction} className="mt-4 grid gap-2 rounded-xl border border-dashed border-green-300 bg-green-50/40 p-3 sm:grid-cols-2 lg:grid-cols-[1fr_.8fr_.5fr_auto] lg:items-end">
                   <ReturnPath value={returnPath} />
                   <label className={labelClass}>New Section
                     <input name="name" required minLength={1} maxLength={60} placeholder="Section A" className={compactInputClass} />
+                  </label>
+                  <label className={labelClass}>Monthly Fee (MMK)
+                    <input name="monthly_fee" type="number" min="0" max="100000000" step="100" required defaultValue="0" className={compactInputClass} />
                   </label>
                   <label className={labelClass}>Order
                     <input name="sort_order" type="number" min="0" max="10000" required defaultValue="10" className={compactInputClass} />

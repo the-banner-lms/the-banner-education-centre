@@ -318,6 +318,7 @@ CREATE TABLE public.class_sections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   class_id UUID NOT NULL REFERENCES public.school_classes(id) ON DELETE CASCADE,
   name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 60),
+  monthly_fee NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (monthly_fee BETWEEN 0 AND 100000000),
   sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order BETWEEN 0 AND 10000),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -420,11 +421,12 @@ AS $$
 DECLARE
   v_prefix TEXT;
   v_student_number TEXT;
-  v_month TEXT;
+  v_month_number TEXT;
+  v_month_name TEXT;
 BEGIN
   v_prefix := regexp_replace(upper(trim(COALESCE(p_prefix, 'TBEC'))), '[^A-Z0-9-]', '-', 'g');
   v_student_number := regexp_replace(upper(trim(COALESCE(p_student_number, 'STUDENT'))), '[^A-Z0-9-]', '-', 'g');
-  v_month := split_part(COALESCE(p_month_year, ''), '-', 2);
+  v_month_number := split_part(COALESCE(p_month_year, ''), '-', 2);
 
   IF char_length(v_prefix) < 2 OR char_length(v_prefix) > 16 THEN
     v_prefix := 'TBEC';
@@ -432,11 +434,16 @@ BEGIN
   IF char_length(v_student_number) < 2 OR char_length(v_student_number) > 64 THEN
     v_student_number := 'STUDENT';
   END IF;
-  IF v_month !~ '^(0[1-9]|1[0-2])$' THEN
+  IF COALESCE(p_month_year, '') !~ '^\d{4}-(0[1-9]|1[0-2])$' THEN
     RAISE EXCEPTION 'Invalid invoice month';
   END IF;
 
-  RETURN format('%s-%s-%s', v_prefix, v_student_number, v_month);
+  v_month_name := to_char(
+    make_date(split_part(p_month_year, '-', 1)::INTEGER, v_month_number::INTEGER, 1),
+    'FMMonth'
+  );
+
+  RETURN format('%s-%s-%s', v_prefix, v_student_number, v_month_name);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.format_tuition_invoice_number(TEXT, TEXT, TEXT) FROM PUBLIC;

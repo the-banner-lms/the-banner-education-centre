@@ -54,6 +54,11 @@ export type ManualStudentState = {
   error: string | null
 }
 
+export type StudentAssignmentState = {
+  error: string | null
+  success: string | null
+}
+
 async function createStudentNumber(assignedClass: string) {
   const { data, error } = await supabaseAdmin.rpc('next_student_number', {
     p_class_code: assignedClass,
@@ -115,7 +120,11 @@ export async function createManualStudent(
     return { error: 'Select a valid YLE sub-class for the student.' }
   }
 
-  const assignedSubclass = assignedClass === 'yle' ? requestedSubclass : null
+  if (assignedClass !== 'pre-kg' && requestedSubclass && !isYleSubclass(requestedSubclass)) {
+    return { error: 'Select a valid YLE sub-class for the student.' }
+  }
+
+  const assignedSubclass = assignedClass === 'pre-kg' ? null : requestedSubclass || null
 
   if (address.length < 3 || address.length > 300) {
     return { error: 'Address must be between 3 and 300 characters.' }
@@ -177,24 +186,36 @@ export async function createManualStudent(
   redirect(`${basePath}/${studentId}`)
 }
 
-export async function updateStudentDetails(studentId: string, formData: FormData) {
-  await verifyStaffAccess()
+export async function updateStudentDetails(
+  studentId: string,
+  _previousState: StudentAssignmentState,
+  formData: FormData,
+): Promise<StudentAssignmentState> {
+  try {
+    await verifyStaffAccess()
+  } catch {
+    return { error: 'You do not have permission to update student assignments.', success: null }
+  }
 
   const assignedClass = String(formData.get('assigned_class') || '')
   const requestedSubclass = String(formData.get('assigned_subclass') || '')
   const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   if (!isStudentClass(assignedClass)) {
-    throw new Error('Select a valid student class.')
+    return { error: 'Select a valid student class.', success: null }
   }
 
   if (assignedClass === 'yle' && !isYleSubclass(requestedSubclass)) {
-    throw new Error('Select a valid YLE sub-class.')
+    return { error: 'Select a valid YLE sub-class.', success: null }
   }
 
-  const assignedSubclass = assignedClass === 'yle' ? requestedSubclass : null
+  if (assignedClass !== 'pre-kg' && requestedSubclass && !isYleSubclass(requestedSubclass)) {
+    return { error: 'Select a valid YLE sub-class.', success: null }
+  }
+
+  const assignedSubclass = assignedClass === 'pre-kg' ? null : requestedSubclass || null
 
   if (address.length < 3 || address.length > 300) {
-    throw new Error('Address must be between 3 and 300 characters.')
+    return { error: 'Address must be between 3 and 300 characters.', success: null }
   }
 
   const { data: currentStudent, error: studentLookupError } = await supabaseAdmin
@@ -205,10 +226,17 @@ export async function updateStudentDetails(studentId: string, formData: FormData
     .single()
 
   if (studentLookupError || !currentStudent) {
-    throw new Error('Student profile not found.')
+    return { error: 'Student profile not found.', success: null }
   }
 
-  const studentNumber = currentStudent.student_number || await createStudentNumber(assignedClass)
+  let studentNumber = currentStudent.student_number
+  if (!studentNumber) {
+    try {
+      studentNumber = await createStudentNumber(assignedClass)
+    } catch {
+      return { error: 'A unique student ID could not be generated.', success: null }
+    }
+  }
 
   const { error } = await supabaseAdmin
     .from('profiles')
@@ -225,7 +253,7 @@ export async function updateStudentDetails(studentId: string, formData: FormData
 
   if (error) {
     console.error('Error updating student details:', error)
-    throw new Error('Failed to update the student class and address.')
+    return { error: 'Failed to update the student class, YLE assignment and address.', success: null }
   }
 
   revalidatePath('/admin/students')
@@ -235,6 +263,7 @@ export async function updateStudentDetails(studentId: string, formData: FormData
   revalidatePath(`/staff/students/${studentId}`)
   revalidatePath(`/teacher/students/${studentId}`)
   revalidatePath(`/dashboard/${studentId}`)
+  return { error: null, success: 'Student assignment and address saved.' }
 }
 
 export async function uploadProfilePicture(studentId: string, formData: FormData) {

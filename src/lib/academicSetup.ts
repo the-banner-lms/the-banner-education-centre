@@ -22,7 +22,7 @@ export async function getAcademicSetup(supabase: SupabaseClient) {
 
   const { data: classesData, error: classesError } = await supabase
     .from('school_classes')
-    .select('id, academic_year, code, name, monthly_fee, sort_order, is_active, class_sections(id, name, sort_order, is_active)')
+    .select('id, academic_year, code, name, monthly_fee, sort_order, is_active, class_sections(id, name, monthly_fee, sort_order, is_active)')
     .eq('academic_year', settings.academic_year)
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true })

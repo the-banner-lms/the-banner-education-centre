@@ -206,6 +206,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       <div className="space-y-5">
         {visibleGroups.map(group => {
           const summary = summaries.find(item => item.value === group.value)!
+          const showsYleDual = group.value !== 'pre-kg'
           return (
             <section key={group.value} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col gap-1 border-b border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -213,17 +214,17 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                 <p className="text-sm font-semibold text-gray-600">{summary.studentCount} students · {summary.recordedCount} recorded</p>
               </div>
               <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]" tabIndex={0} aria-label={`${group.label} monthly tuition table`}>
-                <table className={`w-full border-collapse text-left ${group.value === 'yle' ? 'min-w-[720px]' : 'min-w-[570px]'}`}>
+                <table className={`w-full border-collapse text-left ${showsYleDual ? 'min-w-[720px]' : 'min-w-[570px]'}`}>
                   <thead className="bg-white">
                     <tr className="border-b border-gray-200">
-                      {['Name + Student ID', ...(group.value === 'yle' ? ['YLE Status'] : []), 'Tuition Fee Status', 'Fees (MMK)'].map(label => (
+                      {['Name + Student ID', ...(showsYleDual ? ['YLE Dual / Sub-class'] : []), 'Tuition Fee Status', 'Fees (MMK)'].map(label => (
                         <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600 first:sticky first:left-0 first:z-20 first:bg-white">{label}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {group.students.length === 0 ? (
-                      <tr><td colSpan={group.value === 'yle' ? 4 : 3} className="px-4 py-7 text-center text-sm text-gray-500">No students assigned to this class.</td></tr>
+                      <tr><td colSpan={showsYleDual ? 4 : 3} className="px-4 py-7 text-center text-sm text-gray-500">No students assigned to this class.</td></tr>
                     ) : group.students.map(student => {
                       const tuition = tuitionState[student.id]
                       if (!tuition) return null
@@ -234,8 +235,10 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                             <p className="font-bold text-gray-900">{student.full_name || 'No Name'}</p>
                             <p className="mt-1 text-xs font-semibold text-gray-500">{student.student_number || 'Pending ID'}</p>
                           </td>
-                          {group.value === 'yle' && (
-                            <td className="min-w-40 px-4 py-3 text-sm font-semibold text-blue-700">{getYleSubclassLabel(student.assigned_subclass)}</td>
+                          {showsYleDual && (
+                            <td className="min-w-40 px-4 py-3 text-sm font-semibold text-blue-700">
+                              {student.assigned_subclass ? getYleSubclassLabel(student.assigned_subclass) : 'No YLE'}
+                            </td>
                           )}
                           <td className="min-w-48 px-4 py-3">
                             <select aria-label={`Payment status for ${student.full_name || student.email}`} value={tuition.status} onChange={event => updateTuition(student.id, 'status', event.target.value)} className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${tuition.status === 'paid' ? 'text-green-700' : tuition.status === 'scholar' ? 'text-blue-700' : 'text-red-700'}`}>
@@ -254,7 +257,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                   <tfoot className="border-t-2 border-banner-dark bg-green-50">
                     <tr>
                       <th className="sticky left-0 z-10 bg-green-50 px-4 py-3 text-sm font-black text-gray-900">{group.label} Total · {summary.studentCount} students</th>
-                      {group.value === 'yle' && <td className="px-4 py-3 text-sm font-semibold text-gray-600">YLE</td>}
+                      {showsYleDual && <td className="px-4 py-3 text-sm font-semibold text-gray-600">Optional dual</td>}
                       <td className="px-4 py-3 text-xs font-semibold text-gray-700">Paid {summary.paidCount} · Unpaid {summary.unpaidCount} · Scholar {summary.scholarCount}</td>
                       <td className="px-4 py-3 text-right text-base font-black text-banner-dark">{formatAmount(summary.total)}</td>
                     </tr>

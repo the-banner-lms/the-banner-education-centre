@@ -140,17 +140,17 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
               ))}
             </select>
           </div>
-          {assignedClass === 'yle' && (
+          {assignedClass && assignedClass !== 'pre-kg' && (
             <div>
-              <label htmlFor="assigned_subclass" className="block text-sm font-semibold text-gray-800">YLE Sub-class</label>
+              <label htmlFor="assigned_subclass" className="block text-sm font-semibold text-gray-800">YLE Dual / Sub-class</label>
               <select
                 id="assigned_subclass"
                 name="assigned_subclass"
-                required
+                required={assignedClass === 'yle'}
                 defaultValue=""
                 className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-[#0f6630] focus:ring-2 focus:ring-[#0f6630]/20"
               >
-                <option value="" disabled>Select a YLE sub-class</option>
+                <option value="">{assignedClass === 'yle' ? 'Select a YLE sub-class' : 'No YLE'}</option>
                 {YLE_SUBCLASSES.map((subclass) => (
                   <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
                 ))}

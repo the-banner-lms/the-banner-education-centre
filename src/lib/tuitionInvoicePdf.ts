@@ -132,8 +132,8 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.fillColor('#475569').font('Latin').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
     doc.text(data.student.email, left, 303, { width: 250 })
     const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
-    const subclassLabel = data.student.assigned_class === 'yle' && data.student.assigned_subclass
-      ? ` · ${getYleSubclassLabel(data.student.assigned_subclass)}`
+    const subclassLabel = data.student.assigned_subclass
+      ? ` · YLE ${getYleSubclassLabel(data.student.assigned_subclass)}`
       : ''
     doc.text(`Class: ${classLabel}${subclassLabel}`, left, 320, { width: 250 })
 

@@ -104,6 +104,9 @@ export async function submitEnrollment(
   if (assignedClass === 'yle' && !isYleSubclass(requestedSubclass)) {
     return { status: 'error', message: 'Please choose a YLE sub-class.' }
   }
+  if (assignedClass !== 'pre-kg' && requestedSubclass && !isYleSubclass(requestedSubclass)) {
+    return { status: 'error', message: 'Please choose a valid YLE sub-class.' }
+  }
   if (studentName.length < 2 || studentName.length > 100) {
     return { status: 'error', message: 'Student name must be between 2 and 100 characters.' }
   }
@@ -254,7 +257,7 @@ export async function submitEnrollment(
     .insert({
       submission_type: submissionType,
       assigned_class: assignedClass,
-      assigned_subclass: assignedClass === 'yle' ? requestedSubclass : null,
+      assigned_subclass: assignedClass === 'pre-kg' ? null : requestedSubclass || null,
       student_name: studentName,
       email,
       contact_number: contactNumber,

@@ -76,11 +76,11 @@ export default function EnrollmentForm({ type }: { type: 'new_enrollment' | 'mon
         </select>
       </div>
 
-      {selectedClass === 'yle' && (
+      {selectedClass && selectedClass !== 'pre-kg' && (
         <div>
-          <label htmlFor={`${fieldPrefix}-subclass`} className={labelClass}>YLE Sub-class</label>
-          <select id={`${fieldPrefix}-subclass`} name="assigned_subclass" required defaultValue="" className={inputClass}>
-            <option value="" disabled>Choose a YLE sub-class</option>
+          <label htmlFor={`${fieldPrefix}-subclass`} className={labelClass}>YLE Dual / Sub-class</label>
+          <select id={`${fieldPrefix}-subclass`} name="assigned_subclass" required={selectedClass === 'yle'} defaultValue="" className={inputClass}>
+            <option value="">{selectedClass === 'yle' ? 'Choose a YLE sub-class' : 'No YLE'}</option>
             {YLE_SUBCLASSES.map((subclass) => (
               <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
             ))}
