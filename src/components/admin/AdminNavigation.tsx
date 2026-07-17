@@ -21,7 +21,7 @@ import {
 } from '@heroicons/react/24/outline'
 
 const enrollmentsHref = '/admin/enrollments'
-const monthlyPaymentsHref = '/admin/enrollments?type=monthly_payment&status=all'
+const monthlyPaymentsHref = '/admin/enrollments?type=monthly_payment&status=all&class=all'
 
 const navigationGroups = [
   {
