@@ -65,11 +65,13 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    const fontDirectory = path.join(process.cwd(), 'node_modules', '@fontsource', 'noto-sans-myanmar', 'files')
-    doc.registerFont('Latin', path.join(fontDirectory, 'noto-sans-myanmar-latin-400-normal.woff'))
-    doc.registerFont('LatinBold', path.join(fontDirectory, 'noto-sans-myanmar-latin-700-normal.woff'))
-    doc.registerFont('Myanmar', path.join(fontDirectory, 'noto-sans-myanmar-myanmar-400-normal.woff'))
-    doc.registerFont('MyanmarBold', path.join(fontDirectory, 'noto-sans-myanmar-myanmar-700-normal.woff'))
+    const fontDirectory = path.join(process.cwd(), 'src', 'assets', 'fonts')
+    const regularFont = path.join(fontDirectory, 'Z06-Walone-Regular.ttf')
+    const boldFont = path.join(fontDirectory, 'Z06-Walone-Bold.ttf')
+    doc.registerFont('Latin', regularFont)
+    doc.registerFont('LatinBold', boldFont)
+    doc.registerFont('Myanmar', regularFont)
+    doc.registerFont('MyanmarBold', boldFont)
 
     const pageWidth = doc.page.width
     const left = 48

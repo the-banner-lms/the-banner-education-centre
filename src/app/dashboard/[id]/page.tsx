@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { canViewDashboard } from '@/utils/supabase/queries'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
-import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
+import StudentReportPanel from '@/components/StudentReportPanel'
 import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
 import TuitionAmountBreakdown from '@/components/TuitionAmountBreakdown'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
@@ -156,9 +156,6 @@ export default async function UniversalUserDashboardView(props: {
               />
             </div>
             
-            <div className="hide-in-pdf self-start sm:self-end mt-4 sm:mt-0">
-              <StudentReportDownloadButton studentId={studentId} weekStartDate={weekStartDateStr} />
-            </div>
           </div>
           
           <div>
@@ -181,6 +178,10 @@ export default async function UniversalUserDashboardView(props: {
 
       {isStudent && (
         <>
+          <StudentReportPanel
+            studentId={studentId}
+            canPreview={['admin', 'staff'].includes(currentUserProfile.role)}
+          />
           <WeeklyPerformanceDisplay 
             performances={currentPerformances}
             weekStartDate={weekStartDateStr}

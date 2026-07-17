@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@fontsource/noto-sans-myanmar": "^5.2.7",
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.12.0",

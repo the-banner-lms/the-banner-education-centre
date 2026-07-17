@@ -4,10 +4,16 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pdfkit'],
   outputFileTracingIncludes: {
     '/api/student-report': [
-      './node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-latin-400-normal.woff',
-      './node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-latin-700-normal.woff',
-      './node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-400-normal.woff',
-      './node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-700-normal.woff',
+      './src/assets/fonts/Z06-Walone-Regular.ttf',
+      './src/assets/fonts/Z06-Walone-Bold.ttf',
+    ],
+    '/api/tuition-invoice/[id]': [
+      './src/assets/fonts/Z06-Walone-Regular.ttf',
+      './src/assets/fonts/Z06-Walone-Bold.ttf',
+    ],
+    '/api/cron/student-reports': [
+      './src/assets/fonts/Z06-Walone-Regular.ttf',
+      './src/assets/fonts/Z06-Walone-Bold.ttf',
     ],
   },
   experimental: {

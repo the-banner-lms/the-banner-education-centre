@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
-import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
+import StudentReportPanel from '@/components/StudentReportPanel'
 import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
 import TuitionAmountBreakdown from '@/components/TuitionAmountBreakdown'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
@@ -155,10 +155,9 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
             </p>
           </div>
         </div>
-        <div className="hide-in-pdf">
-          <StudentReportDownloadButton studentId={user.id} weekStartDate={weekStartDateStr} />
-        </div>
       </div>
+
+      {profile.role === 'student' && <StudentReportPanel studentId={user.id} />}
 
       <WeeklyPerformanceDisplay 
         performances={currentPerformances}

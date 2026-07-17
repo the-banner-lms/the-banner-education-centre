@@ -3,13 +3,21 @@ import { canViewDashboard } from '@/utils/supabase/queries'
 import PDFDocument from 'pdfkit'
 import path from 'node:path'
 import { writeMixedPdfText } from '@/lib/pdfMixedText'
+import {
+  addIsoDays,
+  getCurrentMyanmarWeek,
+  getCurrentReportMonth,
+  isReportReleased,
+  monthBounds,
+  type StudentReportType,
+} from '@/lib/studentReportPeriods'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 type AttendanceStatus = 'present' | 'absent' | 'leave' | 'off' | null
 
-interface PerformanceRecord {
+export interface PerformanceRecord {
   week_start_date: string
   burmese_score: string | null
   english_score: string | null
@@ -24,7 +32,7 @@ interface PerformanceRecord {
   remarks: string | null
 }
 
-interface TuitionFeeRecord {
+export interface TuitionFeeRecord {
   month_year: string
   status: string
   amount: number
@@ -32,7 +40,7 @@ interface TuitionFeeRecord {
   created_at: string
 }
 
-interface AttendanceRecord {
+export interface AttendanceRecord {
   date: string
   morning_status: AttendanceStatus
   afternoon_status: AttendanceStatus
@@ -44,18 +52,48 @@ const bottomLimit = 800
 const maximumAvatarBytes = 5 * 1024 * 1024
 
 function getMyanmarWeekStart() {
-  const now = new Date()
-  const myanmarNow = new Date(now.getTime() + (390 * 60 * 1000))
-  const day = myanmarNow.getUTCDay()
-  const diff = day === 0 ? -6 : 1 - day
-  myanmarNow.setUTCDate(myanmarNow.getUTCDate() + diff)
-  return myanmarNow.toISOString().slice(0, 10)
+  return getCurrentMyanmarWeek()
 }
 
 function addDays(dateString: string, days: number) {
-  const [year, month, day] = dateString.split('-').map(Number)
-  const date = new Date(Date.UTC(year, month - 1, day + days))
-  return date.toISOString().slice(0, 10)
+  return addIsoDays(dateString, days)
+}
+
+function daysBetween(start: string, end: string) {
+  const [startYear, startMonth, startDay] = start.split('-').map(Number)
+  const [endYear, endMonth, endDay] = end.split('-').map(Number)
+  return Math.floor((Date.UTC(endYear, endMonth - 1, endDay) - Date.UTC(startYear, startMonth - 1, startDay)) / 86_400_000) + 1
+}
+
+function buildBurmeseMonthlySummary(performances: PerformanceRecord[], attendance: AttendanceRecord[]) {
+  const ratings = performances.flatMap(record => [
+    record.burmese_score, record.english_score, record.math_score, record.science_score,
+    record.sports_score, record.art_score, record.social_score, record.health_score,
+    record.teamwork_score, record.discipline_score,
+  ]).filter((value): value is string => Boolean(value))
+  const normalized = ratings.map(value => value.toLowerCase())
+  const excellent = normalized.filter(value => value.includes('excellent') || value.includes('အထူးကောင်း')).length
+  const needsImprovement = normalized.filter(value => value.includes('need') || value.includes('တိုးတက်ရန်')).length
+  const recordedAttendance = attendance.flatMap(record => [record.morning_status, record.afternoon_status])
+    .filter(status => status && status !== 'off')
+  const present = recordedAttendance.filter(status => status === 'present').length
+  const attendanceRate = recordedAttendance.length ? Math.round((present / recordedAttendance.length) * 100) : 0
+
+  let learning = 'ယခုလအတွက် သင်ယူမှုအချက်အလက် မပြည့်စုံသေးပါ။'
+  if (ratings.length > 0) {
+    learning = needsImprovement > Math.max(2, ratings.length / 3)
+      ? 'ယခုလတွင် သင်ယူမှုအပိုင်းအချို့ကို ပိုမိုလေ့ကျင့်ရန် လိုအပ်ပါသည်။'
+      : excellent >= Math.max(2, ratings.length / 3)
+        ? 'ယခုလတွင် သင်ယူမှုရလဒ် အထူးကောင်းမွန်ပါသည်။'
+        : 'ယခုလတွင် သင်ယူမှုရလဒ် ကောင်းမွန်ပါသည်။'
+  }
+  const attendanceText = recordedAttendance.length
+    ? ` တက်ရောက်မှု ${attendanceRate}% ရှိပါသည်။`
+    : ' တက်ရောက်မှုအချက်အလက် မရှိသေးပါ။'
+  const remarkText = performances.some(record => record.remarks?.trim())
+    ? ' ဆရာ/ဆရာမ၏ အပတ်စဉ်မှတ်ချက်များကို အောက်တွင် ထည့်သွင်းဖော်ပြထားပါသည်။'
+    : ''
+  return `${learning}${attendanceText}${remarkText}`
 }
 
 function formatDisplayDate(dateString: string) {
@@ -76,7 +114,7 @@ function isPrivateHostname(hostname: string) {
     || /^172\.(1[6-9]|2\d|3[01])\./.test(normalized)
 }
 
-async function loadAvatarImage(avatarUrl: string | null) {
+export async function loadAvatarImage(avatarUrl: string | null) {
   if (!avatarUrl) return null
 
   try {
@@ -210,19 +248,23 @@ function row(
 
 export function buildStudentReportPdf(options: {
   profile: { full_name: string | null; email: string | null; role: string; student_number: string | null }
+  reportType?: StudentReportType
   weekStart: string
+  periodEnd?: string
   performances: PerformanceRecord[]
   tuitionFees: TuitionFeeRecord[]
   attendance: AttendanceRecord[]
   avatarImage?: Buffer | null
 }) {
   return new Promise<Buffer>((resolve, reject) => {
+    const reportType = options.reportType || 'weekly'
+    const periodEnd = options.periodEnd || addDays(options.weekStart, 6)
     const doc = new PDFDocument({
       size: 'A4',
       margins: { top: pageMargin, right: pageMargin, bottom: pageMargin, left: pageMargin },
       bufferPages: true,
       info: {
-        Title: `${options.profile.full_name || 'Student'} - Weekly Report`,
+        Title: `${options.profile.full_name || 'Student'} - ${reportType === 'monthly' ? 'Monthly' : 'Weekly'} Report`,
         Author: 'The Banner Education Centre',
       },
     })
@@ -234,21 +276,22 @@ export function buildStudentReportPdf(options: {
 
     const fontDirectory = path.join(
       process.cwd(),
-      'node_modules',
-      '@fontsource',
-      'noto-sans-myanmar',
-      'files',
+      'src',
+      'assets',
+      'fonts',
     )
-    doc.registerFont('Latin', path.join(fontDirectory, 'noto-sans-myanmar-latin-400-normal.woff'))
-    doc.registerFont('LatinBold', path.join(fontDirectory, 'noto-sans-myanmar-latin-700-normal.woff'))
-    doc.registerFont('Myanmar', path.join(fontDirectory, 'noto-sans-myanmar-myanmar-400-normal.woff'))
-    doc.registerFont('MyanmarBold', path.join(fontDirectory, 'noto-sans-myanmar-myanmar-700-normal.woff'))
+    const regularFont = path.join(fontDirectory, 'Z06-Walone-Regular.ttf')
+    const boldFont = path.join(fontDirectory, 'Z06-Walone-Bold.ttf')
+    doc.registerFont('Latin', regularFont)
+    doc.registerFont('LatinBold', boldFont)
+    doc.registerFont('Myanmar', regularFont)
+    doc.registerFont('MyanmarBold', boldFont)
 
     drawCenteredProfilePicture(doc, options.profile.full_name, options.avatarImage)
     doc.fillColor('#312e81').font('LatinBold').fontSize(20).text('The Banner Education Centre', {
       align: 'center',
     })
-    doc.moveDown(0.2).fillColor('#64748b').font('Latin').fontSize(12).text('Student Weekly Report', {
+    doc.moveDown(0.2).fillColor('#64748b').font('Latin').fontSize(12).text(`Student ${reportType === 'monthly' ? 'Monthly Summary' : 'Weekly Report'}`, {
       align: 'center',
     })
     doc.moveDown(1)
@@ -261,12 +304,19 @@ export function buildStudentReportPdf(options: {
     doc.font('Latin').text(options.profile.email || '-')
     doc.font('LatinBold').text('Role: ', { continued: true })
     doc.font('Latin').text(options.profile.role)
-    doc.font('LatinBold').text('Week: ', { continued: true })
+    doc.font('LatinBold').text(`${reportType === 'monthly' ? 'Period' : 'Week'}: `, { continued: true })
     doc.font('Latin').text(
-      `${formatDisplayDate(options.weekStart)} to ${formatDisplayDate(addDays(options.weekStart, 6))}`,
+      `${formatDisplayDate(options.weekStart)} to ${formatDisplayDate(periodEnd)}`,
     )
 
-    sectionHeading(doc, 'Weekly Performance')
+    if (reportType === 'monthly') {
+      sectionHeading(doc, 'Monthly Summary')
+      doc.fillColor('#334155').fontSize(10)
+      writeMixedPdfText(doc, buildBurmeseMonthlySummary(options.performances, options.attendance), pageMargin, doc.y, { width: contentWidth, lineGap: 4 })
+      doc.moveDown(0.3)
+    }
+
+    sectionHeading(doc, reportType === 'monthly' ? 'Weekly Performance Details' : 'Weekly Performance')
     const subjects: Array<[keyof PerformanceRecord, string]> = [
       ['burmese_score', 'Burmese'],
       ['english_score', 'English'],
@@ -280,27 +330,35 @@ export function buildStudentReportPdf(options: {
       ['discipline_score', 'Discipline'],
     ]
 
-    row(doc, [
-      { text: 'Subject', width: 210 },
-      { text: 'Rating', width: contentWidth - 210 },
-    ], true)
-
-    const performance = options.performances[0]
-    if (performance) {
-      subjects.forEach(([key, label], index) => {
+    if (options.performances.length) {
+      options.performances.forEach((performance, performanceIndex) => {
+        if (reportType === 'monthly') {
+          ensureSpace(doc, 45)
+          doc.fillColor('#475569').font('LatinBold').fontSize(10).text(
+            `Week ${performanceIndex + 1} · ${formatDisplayDate(performance.week_start_date)}`,
+          )
+          doc.moveDown(0.3)
+        }
         row(doc, [
-          { text: label, width: 210 },
-          { text: String(performance[key] || 'Not Graded'), width: contentWidth - 210, myanmar: true },
-        ], index % 2 === 1)
+          { text: 'Subject', width: 210 },
+          { text: 'Rating', width: contentWidth - 210 },
+        ], true)
+        subjects.forEach(([key, label], index) => {
+          row(doc, [
+            { text: label, width: 210 },
+            { text: String(performance[key] || 'Not Graded'), width: contentWidth - 210, myanmar: true },
+          ], index % 2 === 1)
+        })
+        if (performance.remarks) {
+          ensureSpace(doc, 55)
+          doc.moveDown(0.8).fillColor('#92400e').font('LatinBold').fontSize(10).text("Teacher's Remarks")
+          doc.moveDown(0.2).fillColor('#334155').fontSize(10)
+          writeMixedPdfText(doc, performance.remarks, pageMargin, doc.y, { width: contentWidth, lineGap: 3 })
+        }
+        if (reportType === 'monthly') doc.moveDown(0.8)
       })
-      if (performance.remarks) {
-        ensureSpace(doc, 55)
-        doc.moveDown(0.8).fillColor('#92400e').font('LatinBold').fontSize(10).text("Teacher's Remarks")
-        doc.moveDown(0.2).fillColor('#334155').fontSize(10)
-        writeMixedPdfText(doc, performance.remarks, pageMargin, doc.y, { width: contentWidth, lineGap: 3 })
-      }
     } else {
-      doc.fillColor('#64748b').font('Latin').fontSize(10).text('No performance data recorded for this week.')
+      doc.fillColor('#64748b').font('Latin').fontSize(10).text(`No performance data recorded for this ${reportType === 'monthly' ? 'month' : 'week'}.`)
     }
 
     sectionHeading(doc, 'Attendance')
@@ -321,7 +379,7 @@ export function buildStudentReportPdf(options: {
       { text: 'Afternoon', width: contentWidth - 350 },
     ], true)
 
-    for (let offset = 0; offset < 7; offset += 1) {
+    for (let offset = 0; offset < daysBetween(options.weekStart, periodEnd); offset += 1) {
       const date = addDays(options.weekStart, offset)
       const record = options.attendance.find((item) => item.date === date)
       row(doc, [
@@ -356,7 +414,7 @@ export function buildStudentReportPdf(options: {
       doc.switchToPage(pageIndex)
       const originalBottomMargin = doc.page.margins.bottom
       doc.page.margins.bottom = 0
-      doc.fillColor('#94a3b8').font('Latin').fontSize(8).text(
+      doc.fillColor('#94a3b8').font('Helvetica').fontSize(8).text(
         `Generated by The Banner Education Centre  |  Page ${pageIndex + 1} of ${pageRange.count}`,
         pageMargin,
         doc.page.height - 26,
@@ -372,10 +430,18 @@ export function buildStudentReportPdf(options: {
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const studentId = url.searchParams.get('studentId')
+  const reportType: StudentReportType = url.searchParams.get('type') === 'monthly' ? 'monthly' : 'weekly'
   const requestedWeek = url.searchParams.get('week')
   const weekStart = requestedWeek && /^\d{4}-\d{2}-\d{2}$/.test(requestedWeek)
     ? requestedWeek
     : getMyanmarWeekStart()
+  const requestedMonth = url.searchParams.get('month')
+  const reportMonth = requestedMonth && /^\d{4}-\d{2}$/.test(requestedMonth)
+    ? requestedMonth
+    : getCurrentReportMonth()
+  const monthlyPeriod = monthBounds(reportMonth)
+  const periodStart = reportType === 'monthly' ? monthlyPeriod.start : weekStart
+  const periodEnd = reportType === 'monthly' ? monthlyPeriod.end : addDays(weekStart, 6)
 
   if (!studentId) {
     return new Response('Student ID is required.', { status: 400 })
@@ -401,27 +467,34 @@ export async function GET(request: Request) {
     return new Response('Forbidden.', { status: 403 })
   }
 
-  const weekEnd = addDays(weekStart, 6)
+  const canPreview = ['admin', 'staff'].includes(currentProfile.role)
+  const reportPeriod = reportType === 'monthly' ? reportMonth : weekStart
+  if (!canPreview && !isReportReleased(reportType, reportPeriod)) {
+    return new Response('This report is not available yet.', { status: 403 })
+  }
+
   const [performanceResult, tuitionResult, attendanceResult, avatarImage] = await Promise.all([
     supabase
       .from('weekly_performances')
       .select('week_start_date, burmese_score, english_score, math_score, science_score, sports_score, art_score, social_score, health_score, teamwork_score, discipline_score, remarks')
       .eq('student_id', studentId)
-      .gte('week_start_date', weekStart)
-      .lte('week_start_date', weekEnd)
-      .order('week_start_date', { ascending: false }),
+      .gte('week_start_date', periodStart)
+      .lte('week_start_date', periodEnd)
+      .order('week_start_date', { ascending: true }),
     supabase
       .from('monthly_tuition_fees')
       .select('month_year, status, amount, remarks, created_at')
       .eq('student_id', studentId)
+      .gte('month_year', reportType === 'monthly' ? reportMonth : '0000-00')
+      .lte('month_year', reportType === 'monthly' ? reportMonth : '9999-99')
       .order('month_year', { ascending: false })
-      .limit(12),
+      .limit(reportType === 'monthly' ? 1 : 12),
     supabase
       .from('daily_attendance')
       .select('date, morning_status, afternoon_status')
       .eq('student_id', studentId)
-      .gte('date', weekStart)
-      .lte('date', weekEnd)
+      .gte('date', periodStart)
+      .lte('date', periodEnd)
       .order('date'),
     loadAvatarImage(targetProfile.avatar_url),
   ])
@@ -438,18 +511,21 @@ export async function GET(request: Request) {
   try {
     const pdf = await buildStudentReportPdf({
       profile: targetProfile,
-      weekStart,
+      reportType,
+      weekStart: periodStart,
+      periodEnd,
       performances: (performanceResult.data || []) as PerformanceRecord[],
       tuitionFees: (tuitionResult.data || []) as TuitionFeeRecord[],
       attendance: (attendanceResult.data || []) as AttendanceRecord[],
       avatarImage,
     })
-    const safeWeek = weekStart.replace(/[^0-9-]/g, '')
+    const safePeriod = reportPeriod.replace(/[^0-9-]/g, '')
+    const filename = `student-${reportType}-report-${safePeriod}.pdf`
 
     return new Response(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="student-report-${safeWeek}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': String(pdf.length),
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
