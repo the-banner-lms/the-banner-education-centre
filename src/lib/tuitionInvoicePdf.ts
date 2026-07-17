@@ -65,11 +65,10 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
+    void (async () => {
     const fontDirectory = path.join(process.cwd(), 'src', 'assets', 'fonts')
     const regularFont = path.join(fontDirectory, 'Z06-Walone-Regular.ttf')
     const boldFont = path.join(fontDirectory, 'Z06-Walone-Bold.ttf')
-    doc.registerFont('Latin', regularFont)
-    doc.registerFont('LatinBold', boldFont)
     doc.registerFont('Myanmar', regularFont)
     doc.registerFont('MyanmarBold', boldFont)
 
@@ -80,26 +79,26 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     const scholar = data.fee.status === 'scholar'
 
     doc.roundedRect(left, 48, contentWidth, 118, 12).fill('#0d6831')
-    doc.fillColor('#ffffff').font('LatinBold').fontSize(21).text(
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(21).text(
       'The Banner Education Centre',
       left + 22,
       67,
       { width: contentWidth - 44, align: 'center', lineBreak: false },
     )
-    doc.font('Latin').fontSize(10).text(
+    doc.font('Helvetica').fontSize(10).text(
       'Tuition Invoice & Payment Receipt',
       left + 22,
       99,
       { width: contentWidth - 44, align: 'center', lineBreak: false },
     )
     doc.moveTo(left + 82, 118).lineTo(left + contentWidth - 82, 118).lineWidth(0.6).strokeColor('#8bc6a3').stroke()
-    doc.fillColor('#ffffff').font('LatinBold').fontSize(11).text(
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(11).text(
       data.fee.invoice_number,
       left + 22,
       126,
       { width: contentWidth - 44, align: 'center', lineBreak: false },
     )
-    doc.font('Latin').fontSize(8).text(
+    doc.font('Helvetica').fontSize(8).text(
       `${data.settings.academic_year} · ${data.settings.current_term}`,
       left + 22,
       146,
@@ -109,12 +108,12 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     const badgeColor = paid ? '#166534' : scholar ? '#1d4ed8' : '#b91c1c'
     const badgeText = paid ? 'PAID & VERIFIED' : scholar ? 'SCHOLARSHIP' : new Date(data.fee.due_date).getTime() < Date.now() ? 'OVERDUE' : 'UNPAID'
     doc.roundedRect(left, 184, 132, 28, 14).fill(badgeColor)
-    doc.fillColor('#ffffff').font('LatinBold').fontSize(10).text(badgeText, left, 193, { width: 132, align: 'center' })
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text(badgeText, left, 193, { width: 132, align: 'center' })
 
-    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('STUDENT', left, 238)
+    doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('STUDENT', left, 238)
     doc.fillColor('#0f172a').fontSize(15)
-    writeMixedPdfText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
-    doc.fillColor('#475569').font('Latin').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
+    await writeMixedPdfText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
+    doc.fillColor('#475569').font('Helvetica').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
     doc.text(data.student.email, left, 303, { width: 250 })
     const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
     const subclassLabel = data.student.assigned_subclass
@@ -123,8 +122,8 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.text(`Class: ${classLabel}${subclassLabel}`, left, 320, { width: 250 })
 
     const detailsX = left + 300
-    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('INVOICE DETAILS', detailsX, 238)
-    doc.fillColor('#334155').font('Latin').fontSize(10)
+    doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('INVOICE DETAILS', detailsX, 238)
+    doc.fillColor('#334155').font('Helvetica').fontSize(10)
     doc.text(`Invoice date: ${formatDate(data.fee.created_at)}`, detailsX, 260)
     doc.text(`Payment month: ${data.fee.month_year}`, detailsX, 278)
     doc.text(`Due date: ${formatDate(data.fee.due_date)}`, detailsX, 296)
@@ -132,7 +131,7 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
 
     const tableTop = 364
     doc.roundedRect(left, tableTop, contentWidth, 42, 8).fill('#f1f5f9')
-    doc.fillColor('#475569').font('LatinBold').fontSize(9)
+    doc.fillColor('#475569').font('Helvetica-Bold').fontSize(9)
     doc.text('DESCRIPTION', left + 16, tableTop + 16)
     doc.text('STATUS', left + 302, tableTop + 16, { width: 80 })
     doc.text('AMOUNT', left + 390, tableTop + 16, { width: contentWidth - 406, align: 'right' })
@@ -165,38 +164,39 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     invoiceLines.forEach((line, index) => {
       const lineTop = rowTop + (index * rowHeight)
       doc.rect(left, lineTop, contentWidth, rowHeight).strokeColor('#e2e8f0').stroke()
-      doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text(line.title, left + 16, lineTop + 12, { width: 270 })
-      doc.fillColor('#64748b').font('Latin').fontSize(9).text(line.detail, left + 16, lineTop + 33, { width: 270 })
+      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text(line.title, left + 16, lineTop + 12, { width: 270 })
+      doc.fillColor('#64748b').font('Helvetica').fontSize(9).text(line.detail, left + 16, lineTop + 33, { width: 270 })
       const lineColor = line.status === 'paid' ? '#166534' : line.status === 'scholar' ? '#1d4ed8' : '#b91c1c'
-      doc.fillColor(lineColor).font('LatinBold').fontSize(10).text(line.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
-      doc.fillColor('#0f172a').font('LatinBold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
+      doc.fillColor(lineColor).font('Helvetica-Bold').fontSize(10).text(line.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
+      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
     })
 
     const totalTop = rowTop + (invoiceLines.length * rowHeight) + 22
-    doc.fillColor('#475569').font('LatinBold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 210, totalTop, { width: 120, align: 'right', lineBreak: false })
+    doc.fillColor('#475569').font('Helvetica-Bold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 210, totalTop, { width: 120, align: 'right', lineBreak: false })
     doc.fillColor('#0d6831').fontSize(16).text(formatAmount(data.fee.amount), left + 344, totalTop - 3, { width: contentWidth - 344, align: 'right', lineBreak: false })
 
     if (data.fee.remarks) {
-      doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('REMARK', left, totalTop + 54)
+      doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('REMARK', left, totalTop + 54)
       doc.fillColor('#334155').fontSize(10)
-      writeMixedPdfText(doc, data.fee.remarks, left, totalTop + 72, { width: contentWidth, lineGap: 3 })
+      await writeMixedPdfText(doc, data.fee.remarks, left, totalTop + 72, { width: contentWidth, lineGap: 3 })
     }
 
     doc.roundedRect(left, 670, contentWidth, 70, 10).fill('#f8fafc')
-    doc.fillColor('#334155').font('LatinBold').fontSize(10).text(
+    doc.fillColor('#334155').font('Helvetica-Bold').fontSize(10).text(
       paid ? 'Payment confirmed. Thank you.' : scholar ? 'This student is recorded as a scholarship student.' : `Please pay by ${formatDate(data.fee.due_date)}.`,
       left + 18,
       691,
       { width: contentWidth - 36, align: 'center' },
     )
-    doc.fillColor('#64748b').font('Latin').fontSize(8).text('This computer-generated document does not require a signature.', left + 18, 716, { width: contentWidth - 36, align: 'center' })
+    doc.fillColor('#64748b').font('Helvetica').fontSize(8).text('This computer-generated document does not require a signature.', left + 18, 716, { width: contentWidth - 36, align: 'center' })
 
-    doc.fillColor('#94a3b8').font('Latin').fontSize(8).text(
+    doc.fillColor('#94a3b8').font('Helvetica').fontSize(8).text(
       `Generated ${formatDate(new Date().toISOString())} · The Banner Education Centre`,
       left,
       758,
       { width: contentWidth, align: 'center' },
     )
     doc.end()
+    })().catch(reject)
   })
 }

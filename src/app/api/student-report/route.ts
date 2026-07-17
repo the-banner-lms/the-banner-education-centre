@@ -174,7 +174,7 @@ function drawCenteredProfilePicture(
     } catch {
       doc.restore()
       doc.circle(centerX, centerY, size / 2).fill('#e0e7ff')
-      doc.fillColor('#3730a3').font('LatinBold').fontSize(19).text(
+      doc.fillColor('#3730a3').font('Helvetica-Bold').fontSize(19).text(
         getProfileInitials(fullName),
         x,
         y + 21,
@@ -183,7 +183,7 @@ function drawCenteredProfilePicture(
     }
   } else {
     doc.circle(centerX, centerY, size / 2).fill('#e0e7ff')
-    doc.fillColor('#3730a3').font('LatinBold').fontSize(19).text(
+    doc.fillColor('#3730a3').font('Helvetica-Bold').fontSize(19).text(
       getProfileInitials(fullName),
       x,
       y + 21,
@@ -206,11 +206,11 @@ function sectionHeading(doc: PDFKit.PDFDocument, title: string) {
   doc.moveDown(0.7)
   const y = doc.y
   doc.roundedRect(pageMargin, y, contentWidth, 28, 5).fill('#eef2ff')
-  doc.fillColor('#312e81').font('LatinBold').fontSize(13).text(title, pageMargin + 10, y + 7)
+  doc.fillColor('#312e81').font('Helvetica-Bold').fontSize(13).text(title, pageMargin + 10, y + 7)
   doc.y = y + 34
 }
 
-function row(
+async function row(
   doc: PDFKit.PDFDocument,
   columns: Array<{ text: string; width: number; myanmar?: boolean }>,
   shaded = false,
@@ -225,7 +225,7 @@ function row(
   doc.rect(pageMargin, y, contentWidth, rowHeight).strokeColor('#e2e8f0').stroke()
 
   let x = pageMargin
-  columns.forEach((column, index) => {
+  for (const [index, column] of columns.entries()) {
     if (index > 0) {
       doc.moveTo(x, y).lineTo(x, y + rowHeight).strokeColor('#e2e8f0').stroke()
     }
@@ -233,16 +233,16 @@ function row(
     if (column.myanmar) {
       doc.x = x + 6
       doc.y = y + 7
-      writeMixedPdfText(doc, column.text, x + 6, y + 7, { width: column.width - 12, height: 18 })
+      await writeMixedPdfText(doc, column.text, x + 6, y + 7, { width: column.width - 12, height: 18 })
     } else {
-      doc.font('Latin').text(column.text || '-', x + 6, y + 7, {
+      doc.font('Helvetica').text(column.text || '-', x + 6, y + 7, {
         width: column.width - 12,
         height: 14,
         ellipsis: true,
       })
     }
     x += column.width
-  })
+  }
   doc.y = y + rowHeight
 }
 
@@ -274,6 +274,7 @@ export function buildStudentReportPdf(options: {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
+    void (async () => {
     const fontDirectory = path.join(
       process.cwd(),
       'src',
@@ -282,37 +283,35 @@ export function buildStudentReportPdf(options: {
     )
     const regularFont = path.join(fontDirectory, 'Z06-Walone-Regular.ttf')
     const boldFont = path.join(fontDirectory, 'Z06-Walone-Bold.ttf')
-    doc.registerFont('Latin', regularFont)
-    doc.registerFont('LatinBold', boldFont)
     doc.registerFont('Myanmar', regularFont)
     doc.registerFont('MyanmarBold', boldFont)
 
     drawCenteredProfilePicture(doc, options.profile.full_name, options.avatarImage)
-    doc.fillColor('#312e81').font('LatinBold').fontSize(20).text('The Banner Education Centre', {
+    doc.fillColor('#312e81').font('Helvetica-Bold').fontSize(20).text('The Banner Education Centre', {
       align: 'center',
     })
-    doc.moveDown(0.2).fillColor('#64748b').font('Latin').fontSize(12).text(`Student ${reportType === 'monthly' ? 'Monthly Summary' : 'Weekly Report'}`, {
+    doc.moveDown(0.2).fillColor('#64748b').font('Helvetica').fontSize(12).text(`Student ${reportType === 'monthly' ? 'Monthly Summary' : 'Weekly Report'}`, {
       align: 'center',
     })
     doc.moveDown(1)
 
-    doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text('Student: ', { continued: true })
-    writeMixedPdfText(doc, options.profile.full_name || 'No Name')
-    doc.font('LatinBold').text('Student ID: ', { continued: true })
-    doc.font('Latin').text(options.profile.student_number || 'Pending assignment')
-    doc.font('LatinBold').text('Email: ', { continued: true })
-    doc.font('Latin').text(options.profile.email || '-')
-    doc.font('LatinBold').text('Role: ', { continued: true })
-    doc.font('Latin').text(options.profile.role)
-    doc.font('LatinBold').text(`${reportType === 'monthly' ? 'Period' : 'Week'}: `, { continued: true })
-    doc.font('Latin').text(
+    doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text('Student: ', { continued: true })
+    await writeMixedPdfText(doc, options.profile.full_name || 'No Name')
+    doc.font('Helvetica-Bold').text('Student ID: ', { continued: true })
+    doc.font('Helvetica').text(options.profile.student_number || 'Pending assignment')
+    doc.font('Helvetica-Bold').text('Email: ', { continued: true })
+    doc.font('Helvetica').text(options.profile.email || '-')
+    doc.font('Helvetica-Bold').text('Role: ', { continued: true })
+    doc.font('Helvetica').text(options.profile.role)
+    doc.font('Helvetica-Bold').text(`${reportType === 'monthly' ? 'Period' : 'Week'}: `, { continued: true })
+    doc.font('Helvetica').text(
       `${formatDisplayDate(options.weekStart)} to ${formatDisplayDate(periodEnd)}`,
     )
 
     if (reportType === 'monthly') {
       sectionHeading(doc, 'Monthly Summary')
       doc.fillColor('#334155').fontSize(10)
-      writeMixedPdfText(doc, buildBurmeseMonthlySummary(options.performances, options.attendance), pageMargin, doc.y, { width: contentWidth, lineGap: 4 })
+      await writeMixedPdfText(doc, buildBurmeseMonthlySummary(options.performances, options.attendance), pageMargin, doc.y, { width: contentWidth, lineGap: 4 })
       doc.moveDown(0.3)
     }
 
@@ -331,34 +330,34 @@ export function buildStudentReportPdf(options: {
     ]
 
     if (options.performances.length) {
-      options.performances.forEach((performance, performanceIndex) => {
+      for (const [performanceIndex, performance] of options.performances.entries()) {
         if (reportType === 'monthly') {
           ensureSpace(doc, 45)
-          doc.fillColor('#475569').font('LatinBold').fontSize(10).text(
+          doc.fillColor('#475569').font('Helvetica-Bold').fontSize(10).text(
             `Week ${performanceIndex + 1} · ${formatDisplayDate(performance.week_start_date)}`,
           )
           doc.moveDown(0.3)
         }
-        row(doc, [
+        await row(doc, [
           { text: 'Subject', width: 210 },
           { text: 'Rating', width: contentWidth - 210 },
         ], true)
-        subjects.forEach(([key, label], index) => {
-          row(doc, [
+        for (const [index, [key, label]] of subjects.entries()) {
+          await row(doc, [
             { text: label, width: 210 },
             { text: String(performance[key] || 'Not Graded'), width: contentWidth - 210, myanmar: true },
           ], index % 2 === 1)
-        })
+        }
         if (performance.remarks) {
           ensureSpace(doc, 55)
-          doc.moveDown(0.8).fillColor('#92400e').font('LatinBold').fontSize(10).text("Teacher's Remarks")
+          doc.moveDown(0.8).fillColor('#92400e').font('Helvetica-Bold').fontSize(10).text("Teacher's Remarks")
           doc.moveDown(0.2).fillColor('#334155').fontSize(10)
-          writeMixedPdfText(doc, performance.remarks, pageMargin, doc.y, { width: contentWidth, lineGap: 3 })
+          await writeMixedPdfText(doc, performance.remarks, pageMargin, doc.y, { width: contentWidth, lineGap: 3 })
         }
         if (reportType === 'monthly') doc.moveDown(0.8)
-      })
+      }
     } else {
-      doc.fillColor('#64748b').font('Latin').fontSize(10).text(`No performance data recorded for this ${reportType === 'monthly' ? 'month' : 'week'}.`)
+      doc.fillColor('#64748b').font('Helvetica').fontSize(10).text(`No performance data recorded for this ${reportType === 'monthly' ? 'month' : 'week'}.`)
     }
 
     sectionHeading(doc, 'Attendance')
@@ -369,11 +368,11 @@ export function buildStudentReportPdf(options: {
     const leave = recorded.filter((status) => status === 'leave').length
     const rate = recorded.length ? Math.round((present / recorded.length) * 100) : 0
 
-    doc.fillColor('#334155').font('Latin').fontSize(10).text(
+    doc.fillColor('#334155').font('Helvetica').fontSize(10).text(
       `Attendance rate: ${rate}%    Present: ${present}    Absent: ${absent}    Leave: ${leave}`,
     )
     doc.moveDown(0.5)
-    row(doc, [
+    await row(doc, [
       { text: 'Date', width: 190 },
       { text: 'Morning', width: 160 },
       { text: 'Afternoon', width: contentWidth - 350 },
@@ -382,7 +381,7 @@ export function buildStudentReportPdf(options: {
     for (let offset = 0; offset < daysBetween(options.weekStart, periodEnd); offset += 1) {
       const date = addDays(options.weekStart, offset)
       const record = options.attendance.find((item) => item.date === date)
-      row(doc, [
+      await row(doc, [
         { text: formatDisplayDate(date), width: 190 },
         { text: record?.morning_status || 'No Data', width: 160 },
         { text: record?.afternoon_status || 'No Data', width: contentWidth - 350 },
@@ -390,23 +389,23 @@ export function buildStudentReportPdf(options: {
     }
 
     sectionHeading(doc, 'Tuition Fees')
-    row(doc, [
+    await row(doc, [
       { text: 'Month', width: 110 },
       { text: 'Status', width: 90 },
       { text: 'Amount (MMK)', width: 120 },
       { text: 'Remarks', width: contentWidth - 320 },
     ], true)
     if (options.tuitionFees.length) {
-      options.tuitionFees.forEach((fee, index) => {
-        row(doc, [
+      for (const [index, fee] of options.tuitionFees.entries()) {
+        await row(doc, [
           { text: fee.month_year, width: 110 },
           { text: fee.status.toUpperCase(), width: 90 },
           { text: new Intl.NumberFormat('en-US').format(Number(fee.amount || 0)), width: 120 },
           { text: fee.remarks || '-', width: contentWidth - 320, myanmar: true },
         ], index % 2 === 1)
-      })
+      }
     } else {
-      doc.fillColor('#64748b').font('Latin').fontSize(10).text('No tuition fee records found.')
+      doc.fillColor('#64748b').font('Helvetica').fontSize(10).text('No tuition fee records found.')
     }
 
     const pageRange = doc.bufferedPageRange()
@@ -424,6 +423,7 @@ export function buildStudentReportPdf(options: {
     }
 
     doc.end()
+    })().catch(reject)
   })
 }
 
