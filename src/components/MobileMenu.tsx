@@ -48,6 +48,9 @@ export default function MobileMenu({ userRole, isAuthenticated = false }: Mobile
             <Link onClick={closeMenu} href="/team" className="block px-3 py-2 rounded-md text-base font-medium text-banner-dark hover:text-blue-600 hover:bg-gray-50">
               Our Team
             </Link>
+            <Link onClick={closeMenu} href="/enrollment" className="block px-3 py-2 rounded-md text-base font-medium text-banner-dark hover:text-blue-600 hover:bg-gray-50">
+              Enrollment
+            </Link>
             
             {userRole === 'student' && (
               <Link onClick={closeMenu} href="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-green-600 hover:bg-green-50">

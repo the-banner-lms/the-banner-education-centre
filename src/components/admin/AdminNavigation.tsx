@@ -50,6 +50,7 @@ const navigationGroups = [
   {
     label: 'Data & Reports',
     items: [
+      { href: '/admin/enrollments', label: 'Enrollments', shortLabel: 'Enrollments', icon: ClipboardDocumentCheckIcon },
       { href: '/admin/students/fast-entry', label: 'Fast Data Entry', shortLabel: 'Fast Entry', icon: BoltIcon },
       { href: '/admin/teacher-reports', label: 'Teacher Reports', shortLabel: 'Reports', icon: ClipboardDocumentCheckIcon },
     ],

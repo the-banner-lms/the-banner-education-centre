@@ -15,7 +15,7 @@ export default function AuthGuardClient({
   const pathname = usePathname() || '';
 
   // Allow access to public routes even if the account is pending/rejected.
-  const isPublicRoute = pathname === '/' || pathname.startsWith('/blog') || pathname.startsWith('/team') || pathname.startsWith('/announcements') || pathname.startsWith('/textbook');
+  const isPublicRoute = pathname === '/' || pathname.startsWith('/blog') || pathname.startsWith('/team') || pathname.startsWith('/announcements') || pathname.startsWith('/textbook') || pathname.startsWith('/enrollment');
 
   if ((isPending || isRejected) && !isPublicRoute) {
     return (

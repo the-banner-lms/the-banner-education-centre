@@ -62,6 +62,7 @@ export default async function Navbar() {
               <NavigationLink href="/blog" label="Blog" />
               <NavigationLink href="/activities" label="Activities" />
               <NavigationLink href="/team" label="Our Team" />
+              <NavigationLink href="/enrollment" label="Enrollment" />
               {user && profile?.role === 'student' && (
                 <NavigationLink href="/dashboard" label="Dashboard" />
               )}

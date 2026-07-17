@@ -36,6 +36,27 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
+-- Public enrollment and monthly payment submissions. The table and private
+-- storage bucket are accessed only through validated server actions.
+CREATE TABLE public.enrollment_submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  submission_type TEXT NOT NULL CHECK (submission_type IN ('new_enrollment', 'monthly_payment')),
+  assigned_class TEXT NOT NULL CHECK (assigned_class IN ('pre-kg', 'kg', 'yle', 'primary1', 'primary2', 'primary3', 'primary4', 'primary5', 'primary6')),
+  assigned_subclass TEXT CHECK (assigned_subclass IS NULL OR assigned_subclass IN ('pre-starters', 'starters', 'movers', 'flyers', 'ket', 'pet')),
+  student_name TEXT NOT NULL CHECK (char_length(student_name) BETWEEN 2 AND 100),
+  email TEXT NOT NULL,
+  contact_number TEXT NOT NULL,
+  viber_number TEXT,
+  address TEXT,
+  student_number TEXT,
+  payment_month TEXT,
+  note TEXT,
+  payment_slip_path TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'contacted', 'completed', 'rejected')),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT timezone('utc'::TEXT, now())
+);
+ALTER TABLE public.enrollment_submissions ENABLE ROW LEVEL SECURITY;
+
 -- 2. Bookshelf (Textbooks, Chapters, Lessons)
 CREATE TABLE public.textbooks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
