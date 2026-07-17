@@ -7,6 +7,7 @@ import {
   createManualStudent,
   type ManualStudentState,
 } from '@/app/actions/studentActions'
+import { STUDENT_CLASSES } from '@/lib/studentClasses'
 
 const initialState: ManualStudentState = { error: null }
 
@@ -106,7 +107,23 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
           Use at least 8 characters. Give this temporary password to the student securely.
         </p>
 
-        <div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="assigned_class" className="block text-sm font-semibold text-gray-800">Assigned Class</label>
+            <select
+              id="assigned_class"
+              name="assigned_class"
+              required
+              defaultValue=""
+              className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-[#0f6630] focus:ring-2 focus:ring-[#0f6630]/20"
+            >
+              <option value="" disabled>Select a class</option>
+              {STUDENT_CLASSES.map((studentClass) => (
+                <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
           <label htmlFor="approval_status" className="block text-sm font-semibold text-gray-800">Account Status</label>
           <select
             id="approval_status"
@@ -117,6 +134,7 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
             <option value="approved">Approved — can use the student dashboard</option>
             <option value="pending">Pending — wait for approval</option>
           </select>
+          </div>
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:justify-end">

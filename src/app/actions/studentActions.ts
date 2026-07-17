@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
+import { isStudentClass } from '@/lib/studentClasses'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -66,6 +67,7 @@ export async function createManualStudent(
   const email = String(formData.get('email') || '').trim().toLowerCase()
   const password = String(formData.get('password') || '')
   const confirmPassword = String(formData.get('confirm_password') || '')
+  const assignedClass = String(formData.get('assigned_class') || '')
   const requestedStatus = String(formData.get('approval_status') || 'approved')
   const approvalStatus = requestedStatus === 'pending' ? 'pending' : 'approved'
   const requestedBasePath = String(formData.get('base_path') || '')
@@ -89,12 +91,17 @@ export async function createManualStudent(
     return { error: 'The passwords do not match.' }
   }
 
+  if (!isStudentClass(assignedClass)) {
+    return { error: 'Select a valid class for the student.' }
+  }
+
   const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: {
       full_name: fullName,
+      assigned_class: assignedClass,
     },
   })
 
@@ -111,6 +118,7 @@ export async function createManualStudent(
     .update({
       email,
       full_name: fullName,
+      assigned_class: assignedClass,
       role: 'student',
       approval_status: approvalStatus,
     })
@@ -128,6 +136,36 @@ export async function createManualStudent(
   revalidatePath('/staff/students')
   revalidatePath('/admin/users')
   redirect(`${basePath}/${studentId}`)
+}
+
+export async function updateStudentClass(studentId: string, formData: FormData) {
+  await verifyStaffAccess()
+
+  const assignedClass = String(formData.get('assigned_class') || '')
+  if (!isStudentClass(assignedClass)) {
+    throw new Error('Select a valid student class.')
+  }
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ assigned_class: assignedClass })
+    .eq('id', studentId)
+    .eq('role', 'student')
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('Error updating student class:', error)
+    throw new Error('Failed to update the student class.')
+  }
+
+  revalidatePath('/admin/students')
+  revalidatePath('/staff/students')
+  revalidatePath('/teacher/students')
+  revalidatePath(`/admin/students/${studentId}`)
+  revalidatePath(`/staff/students/${studentId}`)
+  revalidatePath(`/teacher/students/${studentId}`)
+  revalidatePath(`/dashboard/${studentId}`)
 }
 
 export async function uploadProfilePicture(studentId: string, formData: FormData) {

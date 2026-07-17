@@ -83,6 +83,7 @@ export default async function StudentDetailPage(props: {
       weekEndDateFullStr={weekEndDateFullStr}
       basePath="/admin/students"
       showTuition={true} // Admins can manage tuition
+      canManageClass
     />
   )
 }

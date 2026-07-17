@@ -1,9 +1,10 @@
-import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee } from '@/app/actions/studentActions'
+import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee, updateStudentClass } from '@/app/actions/studentActions'
 import ProfilePictureUpload from '@/app/admin/students/[id]/ProfilePictureUpload' // We'll move this later if needed, or leave it and update import
 import Link from 'next/link'
 import { getRoleBannerGradient } from '@/utils/theme'
 import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
+import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
 
 export default function StudentManager({
   student,
@@ -17,6 +18,7 @@ export default function StudentManager({
   weekEndDateFullStr,
   basePath,
   showTuition = false,
+  canManageClass = false,
 }: {
   student: any;
   studentId: string;
@@ -29,6 +31,7 @@ export default function StudentManager({
   weekEndDateFullStr: string;
   basePath: string;
   showTuition?: boolean;
+  canManageClass?: boolean;
 }) {
   const gradeOptions = ['Excellent', 'Good', 'Needs Improvement']
 
@@ -63,8 +66,34 @@ export default function StudentManager({
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{student.full_name || 'No Name Provided'}</h1>
             <p className="text-gray-600 font-medium">Student at The Banner Education Centre</p>
+            <p className="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
+              Class: {getStudentClassLabel(student.assigned_class)}
+            </p>
             <p className="text-sm text-gray-500 mt-1">{student.email}</p>
             <p className="text-xs text-gray-400 mt-2">Student ID: {student.id}</p>
+
+            {canManageClass && (
+              <form action={updateStudentClass.bind(null, studentId)} className="mt-5 flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-end">
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="assigned_class" className="block text-sm font-semibold text-gray-800">Change Assigned Class</label>
+                  <select
+                    id="assigned_class"
+                    name="assigned_class"
+                    required
+                    defaultValue={student.assigned_class || ''}
+                    className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+                  >
+                    <option value="" disabled>Select a class</option>
+                    {STUDENT_CLASSES.map((studentClass) => (
+                      <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button type="submit" className="min-h-11 rounded-lg bg-[#0f6630] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0b5226]">
+                  Save Class
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>
