@@ -76,7 +76,9 @@ export default function StudentManager({
             )}
             <p className="text-sm text-gray-500 mt-1">{student.email}</p>
             <p className="mt-2 text-sm text-gray-600">Address: {student.address || 'No address'}</p>
-            <p className="text-xs text-gray-400 mt-2">Student ID: {student.id}</p>
+            <p className="mt-2 text-sm font-semibold text-gray-700">
+              Student ID: {student.student_number || 'Pending assignment'}
+            </p>
 
             {canManageClass && (
               <form action={updateStudentDetails.bind(null, studentId)} className="mt-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2 sm:items-end">

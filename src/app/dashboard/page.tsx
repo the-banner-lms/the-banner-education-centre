@@ -108,6 +108,11 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{profile.full_name || 'My Dashboard'}</h1>
             <p className="text-gray-500">{profile.email}</p>
+            {profile.role === 'student' && (
+              <p className="mt-1 text-sm font-semibold text-gray-700">
+                Student ID: {profile.student_number || 'Pending assignment'}
+              </p>
+            )}
             <p className={`inline-block mt-2 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
               {profile.role}
             </p>

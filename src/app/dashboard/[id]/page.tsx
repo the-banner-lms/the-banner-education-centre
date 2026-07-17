@@ -161,6 +161,11 @@ export default async function UniversalUserDashboardView(props: {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{profile.full_name || 'No Name'}</h1>
             <p className="text-gray-600 font-medium">{profile.role === 'student' ? 'Student at The Banner Education Centre' : 'Staff Member'}</p>
             <p className="text-sm text-gray-500 mt-1">{profile.email}</p>
+            {isStudent && (
+              <p className="mt-1 text-sm font-semibold text-gray-700">
+                Student ID: {profile.student_number || 'Pending assignment'}
+              </p>
+            )}
             <p className={`inline-block mt-3 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
               {profile.role}
             </p>

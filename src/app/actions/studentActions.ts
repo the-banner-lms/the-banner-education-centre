@@ -53,6 +53,19 @@ export type ManualStudentState = {
   error: string | null
 }
 
+async function createStudentNumber(assignedClass: string) {
+  const { data, error } = await supabaseAdmin.rpc('next_student_number', {
+    p_class_code: assignedClass,
+  })
+
+  if (error || typeof data !== 'string') {
+    console.error('Error generating student number:', error)
+    throw new Error('Failed to generate a student ID.')
+  }
+
+  return data
+}
+
 export async function createManualStudent(
   _previousState: ManualStudentState,
   formData: FormData
@@ -127,6 +140,14 @@ export async function createManualStudent(
   }
 
   const studentId = authData.user.id
+  let studentNumber: string
+  try {
+    studentNumber = await createStudentNumber(assignedClass)
+  } catch {
+    await supabaseAdmin.auth.admin.deleteUser(studentId)
+    return { error: 'A unique student ID could not be generated.' }
+  }
+
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .update({
@@ -135,6 +156,7 @@ export async function createManualStudent(
       assigned_class: assignedClass,
       assigned_subclass: assignedSubclass,
       address,
+      student_number: studentNumber,
       role: 'student',
       approval_status: approvalStatus,
     })
@@ -174,9 +196,27 @@ export async function updateStudentDetails(studentId: string, formData: FormData
     throw new Error('Address must be between 3 and 300 characters.')
   }
 
+  const { data: currentStudent, error: studentLookupError } = await supabaseAdmin
+    .from('profiles')
+    .select('student_number')
+    .eq('id', studentId)
+    .eq('role', 'student')
+    .single()
+
+  if (studentLookupError || !currentStudent) {
+    throw new Error('Student profile not found.')
+  }
+
+  const studentNumber = currentStudent.student_number || await createStudentNumber(assignedClass)
+
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ assigned_class: assignedClass, assigned_subclass: assignedSubclass, address })
+    .update({
+      assigned_class: assignedClass,
+      assigned_subclass: assignedSubclass,
+      address,
+      student_number: studentNumber,
+    })
     .eq('id', studentId)
     .eq('role', 'student')
     .select('id')

@@ -228,7 +228,7 @@ function row(
 }
 
 export function buildStudentReportPdf(options: {
-  profile: { full_name: string | null; email: string | null; role: string }
+  profile: { full_name: string | null; email: string | null; role: string; student_number: string | null }
   weekStart: string
   performances: PerformanceRecord[]
   tuitionFees: TuitionFeeRecord[]
@@ -274,6 +274,8 @@ export function buildStudentReportPdf(options: {
 
     doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text('Student: ', { continued: true })
     writeMixedText(doc, options.profile.full_name || 'No Name')
+    doc.font('LatinBold').text('Student ID: ', { continued: true })
+    doc.font('Latin').text(options.profile.student_number || 'Pending assignment')
     doc.font('LatinBold').text('Email: ', { continued: true })
     doc.font('Latin').text(options.profile.email || '-')
     doc.font('LatinBold').text('Role: ', { continued: true })
@@ -404,7 +406,7 @@ export async function GET(request: Request) {
 
   const [{ data: currentProfile }, { data: targetProfile }] = await Promise.all([
     supabase.from('profiles').select('role').eq('id', user.id).single(),
-    supabase.from('profiles').select('full_name, email, role, avatar_url').eq('id', studentId).single(),
+    supabase.from('profiles').select('full_name, email, role, avatar_url, student_number').eq('id', studentId).single(),
   ])
 
   if (!currentProfile || !targetProfile) {

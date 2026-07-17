@@ -15,6 +15,7 @@ type Student = {
   assigned_class?: string | null
   assigned_subclass?: string | null
   address?: string | null
+  student_number?: string | null
 }
 
 function StudentDetailsForm({ student }: { student: Student }) {
@@ -102,6 +103,9 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                     {student.full_name || 'No Name'}
                   </Link>
                   <p className="truncate text-sm text-gray-500">{student.email}</p>
+                  <p className="mt-1 text-xs font-semibold text-gray-600">
+                    Student ID: {student.student_number || 'Pending assignment'}
+                  </p>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
                     Address: {student.address || 'No address'}
                   </p>
