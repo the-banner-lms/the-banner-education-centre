@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getRoleBannerGradient } from '@/utils/theme'
 import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
-import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
+import { getStudentClassLabel, getYleSubclassLabel, STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
 
 export default function StudentManager({
   student,
@@ -69,6 +69,11 @@ export default function StudentManager({
             <p className="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
               Class: {getStudentClassLabel(student.assigned_class)}
             </p>
+            {student.assigned_class === 'yle' && (
+              <p className="ml-2 mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                {getYleSubclassLabel(student.assigned_subclass)}
+              </p>
+            )}
             <p className="text-sm text-gray-500 mt-1">{student.email}</p>
             <p className="mt-2 text-sm text-gray-600">Address: {student.address || 'No address'}</p>
             <p className="text-xs text-gray-400 mt-2">Student ID: {student.id}</p>
@@ -91,6 +96,20 @@ export default function StudentManager({
                   </select>
                 </div>
                 <div className="min-w-0">
+                  <label htmlFor="assigned_subclass" className="block text-sm font-semibold text-gray-800">YLE Sub-class</label>
+                  <select
+                    id="assigned_subclass"
+                    name="assigned_subclass"
+                    defaultValue={student.assigned_subclass || ''}
+                    className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+                  >
+                    <option value="">Not applicable / select for YLE</option>
+                    {YLE_SUBCLASSES.map((subclass) => (
+                      <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
                   <label htmlFor="address" className="block text-sm font-semibold text-gray-800">Address</label>
                   <input
                     id="address"
@@ -106,7 +125,7 @@ export default function StudentManager({
                   />
                 </div>
                 <button type="submit" className="min-h-11 rounded-lg bg-[#0f6630] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0b5226] sm:col-span-2 sm:justify-self-end">
-                  Save Class & Address
+                  Save Assignment & Address
                 </button>
               </form>
             )}

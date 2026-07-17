@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import {
   createManualStudent,
   type ManualStudentState,
 } from '@/app/actions/studentActions'
-import { STUDENT_CLASSES } from '@/lib/studentClasses'
+import { STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
 
 const initialState: ManualStudentState = { error: null }
 
@@ -27,6 +27,7 @@ function SubmitButton() {
 
 export default function ManualStudentForm({ basePath }: { basePath: '/admin/students' | '/staff/students' }) {
   const [state, formAction] = useActionState(createManualStudent, initialState)
+  const [assignedClass, setAssignedClass] = useState('')
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -129,7 +130,8 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
               id="assigned_class"
               name="assigned_class"
               required
-              defaultValue=""
+              value={assignedClass}
+              onChange={(event) => setAssignedClass(event.target.value)}
               className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-[#0f6630] focus:ring-2 focus:ring-[#0f6630]/20"
             >
               <option value="" disabled>Select a class</option>
@@ -138,6 +140,23 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
               ))}
             </select>
           </div>
+          {assignedClass === 'yle' && (
+            <div>
+              <label htmlFor="assigned_subclass" className="block text-sm font-semibold text-gray-800">YLE Sub-class</label>
+              <select
+                id="assigned_subclass"
+                name="assigned_subclass"
+                required
+                defaultValue=""
+                className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none transition focus:border-[#0f6630] focus:ring-2 focus:ring-[#0f6630]/20"
+              >
+                <option value="" disabled>Select a YLE sub-class</option>
+                {YLE_SUBCLASSES.map((subclass) => (
+                  <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
           <label htmlFor="approval_status" className="block text-sm font-semibold text-gray-800">Account Status</label>
           <select

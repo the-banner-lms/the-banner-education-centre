@@ -7,6 +7,7 @@ CREATE TABLE public.profiles (
   full_name TEXT,
   avatar_url TEXT,
   assigned_class TEXT CHECK (assigned_class IS NULL OR assigned_class IN ('pre-kg', 'kg', 'yle', 'primary1', 'primary2', 'primary3', 'primary4', 'primary5', 'primary6')),
+  assigned_subclass TEXT CHECK (assigned_subclass IS NULL OR assigned_subclass IN ('pre-starters', 'starters', 'movers', 'flyers', 'ket', 'pet')),
   address TEXT CHECK (address IS NULL OR char_length(address) <= 300),
   role TEXT DEFAULT 'student' CHECK (role IN ('super_admin', 'admin', 'editor', 'teacher', 'student', 'staff')),
   approval_status TEXT DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected')),

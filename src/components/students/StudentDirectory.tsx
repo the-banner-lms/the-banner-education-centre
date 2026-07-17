@@ -1,6 +1,11 @@
 import Link from 'next/link'
 import { updateStudentDetails } from '@/app/actions/studentActions'
-import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
+import {
+  getStudentClassLabel,
+  getYleSubclassLabel,
+  STUDENT_CLASSES,
+  YLE_SUBCLASSES,
+} from '@/lib/studentClasses'
 
 type Student = {
   id: string
@@ -8,15 +13,17 @@ type Student = {
   full_name?: string | null
   avatar_url?: string | null
   assigned_class?: string | null
+  assigned_subclass?: string | null
   address?: string | null
 }
 
 function StudentDetailsForm({ student }: { student: Student }) {
   const fieldId = `assigned-class-${student.id}`
+  const subclassId = `assigned-subclass-${student.id}`
   const addressId = `address-${student.id}`
 
   return (
-    <form action={updateStudentDetails.bind(null, student.id)} className="grid min-w-0 gap-3 xl:grid-cols-[minmax(9rem,0.7fr)_minmax(14rem,1.3fr)_auto] xl:items-end">
+    <form action={updateStudentDetails.bind(null, student.id)} className="grid min-w-0 gap-3 xl:grid-cols-[minmax(8rem,0.6fr)_minmax(10rem,0.75fr)_minmax(14rem,1.2fr)_auto] xl:items-end">
       <div>
         <label htmlFor={fieldId} className="mb-1 block text-xs font-semibold text-gray-600">Class</label>
         <select
@@ -29,6 +36,20 @@ function StudentDetailsForm({ student }: { student: Student }) {
           <option value="" disabled>Select class</option>
           {STUDENT_CLASSES.map((studentClass) => (
             <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor={subclassId} className="mb-1 block text-xs font-semibold text-gray-600">YLE Sub-class</label>
+        <select
+          id={subclassId}
+          name="assigned_subclass"
+          defaultValue={student.assigned_subclass || ''}
+          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+        >
+          <option value="">Not applicable / select for YLE</option>
+          {YLE_SUBCLASSES.map((subclass) => (
+            <option key={subclass.value} value={subclass.value}>{subclass.label}</option>
           ))}
         </select>
       </div>
@@ -87,6 +108,11 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                   <span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
                     {getStudentClassLabel(student.assigned_class)}
                   </span>
+                  {student.assigned_class === 'yle' && (
+                    <span className="ml-1 mt-1 inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                      {getYleSubclassLabel(student.assigned_subclass)}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -100,6 +126,12 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned Class</p>
                     <p className="mt-1 font-semibold text-[#0f6630]">{getStudentClassLabel(student.assigned_class)}</p>
+                    {student.assigned_class === 'yle' && (
+                      <>
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">YLE Sub-class</p>
+                        <p className="mt-1 font-semibold text-blue-700">{getYleSubclassLabel(student.assigned_subclass)}</p>
+                      </>
+                    )}
                     <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Address</p>
                     <p className="mt-1 text-sm text-gray-700">{student.address || 'No address'}</p>
                   </div>
@@ -115,6 +147,51 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
             </div>
           </article>
         ))}
+    </div>
+  )
+}
+
+function YleSubclassDirectory({
+  students,
+  basePath,
+  canAssign,
+}: {
+  students: Student[]
+  basePath: string
+  canAssign: boolean
+}) {
+  const subclassGroups = YLE_SUBCLASSES.map((subclass) => ({
+    ...subclass,
+    students: students.filter((student) => student.assigned_subclass === subclass.value),
+  }))
+  const unassignedStudents = students.filter(
+    (student) => !YLE_SUBCLASSES.some((subclass) => subclass.value === student.assigned_subclass)
+  )
+  const groups = [
+    ...subclassGroups,
+    { value: 'unassigned-yle', label: 'YLE Sub-class Unassigned', students: unassignedStudents },
+  ]
+  const firstPopulatedGroup = groups.findIndex((group) => group.students.length > 0)
+
+  return (
+    <div className="space-y-3 border-t border-gray-200 bg-blue-50/40 p-3 sm:p-4">
+      <p className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-blue-700">YLE Sub-classes</p>
+      {groups.map((group, index) => (
+        <details
+          key={group.value}
+          open={index === firstPopulatedGroup}
+          className="group/subclass overflow-hidden rounded-lg border border-blue-100 bg-white"
+        >
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 font-semibold text-gray-800 marker:content-none">
+            <span>{group.label}</span>
+            <span className="flex items-center gap-3">
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{group.students.length}</span>
+              <span aria-hidden="true" className="text-gray-400 transition-transform group-open/subclass:rotate-180">⌄</span>
+            </span>
+          </summary>
+          <StudentList students={group.students} basePath={basePath} canAssign={canAssign} />
+        </details>
+      ))}
     </div>
   )
 }
@@ -178,7 +255,11 @@ export default function StudentDirectory({
                 <span aria-hidden="true" className="text-lg text-gray-400 transition-transform group-open:rotate-180">⌄</span>
               </span>
             </summary>
-            <StudentList students={group.students} basePath={basePath} canAssign={canAssign} />
+            {group.value === 'yle' ? (
+              <YleSubclassDirectory students={group.students} basePath={basePath} canAssign={canAssign} />
+            ) : (
+              <StudentList students={group.students} basePath={basePath} canAssign={canAssign} />
+            )}
           </details>
         ))}
       </div>

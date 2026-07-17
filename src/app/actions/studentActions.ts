@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
-import { isStudentClass } from '@/lib/studentClasses'
+import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,6 +68,7 @@ export async function createManualStudent(
   const password = String(formData.get('password') || '')
   const confirmPassword = String(formData.get('confirm_password') || '')
   const assignedClass = String(formData.get('assigned_class') || '')
+  const requestedSubclass = String(formData.get('assigned_subclass') || '')
   const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   const requestedStatus = String(formData.get('approval_status') || 'approved')
   const approvalStatus = requestedStatus === 'pending' ? 'pending' : 'approved'
@@ -96,6 +97,12 @@ export async function createManualStudent(
     return { error: 'Select a valid class for the student.' }
   }
 
+  if (assignedClass === 'yle' && !isYleSubclass(requestedSubclass)) {
+    return { error: 'Select a valid YLE sub-class for the student.' }
+  }
+
+  const assignedSubclass = assignedClass === 'yle' ? requestedSubclass : null
+
   if (address.length < 3 || address.length > 300) {
     return { error: 'Address must be between 3 and 300 characters.' }
   }
@@ -107,6 +114,7 @@ export async function createManualStudent(
     user_metadata: {
       full_name: fullName,
       assigned_class: assignedClass,
+      assigned_subclass: assignedSubclass,
       address,
     },
   })
@@ -125,6 +133,7 @@ export async function createManualStudent(
       email,
       full_name: fullName,
       assigned_class: assignedClass,
+      assigned_subclass: assignedSubclass,
       address,
       role: 'student',
       approval_status: approvalStatus,
@@ -149,10 +158,17 @@ export async function updateStudentDetails(studentId: string, formData: FormData
   await verifyStaffAccess()
 
   const assignedClass = String(formData.get('assigned_class') || '')
+  const requestedSubclass = String(formData.get('assigned_subclass') || '')
   const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   if (!isStudentClass(assignedClass)) {
     throw new Error('Select a valid student class.')
   }
+
+  if (assignedClass === 'yle' && !isYleSubclass(requestedSubclass)) {
+    throw new Error('Select a valid YLE sub-class.')
+  }
+
+  const assignedSubclass = assignedClass === 'yle' ? requestedSubclass : null
 
   if (address.length < 3 || address.length > 300) {
     throw new Error('Address must be between 3 and 300 characters.')
@@ -160,7 +176,7 @@ export async function updateStudentDetails(studentId: string, formData: FormData
 
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ assigned_class: assignedClass, address })
+    .update({ assigned_class: assignedClass, assigned_subclass: assignedSubclass, address })
     .eq('id', studentId)
     .eq('role', 'student')
     .select('id')
