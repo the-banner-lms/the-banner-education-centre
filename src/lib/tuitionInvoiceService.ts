@@ -8,6 +8,11 @@ type DeliveryResult = {
   message: string
 }
 
+type DeliveryOptions = {
+  force?: boolean
+  resendBatchId?: string
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -48,7 +53,10 @@ export async function getTuitionInvoiceData(feeId: string): Promise<TuitionInvoi
   }
 }
 
-export async function sendPaidTuitionInvoiceEmail(feeId: string): Promise<DeliveryResult> {
+export async function sendPaidTuitionInvoiceEmail(
+  feeId: string,
+  options: DeliveryOptions = {},
+): Promise<DeliveryResult> {
   const { data: delivery } = await supabaseAdmin
     .from('monthly_tuition_fees')
     .select('status, email_status, email_sent_at')
@@ -58,7 +66,7 @@ export async function sendPaidTuitionInvoiceEmail(feeId: string): Promise<Delive
   if (!delivery || delivery.status !== 'paid') {
     return { status: 'failed', message: 'Only paid invoices can be emailed.' }
   }
-  if (delivery.email_status === 'sent' && delivery.email_sent_at) {
+  if (!options.force && delivery.email_status === 'sent' && delivery.email_sent_at) {
     return { status: 'already_sent', message: 'Payment email was already sent.' }
   }
 
@@ -89,7 +97,9 @@ export async function sendPaidTuitionInvoiceEmail(feeId: string): Promise<Delive
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': `tuition-paid-${feeId}-${invoice.fee.invoice_number}`,
+        'Idempotency-Key': options.force
+          ? `tuition-paid-resend-${options.resendBatchId || crypto.randomUUID()}-${feeId}`
+          : `tuition-paid-${feeId}-${invoice.fee.invoice_number}`,
       },
       body: JSON.stringify({
         from,
@@ -142,11 +152,14 @@ export async function sendPaidTuitionInvoiceEmail(feeId: string): Promise<Delive
   }
 }
 
-export async function sendPaidTuitionInvoiceEmails(feeIds: string[]) {
+export async function sendPaidTuitionInvoiceEmails(
+  feeIds: string[],
+  options: DeliveryOptions = {},
+) {
   const results: DeliveryResult[] = []
   for (let index = 0; index < feeIds.length; index += 8) {
     const batch = feeIds.slice(index, index + 8)
-    results.push(...await Promise.all(batch.map(sendPaidTuitionInvoiceEmail)))
+    results.push(...await Promise.all(batch.map(feeId => sendPaidTuitionInvoiceEmail(feeId, options))))
   }
   return {
     sent: results.filter(result => result.status === 'sent').length,

@@ -2,6 +2,7 @@ import {
   createAcademicClass,
   createClassSection,
   generateMonthlyInvoices,
+  resendAllPaidInvoiceEmails,
   saveAcademicSettings,
   sendPendingPaidInvoiceEmails,
   updateAcademicClass,
@@ -142,10 +143,16 @@ export default function AcademicSetupPanel({
             <p className="text-sm font-black text-gray-900">Paid invoice email: {emailConfigured ? 'Ready' : 'Configuration required'}</p>
             <p className="mt-1 text-xs leading-5 text-gray-600">Verified payments are emailed once. Use this button to send or retry invoices for existing paid students.</p>
           </div>
-          <form action={sendPendingPaidInvoiceEmails}>
-            <ReturnPath value={returnPath} />
-            <button type="submit" className="min-h-10 whitespace-nowrap rounded-lg border border-banner-dark bg-white px-4 py-2 text-sm font-black text-banner-dark hover:bg-green-50">Send Pending Paid Emails</button>
-          </form>
+          <div className="flex flex-wrap gap-2">
+            <form action={sendPendingPaidInvoiceEmails}>
+              <ReturnPath value={returnPath} />
+              <button type="submit" className="min-h-10 whitespace-nowrap rounded-lg border border-banner-dark bg-white px-4 py-2 text-sm font-black text-banner-dark hover:bg-green-50">Send Pending Paid Emails</button>
+            </form>
+            <form action={resendAllPaidInvoiceEmails}>
+              <ReturnPath value={returnPath} />
+              <button type="submit" className="min-h-10 whitespace-nowrap rounded-lg bg-banner-dark px-4 py-2 text-sm font-black text-white hover:bg-[#0b5226]">Resend All Paid Emails</button>
+            </form>
+          </div>
         </div>
       </section>
 

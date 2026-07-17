@@ -214,6 +214,31 @@ export async function sendPendingPaidInvoiceEmails(formData: FormData) {
   finish(formData, delivery.notConfigured ? 'error' : 'notice', message)
 }
 
+export async function resendAllPaidInvoiceEmails(formData: FormData) {
+  const access = await requireAcademicSetupAccess()
+  if (!access) finish(formData, 'error', 'You do not have permission to resend payment emails.')
+
+  const { data: paidInvoices, error } = await access.supabase
+    .from('monthly_tuition_fees')
+    .select('id')
+    .eq('status', 'paid')
+    .order('created_at', { ascending: true })
+    .limit(500)
+
+  if (error) finish(formData, 'error', 'Paid invoices could not be loaded.')
+  if (!paidInvoices?.length) finish(formData, 'notice', 'No paid invoice emails were found.')
+
+  const delivery = await sendPaidTuitionInvoiceEmails(
+    paidInvoices.map(row => row.id),
+    { force: true, resendBatchId: crypto.randomUUID() },
+  )
+  revalidateAcademicSetup()
+  const message = delivery.notConfigured
+    ? 'Email provider setup is required before paid invoice emails can be resent.'
+    : `${delivery.sent} paid invoice email${delivery.sent === 1 ? '' : 's'} resent${delivery.failed ? `; ${delivery.failed} failed and can be retried` : ''}.`
+  finish(formData, delivery.notConfigured ? 'error' : 'notice', message)
+}
+
 export async function createAcademicClass(formData: FormData) {
   const access = await requireAcademicSetupAccess()
   if (!access) finish(formData, 'error', 'You do not have permission to create classes.')
