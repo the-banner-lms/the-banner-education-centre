@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import PasswordInput from '@/components/forms/PasswordInput'
 
 export default function SetStudentPasswordPage() {
   const router = useRouter()
@@ -76,11 +77,11 @@ export default function SetStudentPasswordPage() {
           <form action={handleSubmit} className="mt-6 space-y-5">
             <div>
               <label htmlFor="student-new-password" className="block text-sm font-bold text-gray-800">New Password</label>
-              <input id="student-new-password" name="password" type="password" minLength={8} required autoComplete="new-password" className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-banner-dark focus:ring-2 focus:ring-banner-light/30" />
+              <PasswordInput id="student-new-password" name="password" minLength={8} required autoComplete="new-password" className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-banner-dark focus:ring-2 focus:ring-banner-light/30" />
             </div>
             <div>
               <label htmlFor="student-confirm-password" className="block text-sm font-bold text-gray-800">Confirm Password</label>
-              <input id="student-confirm-password" name="confirmation" type="password" minLength={8} required autoComplete="new-password" className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-banner-dark focus:ring-2 focus:ring-banner-light/30" />
+              <PasswordInput id="student-confirm-password" name="confirmation" minLength={8} required autoComplete="new-password" className="mt-2 min-h-12 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-banner-dark focus:ring-2 focus:ring-banner-light/30" />
             </div>
             {message && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{message}</p>}
             <button type="submit" disabled={saving} className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-banner-dark px-6 py-3 font-bold text-white hover:bg-[#0b5226] disabled:cursor-wait disabled:opacity-60">

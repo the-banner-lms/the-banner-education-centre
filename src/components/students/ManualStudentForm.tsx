@@ -8,6 +8,7 @@ import {
   type ManualStudentState,
 } from '@/app/actions/studentActions'
 import { STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
+import PasswordInput from '@/components/forms/PasswordInput'
 
 const initialState: ManualStudentState = { error: null }
 
@@ -95,10 +96,9 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-gray-800">Temporary Password</label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
@@ -107,10 +107,9 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
           </div>
           <div>
             <label htmlFor="confirm_password" className="block text-sm font-semibold text-gray-800">Confirm Password</label>
-            <input
+            <PasswordInput
               id="confirm_password"
               name="confirm_password"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
