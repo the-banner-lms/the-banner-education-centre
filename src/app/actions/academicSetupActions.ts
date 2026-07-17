@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
 
 const allowedReturnPaths = new Set(['/admin/academic-setup', '/staff/academic-setup'])
 
@@ -80,6 +81,114 @@ export async function saveAcademicSettings(formData: FormData) {
 
   revalidateAcademicSetup()
   finish(formData, 'notice', 'Academic settings saved.')
+}
+
+export async function generateMonthlyInvoices(formData: FormData) {
+  const access = await requireAcademicSetupAccess()
+  if (!access) finish(formData, 'error', 'You do not have permission to generate monthly invoices.')
+
+  const monthYear = cleanText(formData, 'month_year')
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthYear)) {
+    finish(formData, 'error', 'Choose a valid invoice month.')
+  }
+
+  const { data: settings, error: settingsError } = await access.supabase
+    .from('academic_settings')
+    .select('academic_year, current_term')
+    .eq('singleton', true)
+    .single()
+  if (settingsError || !settings) finish(formData, 'error', 'Academic settings could not be loaded.')
+
+  const { data: schoolClasses, error: classError } = await access.supabase
+    .from('school_classes')
+    .select('code, name, monthly_fee')
+    .eq('academic_year', settings.academic_year)
+    .eq('is_active', true)
+    .gt('monthly_fee', 0)
+  if (classError) finish(formData, 'error', 'Class fee plans could not be loaded.')
+
+  const feesByClass = new Map((schoolClasses || []).map(item => [item.code, {
+    name: item.name,
+    amount: Number(item.monthly_fee),
+  }]))
+  if (!feesByClass.size) finish(formData, 'error', 'Set a monthly fee greater than 0 for at least one active class first.')
+
+  const { data: students, error: studentError } = await access.supabase
+    .from('profiles')
+    .select('id, assigned_class')
+    .eq('role', 'student')
+    .eq('approval_status', 'approved')
+    .in('assigned_class', [...feesByClass.keys()])
+  if (studentError) finish(formData, 'error', 'Students could not be loaded.')
+  if (!students?.length) finish(formData, 'error', 'No approved students match the configured classes.')
+
+  const studentIds = students.map(student => student.id)
+  const { data: existing, error: existingError } = await access.supabase
+    .from('monthly_tuition_fees')
+    .select('student_id')
+    .eq('month_year', monthYear)
+    .in('student_id', studentIds)
+  if (existingError) finish(formData, 'error', 'Existing invoices could not be checked.')
+
+  const existingStudentIds = new Set((existing || []).map(row => row.student_id))
+  const rows = students.flatMap(student => {
+    if (!student.assigned_class || existingStudentIds.has(student.id)) return []
+    const plan = feesByClass.get(student.assigned_class)
+    if (!plan) return []
+    return [{
+      student_id: student.id,
+      month_year: monthYear,
+      status: 'unpaid',
+      amount: plan.amount,
+      remarks: `${settings.current_term} · ${plan.name} monthly tuition`,
+      staff_id: access.userId,
+      email_status: 'not_applicable',
+    }]
+  })
+
+  if (rows.length) {
+    const { error } = await access.supabase.from('monthly_tuition_fees').insert(rows)
+    if (error) {
+      console.error('Failed to generate monthly invoices:', error)
+      finish(formData, 'error', 'Monthly invoices could not be generated.')
+    }
+  }
+
+  revalidateAcademicSetup()
+  revalidatePath('/admin/students/fast-entry')
+  revalidatePath('/staff/students/fast-entry')
+  revalidatePath('/dashboard/[id]', 'page')
+  revalidatePath('/dashboard', 'page')
+  finish(
+    formData,
+    'notice',
+    rows.length
+      ? `${rows.length} monthly invoice${rows.length === 1 ? '' : 's'} generated for ${monthYear}.`
+      : `All eligible students already have an invoice for ${monthYear}.`,
+  )
+}
+
+export async function sendPendingPaidInvoiceEmails(formData: FormData) {
+  const access = await requireAcademicSetupAccess()
+  if (!access) finish(formData, 'error', 'You do not have permission to send payment emails.')
+
+  const { data: pending, error } = await access.supabase
+    .from('monthly_tuition_fees')
+    .select('id')
+    .eq('status', 'paid')
+    .neq('email_status', 'sent')
+    .order('created_at', { ascending: true })
+    .limit(500)
+
+  if (error) finish(formData, 'error', 'Pending paid invoices could not be loaded.')
+  if (!pending?.length) finish(formData, 'notice', 'No pending paid invoice emails were found.')
+
+  const delivery = await sendPaidTuitionInvoiceEmails(pending.map(row => row.id))
+  revalidateAcademicSetup()
+  const message = delivery.notConfigured
+    ? 'Email provider setup is required before paid invoice emails can be sent.'
+    : `${delivery.sent} email${delivery.sent === 1 ? '' : 's'} sent${delivery.failed ? `; ${delivery.failed} failed and can be retried` : ''}.`
+  finish(formData, delivery.notConfigured ? 'error' : 'notice', message)
 }
 
 export async function createAcademicClass(formData: FormData) {

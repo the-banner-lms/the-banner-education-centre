@@ -3,10 +3,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
 import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
+import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import { getRoleBadgeStyle } from '@/utils/theme'
-import { formatTuitionAmount, getTuitionStatusStyle } from '@/lib/tuition'
+import { formatTuitionAmount, getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
 import { getEnrollmentReviewNotices } from '@/lib/enrollmentNotices'
 
 export const dynamic = 'force-dynamic'
@@ -172,23 +173,28 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice / Due</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {tuitionFees.map(fee => (
-                  <tr key={fee.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                {tuitionFees.map(fee => {
+                  const displayStatus = getTuitionDisplayStatus(fee.status, fee.due_date)
+                  return <tr key={fee.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{fee.month_year}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTuitionStatusStyle(fee.status)}`}>
-                        {fee.status.toUpperCase()}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTuitionStatusStyle(displayStatus)}`}>
+                        {displayStatus.toUpperCase()}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{new Date(fee.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      <p className="mb-2 whitespace-nowrap font-mono text-xs font-semibold text-gray-700">{fee.invoice_number || 'Preparing invoice'}</p>
+                      <p className="mb-2 whitespace-nowrap text-xs">Due {fee.due_date ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'Asia/Yangon' }).format(new Date(`${fee.due_date}T00:00:00+06:30`)) : '-'}</p>
+                      <TuitionInvoiceDownloadLink feeId={fee.id} invoiceNumber={fee.invoice_number} />
+                    </td>
                   </tr>
-                ))}
+                })}
               </tbody>
             </table>
           </div>

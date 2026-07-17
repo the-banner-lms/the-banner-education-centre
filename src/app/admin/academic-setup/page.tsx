@@ -19,6 +19,7 @@ export default async function AdminAcademicSetupPage(props: {
       returnPath="/admin/academic-setup"
       notice={searchParams.notice}
       error={searchParams.error || setup.error || undefined}
+      emailConfigured={Boolean(process.env.RESEND_API_KEY && process.env.PAYMENT_EMAIL_FROM)}
     />
   )
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
 
 export type AttendanceEntry = {
   student_id: string
@@ -71,24 +72,51 @@ export async function bulkSaveMonthlyTuition(
     }
   }
 
-  const tuitionUpserts = entriesToSave.map(entry => ({
-    student_id: entry.student_id,
-    month_year: monthYear,
-    status: entry.status,
-    amount: Math.round(Number(entry.amount) * 100) / 100,
-    remarks: entry.remarks?.trim() || '',
-    staff_id: user.id
-  }))
+  const { data: existingFees, error: existingFeeError } = studentIds.length > 0
+    ? await supabase
+      .from('monthly_tuition_fees')
+      .select('student_id, status, email_status, email_sent_at')
+      .eq('month_year', monthYear)
+      .in('student_id', studentIds)
+    : { data: [], error: null }
 
+  if (existingFeeError) return { error: 'Unable to check existing tuition records' }
+  const existingByStudent = new Map((existingFees || []).map(fee => [fee.student_id, fee]))
+  const now = new Date().toISOString()
+
+  const tuitionUpserts = entriesToSave.map(entry => {
+    const existing = existingByStudent.get(entry.student_id)
+    const emailAlreadySent = existing?.email_status === 'sent' && Boolean(existing.email_sent_at)
+    return {
+      student_id: entry.student_id,
+      month_year: monthYear,
+      status: entry.status,
+      amount: Math.round(Number(entry.amount) * 100) / 100,
+      remarks: entry.remarks?.trim() || '',
+      staff_id: user.id,
+      verified_by: entry.status === 'paid' ? user.id : null,
+      verified_at: entry.status === 'paid' ? now : null,
+      paid_at: entry.status === 'paid' ? now : null,
+      email_status: entry.status === 'paid'
+        ? emailAlreadySent ? 'sent' : 'pending'
+        : 'not_applicable',
+      email_sent_at: existing?.email_sent_at || null,
+      email_error: null,
+    }
+  })
+
+  let savedRows: Array<{ id: string; status: string; email_status: string }> = []
   if (tuitionUpserts.length > 0) {
-    const { error: tuiError } = await supabase
+    const { data, error: tuiError } = await supabase
       .from('monthly_tuition_fees')
       .upsert(tuitionUpserts, { onConflict: 'student_id, month_year' })
+      .select('id, status, email_status')
 
     if (tuiError) {
       console.error('Error upserting tuition fees:', tuiError)
       return { error: 'Failed to save tuition fees' }
     }
+    savedRows = data || []
   }
 
   revalidatePath('/admin/students/fast-entry')
@@ -96,7 +124,14 @@ export async function bulkSaveMonthlyTuition(
   revalidatePath('/dashboard/[id]', 'page')
   revalidatePath('/dashboard', 'page')
 
-  return { success: true, savedCount: tuitionUpserts.length }
+  const pendingEmailIds = savedRows
+    .filter(row => row.status === 'paid' && row.email_status !== 'sent')
+    .map(row => row.id)
+  const emailDelivery = pendingEmailIds.length
+    ? await sendPaidTuitionInvoiceEmails(pendingEmailIds)
+    : { sent: 0, alreadySent: 0, notConfigured: 0, failed: 0 }
+
+  return { success: true, savedCount: tuitionUpserts.length, emailDelivery }
 }
 
 // 2. Teacher Submit Daily Report (Attendance Only)

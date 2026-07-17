@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
+import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
 import {
   analyzePaymentSlip,
   hashSubmissionFingerprint,
@@ -315,6 +316,81 @@ export async function updateEnrollmentStatus(
   }
   if (reviewReason.length > 500) return { status: 'error', message: 'Review notice is too long.' }
 
+  const { data: submission, error: lookupError } = await supabaseAdmin
+    .from('enrollment_submissions')
+    .select('id, submission_type, assigned_class, student_name, email, student_number, payment_month, payment_amount, transaction_id, status')
+    .eq('id', submissionId)
+    .maybeSingle()
+
+  if (lookupError || !submission) {
+    return { status: 'error', message: 'Submission not found.' }
+  }
+
+  let paidFeeId: string | null = null
+  if (status === 'completed' && submission.submission_type === 'monthly_payment') {
+    let student: { id: string; email: string } | null = null
+    if (submission.student_number) {
+      const { data } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('role', 'student')
+        .eq('student_number', submission.student_number)
+        .maybeSingle()
+      student = data
+    }
+    if (!student) {
+      const { data } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email')
+        .eq('role', 'student')
+        .ilike('email', submission.email)
+        .maybeSingle()
+      student = data
+    }
+
+    if (!student) {
+      return {
+        status: 'error',
+        message: 'Cannot verify payment: no existing student matches this Student ID or email.',
+      }
+    }
+    if (!submission.payment_month || !submission.payment_amount) {
+      return { status: 'error', message: 'Cannot verify payment: month or amount is missing.' }
+    }
+
+    const { data: existingFee } = await supabaseAdmin
+      .from('monthly_tuition_fees')
+      .select('id, status, email_status, email_sent_at')
+      .eq('student_id', student.id)
+      .eq('month_year', submission.payment_month)
+      .maybeSingle()
+
+    const shouldQueueEmail = !existingFee?.email_sent_at || existingFee.email_status !== 'sent'
+    const { data: paidFee, error: tuitionError } = await supabaseAdmin
+      .from('monthly_tuition_fees')
+      .upsert({
+        student_id: student.id,
+        month_year: submission.payment_month,
+        status: 'paid',
+        amount: Math.round(Number(submission.payment_amount) * 100) / 100,
+        remarks: reviewReason || `Online payment verified · Transaction ${submission.transaction_id || 'recorded'}`,
+        staff_id: reviewerId,
+        verified_by: reviewerId,
+        verified_at: new Date().toISOString(),
+        paid_at: new Date().toISOString(),
+        payment_submission_id: submission.id,
+        ...(shouldQueueEmail ? { email_status: 'pending', email_error: null } : {}),
+      }, { onConflict: 'student_id,month_year' })
+      .select('id')
+      .single()
+
+    if (tuitionError || !paidFee) {
+      console.error('Verified payment could not be linked to tuition:', tuitionError)
+      return { status: 'error', message: 'Payment could not be linked to the student tuition record.' }
+    }
+    paidFeeId = paidFee.id
+  }
+
   const { error } = await supabaseAdmin
     .from('enrollment_submissions')
     .update({
@@ -334,6 +410,19 @@ export async function updateEnrollmentStatus(
   revalidatePath('/admin/enrollments')
   revalidatePath('/staff/enrollments')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/[id]', 'page')
+
+  if (paidFeeId) {
+    const delivery = await sendPaidTuitionInvoiceEmail(paidFeeId)
+    return {
+      status: 'success',
+      message: delivery.status === 'sent'
+        ? 'Payment verified, invoice created and email sent.'
+        : delivery.status === 'already_sent'
+          ? 'Payment verified. The invoice email was already sent.'
+          : delivery.message,
+    }
+  }
   return { status: 'success', message: status === 'rejected' ? 'Rejected notice saved.' : 'Review status saved.' }
 }
 

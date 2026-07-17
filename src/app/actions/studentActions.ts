@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
+import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -371,7 +372,16 @@ export async function recordMonthlyTuitionFee(data: {
     throw new Error('Remarks must be 500 characters or fewer')
   }
 
-  const { error } = await supabaseAdmin
+  const { data: existingFee } = await supabaseAdmin
+    .from('monthly_tuition_fees')
+    .select('email_status, email_sent_at')
+    .eq('student_id', data.student_id)
+    .eq('month_year', data.month_year)
+    .maybeSingle()
+  const emailAlreadySent = existingFee?.email_status === 'sent' && Boolean(existingFee.email_sent_at)
+  const now = new Date().toISOString()
+
+  const { data: savedFee, error } = await supabaseAdmin
     .from('monthly_tuition_fees')
     .upsert({
       student_id: data.student_id,
@@ -379,12 +389,22 @@ export async function recordMonthlyTuitionFee(data: {
       status: data.status,
       amount: Math.round(amount * 100) / 100,
       remarks: data.remarks,
-      staff_id: staffId
+      staff_id: staffId,
+      verified_by: data.status === 'paid' ? staffId : null,
+      verified_at: data.status === 'paid' ? now : null,
+      paid_at: data.status === 'paid' ? now : null,
+      email_status: data.status === 'paid'
+        ? emailAlreadySent ? 'sent' : 'pending'
+        : 'not_applicable',
+      email_sent_at: existingFee?.email_sent_at || null,
+      email_error: null,
     }, {
       onConflict: 'student_id,month_year'
     })
+    .select('id')
+    .single()
 
-  if (error) {
+  if (error || !savedFee) {
     console.error('Error recording tuition fee:', error)
     throw new Error('Failed to record tuition fee')
   }
@@ -392,5 +412,10 @@ export async function recordMonthlyTuitionFee(data: {
   revalidatePath(`/admin/students/${data.student_id}`)
   revalidatePath(`/staff/students/${data.student_id}`)
   revalidatePath(`/dashboard`)
-  return { success: true }
+  revalidatePath(`/dashboard/${data.student_id}`)
+
+  const emailDelivery = data.status === 'paid' && !emailAlreadySent
+    ? await sendPaidTuitionInvoiceEmail(savedFee.id)
+    : null
+  return { success: true, emailDelivery }
 }

@@ -157,7 +157,15 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       if (result.error) {
         setMessage({ type: 'error', text: result.error })
       } else {
-        setMessage({ type: 'success', text: `${result.savedCount || 0} monthly payment records saved. Student dashboards are synced.` })
+        const delivery = result.emailDelivery
+        const emailNote = delivery?.sent
+          ? ` ${delivery.sent} paid invoice email${delivery.sent === 1 ? '' : 's'} sent.`
+          : delivery?.notConfigured
+            ? ' Paid records saved; email provider setup is still required.'
+            : delivery?.failed
+              ? ' Paid records saved; one or more emails need retrying.'
+              : ''
+        setMessage({ type: 'success', text: `${result.savedCount || 0} monthly payment records saved. Student dashboards are synced.${emailNote}` })
         setHasChanges(false)
         router.refresh()
       }

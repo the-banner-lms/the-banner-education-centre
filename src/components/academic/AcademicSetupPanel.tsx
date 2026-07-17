@@ -1,7 +1,9 @@
 import {
   createAcademicClass,
   createClassSection,
+  generateMonthlyInvoices,
   saveAcademicSettings,
+  sendPendingPaidInvoiceEmails,
   updateAcademicClass,
   updateClassSection,
 } from '@/app/actions/academicSetupActions'
@@ -45,12 +47,14 @@ export default function AcademicSetupPanel({
   returnPath,
   notice,
   error,
+  emailConfigured,
 }: {
   settings: AcademicSettings
   classes: AcademicClass[]
   returnPath: '/admin/academic-setup' | '/staff/academic-setup'
   notice?: string
   error?: string
+  emailConfigured: boolean
 }) {
   const activeClasses = classes.filter(schoolClass => schoolClass.is_active).length
   const totalMonthlyFees = classes
@@ -108,6 +112,32 @@ export default function AcademicSetupPanel({
           </label>
           <button type="submit" className="min-h-11 rounded-lg bg-banner-dark px-5 py-2 text-sm font-black text-white hover:bg-[#0b5226]">Save Settings</button>
         </form>
+      </section>
+
+      <section className="rounded-2xl border border-green-200 bg-green-50/50 p-5 shadow-sm sm:p-6" aria-labelledby="generate-invoices-title">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 id="generate-invoices-title" className="text-xl font-black text-gray-950">Generate Monthly Invoices</h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">Creates one unpaid invoice for every approved student whose class has a monthly fee. Existing invoices for the selected month are kept unchanged.</p>
+          </div>
+          <form action={generateMonthlyInvoices} className="grid shrink-0 gap-3 sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
+            <ReturnPath value={returnPath} />
+            <label className={labelClass}>Invoice Month
+              <input name="month_year" type="month" required defaultValue={`${settings.academic_year}-${String(new Date().getMonth() + 1).padStart(2, '0')}`} className={inputClass} />
+            </label>
+            <button type="submit" className="min-h-11 rounded-lg bg-green-700 px-5 py-2 text-sm font-black text-white hover:bg-green-800">Generate Invoices</button>
+          </form>
+        </div>
+        <div className={`mt-5 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${emailConfigured ? 'border-green-200 bg-white' : 'border-amber-200 bg-amber-50'}`}>
+          <div>
+            <p className="text-sm font-black text-gray-900">Paid invoice email: {emailConfigured ? 'Ready' : 'Configuration required'}</p>
+            <p className="mt-1 text-xs leading-5 text-gray-600">Verified payments are emailed once. Use this button to send or retry invoices for existing paid students.</p>
+          </div>
+          <form action={sendPendingPaidInvoiceEmails}>
+            <ReturnPath value={returnPath} />
+            <button type="submit" className="min-h-10 whitespace-nowrap rounded-lg border border-banner-dark bg-white px-4 py-2 text-sm font-black text-banner-dark hover:bg-green-50">Send Pending Paid Emails</button>
+          </form>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="add-class-title">
