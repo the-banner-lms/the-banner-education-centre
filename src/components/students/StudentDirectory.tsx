@@ -10,8 +10,8 @@ type Student = {
   assigned_class?: string | null
 }
 
-function ClassAssignmentForm({ student, variant }: { student: Student; variant: 'mobile' | 'desktop' }) {
-  const fieldId = `assigned-class-${variant}-${student.id}`
+function ClassAssignmentForm({ student }: { student: Student }) {
+  const fieldId = `assigned-class-${student.id}`
 
   return (
     <form action={updateStudentClass.bind(null, student.id)} className="flex min-w-0 items-center gap-2">
@@ -44,95 +44,53 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
   }
 
   return (
-    <div className="border-t border-gray-200">
-      <div className="divide-y divide-gray-200 md:hidden">
+    <div className="space-y-4 border-t border-gray-200 bg-gray-50/70 p-4 sm:p-5">
         {students.map((student) => (
-          <article key={student.id} className="p-4">
-            <div className="flex items-center gap-3">
-              <Link href={`/dashboard/${student.id}`} className="shrink-0">
-                <img
-                  className="h-12 w-12 rounded-full object-cover ring-1 ring-gray-200"
-                  src={student.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.email)}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                />
-              </Link>
-              <div className="min-w-0 flex-1">
-                <Link href={`/dashboard/${student.id}`} className="block truncate font-semibold text-gray-900 hover:text-indigo-600">
-                  {student.full_name || 'No Name'}
+          <article key={student.id} className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div className="flex min-w-0 items-center gap-3 lg:w-72 lg:shrink-0">
+                <Link href={`/dashboard/${student.id}`} className="shrink-0">
+                  <img
+                    className="h-14 w-14 rounded-full object-cover ring-1 ring-gray-200 transition-all hover:ring-2 hover:ring-indigo-300"
+                    src={student.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.email)}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
                 </Link>
-                <p className="truncate text-sm text-gray-500">{student.email}</p>
-                <span className="mt-1 inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-[#0f6630]">
-                  {getStudentClassLabel(student.assigned_class)}
-                </span>
+                <div className="min-w-0">
+                  <Link href={`/dashboard/${student.id}`} className="block truncate font-semibold text-gray-900 hover:text-indigo-600">
+                    {student.full_name || 'No Name'}
+                  </Link>
+                  <p className="truncate text-sm text-gray-500">{student.email}</p>
+                  <span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
+                    {getStudentClassLabel(student.assigned_class)}
+                  </span>
+                </div>
               </div>
+
+              <div className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                {canAssign ? (
+                  <>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Assign / Change Class</p>
+                    <ClassAssignmentForm student={student} />
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned Class</p>
+                    <p className="mt-1 font-semibold text-[#0f6630]">{getStudentClassLabel(student.assigned_class)}</p>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href={`${basePath}/${student.id}`}
+                className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 lg:w-auto"
+              >
+                Manage Profile &rarr;
+              </Link>
             </div>
-            {canAssign && (
-              <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Assign / Change Class</p>
-                <ClassAssignmentForm student={student} variant="mobile" />
-              </div>
-            )}
-            <Link
-              href={`${basePath}/${student.id}`}
-              className="mt-3 block rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
-            >
-              Manage Profile
-            </Link>
           </article>
         ))}
-      </div>
-
-      <div className="hidden overflow-x-auto overscroll-x-contain md:block">
-        <table className="min-w-[720px] divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Student</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Class</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td className="whitespace-nowrap px-6 py-4">
-                  <div className="flex items-center">
-                    <Link href={`/dashboard/${student.id}`} className="shrink-0">
-                      <img
-                        className="h-10 w-10 rounded-full object-cover transition-all hover:ring-2 hover:ring-indigo-300"
-                        src={student.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.email)}
-                        alt=""
-                        referrerPolicy="no-referrer"
-                      />
-                    </Link>
-                    <Link href={`/dashboard/${student.id}`} className="ml-4 text-sm font-medium text-gray-900 hover:text-indigo-600">
-                      {student.full_name || 'No Name'}
-                    </Link>
-                  </div>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4">
-                  {canAssign ? (
-                    <div className="w-56">
-                      <ClassAssignmentForm student={student} variant="desktop" />
-                    </div>
-                  ) : (
-                    <span className="inline-flex rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-[#0f6630]">
-                      {getStudentClassLabel(student.assigned_class)}
-                    </span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{student.email}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                  <Link href={`${basePath}/${student.id}`} className="text-indigo-600 hover:text-indigo-900">
-                    Manage Profile &rarr;
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   )
 }
