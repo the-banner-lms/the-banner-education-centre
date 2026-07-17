@@ -1,4 +1,4 @@
-import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee, updateStudentClass } from '@/app/actions/studentActions'
+import { uploadProfilePicture, saveWeeklyPerformance, markDailyAttendance, recordMonthlyTuitionFee, updateStudentDetails } from '@/app/actions/studentActions'
 import ProfilePictureUpload from '@/app/admin/students/[id]/ProfilePictureUpload' // We'll move this later if needed, or leave it and update import
 import Link from 'next/link'
 import { getRoleBannerGradient } from '@/utils/theme'
@@ -70,10 +70,11 @@ export default function StudentManager({
               Class: {getStudentClassLabel(student.assigned_class)}
             </p>
             <p className="text-sm text-gray-500 mt-1">{student.email}</p>
+            <p className="mt-2 text-sm text-gray-600">Address: {student.address || 'No address'}</p>
             <p className="text-xs text-gray-400 mt-2">Student ID: {student.id}</p>
 
             {canManageClass && (
-              <form action={updateStudentClass.bind(null, studentId)} className="mt-5 flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-end">
+              <form action={updateStudentDetails.bind(null, studentId)} className="mt-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2 sm:items-end">
                 <div className="min-w-0 flex-1">
                   <label htmlFor="assigned_class" className="block text-sm font-semibold text-gray-800">Change Assigned Class</label>
                   <select
@@ -89,8 +90,23 @@ export default function StudentManager({
                     ))}
                   </select>
                 </div>
-                <button type="submit" className="min-h-11 rounded-lg bg-[#0f6630] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0b5226]">
-                  Save Class
+                <div className="min-w-0">
+                  <label htmlFor="address" className="block text-sm font-semibold text-gray-800">Address</label>
+                  <input
+                    id="address"
+                    name="address"
+                    type="text"
+                    required
+                    minLength={3}
+                    maxLength={300}
+                    defaultValue={student.address || ''}
+                    autoComplete="street-address"
+                    placeholder="Enter student address"
+                    className="mt-2 min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+                  />
+                </div>
+                <button type="submit" className="min-h-11 rounded-lg bg-[#0f6630] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0b5226] sm:col-span-2 sm:justify-self-end">
+                  Save Class & Address
                 </button>
               </form>
             )}

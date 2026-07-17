@@ -68,6 +68,7 @@ export async function createManualStudent(
   const password = String(formData.get('password') || '')
   const confirmPassword = String(formData.get('confirm_password') || '')
   const assignedClass = String(formData.get('assigned_class') || '')
+  const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   const requestedStatus = String(formData.get('approval_status') || 'approved')
   const approvalStatus = requestedStatus === 'pending' ? 'pending' : 'approved'
   const requestedBasePath = String(formData.get('base_path') || '')
@@ -95,6 +96,10 @@ export async function createManualStudent(
     return { error: 'Select a valid class for the student.' }
   }
 
+  if (address.length < 3 || address.length > 300) {
+    return { error: 'Address must be between 3 and 300 characters.' }
+  }
+
   const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
@@ -102,6 +107,7 @@ export async function createManualStudent(
     user_metadata: {
       full_name: fullName,
       assigned_class: assignedClass,
+      address,
     },
   })
 
@@ -119,6 +125,7 @@ export async function createManualStudent(
       email,
       full_name: fullName,
       assigned_class: assignedClass,
+      address,
       role: 'student',
       approval_status: approvalStatus,
     })
@@ -138,25 +145,30 @@ export async function createManualStudent(
   redirect(`${basePath}/${studentId}`)
 }
 
-export async function updateStudentClass(studentId: string, formData: FormData) {
+export async function updateStudentDetails(studentId: string, formData: FormData) {
   await verifyStaffAccess()
 
   const assignedClass = String(formData.get('assigned_class') || '')
+  const address = String(formData.get('address') || '').trim().replace(/\s+/g, ' ')
   if (!isStudentClass(assignedClass)) {
     throw new Error('Select a valid student class.')
   }
 
+  if (address.length < 3 || address.length > 300) {
+    throw new Error('Address must be between 3 and 300 characters.')
+  }
+
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ assigned_class: assignedClass })
+    .update({ assigned_class: assignedClass, address })
     .eq('id', studentId)
     .eq('role', 'student')
     .select('id')
     .single()
 
   if (error) {
-    console.error('Error updating student class:', error)
-    throw new Error('Failed to update the student class.')
+    console.error('Error updating student details:', error)
+    throw new Error('Failed to update the student class and address.')
   }
 
   revalidatePath('/admin/students')

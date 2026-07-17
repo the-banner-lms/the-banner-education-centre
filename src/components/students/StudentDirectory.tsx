@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { updateStudentClass } from '@/app/actions/studentActions'
+import { updateStudentDetails } from '@/app/actions/studentActions'
 import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
 
 type Student = {
@@ -8,29 +8,48 @@ type Student = {
   full_name?: string | null
   avatar_url?: string | null
   assigned_class?: string | null
+  address?: string | null
 }
 
-function ClassAssignmentForm({ student }: { student: Student }) {
+function StudentDetailsForm({ student }: { student: Student }) {
   const fieldId = `assigned-class-${student.id}`
+  const addressId = `address-${student.id}`
 
   return (
-    <form action={updateStudentClass.bind(null, student.id)} className="flex min-w-0 items-center gap-2">
-      <label htmlFor={fieldId} className="sr-only">Assigned class for {student.full_name || student.email}</label>
-      <select
-        id={fieldId}
-        name="assigned_class"
-        required
-        defaultValue={student.assigned_class || ''}
-        className="min-h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
-      >
-        <option value="" disabled>Select class</option>
-        {STUDENT_CLASSES.map((studentClass) => (
-          <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
-        ))}
-      </select>
+    <form action={updateStudentDetails.bind(null, student.id)} className="grid min-w-0 gap-3 xl:grid-cols-[minmax(9rem,0.7fr)_minmax(14rem,1.3fr)_auto] xl:items-end">
+      <div>
+        <label htmlFor={fieldId} className="mb-1 block text-xs font-semibold text-gray-600">Class</label>
+        <select
+          id={fieldId}
+          name="assigned_class"
+          required
+          defaultValue={student.assigned_class || ''}
+          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+        >
+          <option value="" disabled>Select class</option>
+          {STUDENT_CLASSES.map((studentClass) => (
+            <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor={addressId} className="mb-1 block text-xs font-semibold text-gray-600">Address</label>
+        <input
+          id={addressId}
+          name="address"
+          type="text"
+          required
+          minLength={3}
+          maxLength={300}
+          defaultValue={student.address || ''}
+          placeholder="Enter student address"
+          autoComplete="street-address"
+          className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+        />
+      </div>
       <button
         type="submit"
-        className="min-h-10 shrink-0 rounded-lg bg-[#0f6630] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0b5226] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6630] focus-visible:ring-offset-1"
+        className="min-h-10 shrink-0 rounded-lg bg-[#0f6630] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#0b5226] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6630] focus-visible:ring-offset-1"
       >
         Save
       </button>
@@ -62,6 +81,9 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
                     {student.full_name || 'No Name'}
                   </Link>
                   <p className="truncate text-sm text-gray-500">{student.email}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                    Address: {student.address || 'No address'}
+                  </p>
                   <span className="mt-1 inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-[#0f6630] ring-1 ring-inset ring-green-200">
                     {getStudentClassLabel(student.assigned_class)}
                   </span>
@@ -71,13 +93,15 @@ function StudentList({ students, basePath, canAssign }: { students: Student[]; b
               <div className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 p-3">
                 {canAssign ? (
                   <>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Assign / Change Class</p>
-                    <ClassAssignmentForm student={student} />
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Student Assignment</p>
+                    <StudentDetailsForm student={student} />
                   </>
                 ) : (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Assigned Class</p>
                     <p className="mt-1 font-semibold text-[#0f6630]">{getStudentClassLabel(student.assigned_class)}</p>
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Address</p>
+                    <p className="mt-1 text-sm text-gray-700">{student.address || 'No address'}</p>
                   </div>
                 )}
               </div>

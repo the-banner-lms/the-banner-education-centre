@@ -76,6 +76,21 @@ export default function ManualStudentForm({ basePath }: { basePath: '/admin/stud
           />
         </div>
 
+        <div>
+          <label htmlFor="address" className="block text-sm font-semibold text-gray-800">Address</label>
+          <textarea
+            id="address"
+            name="address"
+            required
+            minLength={3}
+            maxLength={300}
+            rows={3}
+            autoComplete="street-address"
+            placeholder="Student home address"
+            className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-[#0f6630] focus:ring-2 focus:ring-[#0f6630]/20"
+          />
+        </div>
+
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-gray-800">Temporary Password</label>
