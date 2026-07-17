@@ -7,6 +7,7 @@ import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAt
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import Link from 'next/link'
 import { getRoleBannerGradient, getRoleBadgeStyle } from '@/utils/theme'
+import { formatTuitionAmount, getTuitionStatusStyle } from '@/lib/tuition'
 
 export const dynamic = 'force-dynamic'
 
@@ -191,6 +192,7 @@ export default async function UniversalUserDashboardView(props: {
                 <tr>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
                   <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
                 </tr>
@@ -200,10 +202,11 @@ export default async function UniversalUserDashboardView(props: {
                   <tr key={fee.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{fee.month_year}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${fee.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTuitionStatusStyle(fee.status)}`}>
                         {fee.status.toUpperCase()}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{new Date(fee.created_at).toLocaleDateString()}</td>
                   </tr>

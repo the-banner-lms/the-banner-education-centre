@@ -5,6 +5,7 @@ import { getRoleBannerGradient } from '@/utils/theme'
 import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import { getStudentClassLabel, getYleSubclassLabel, STUDENT_CLASSES, YLE_SUBCLASSES } from '@/lib/studentClasses'
+import { formatTuitionAmount, getTuitionStatusStyle } from '@/lib/tuition'
 
 export default function StudentManager({
   student,
@@ -262,6 +263,7 @@ export default function StudentManager({
                 student_id: studentId,
                 month_year: formData.get('month_year') as string,
                 status: formData.get('status') as string,
+                amount: Number(formData.get('amount') || 0),
                 remarks: formData.get('remarks') as string,
               }
               await recordMonthlyTuitionFee(data)
@@ -274,11 +276,16 @@ export default function StudentManager({
                   </div>
                 </div>
                 <div className="flex-1 h-min">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Monthly Fee Amount (MMK)</label>
+                    <input type="number" name="amount" required min="0" max="100000000" step="1000" placeholder="0" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 md:w-1/2 lg:w-1/3" />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
                     <select name="status" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border md:w-1/2 lg:w-1/3">
                       <option value="paid">Paid</option>
                       <option value="unpaid">Unpaid</option>
+                      <option value="scholar">Scholar</option>
                     </select>
                   </div>
                 </div>
@@ -319,6 +326,7 @@ export default function StudentManager({
                   <tr>
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
                     <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
                   </tr>
@@ -328,10 +336,11 @@ export default function StudentManager({
                     <tr key={fee.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{fee.month_year}</td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${fee.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTuitionStatusStyle(fee.status)}`}>
                           {fee.status.toUpperCase()}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{new Date(fee.created_at).toLocaleDateString()}</td>
                     </tr>

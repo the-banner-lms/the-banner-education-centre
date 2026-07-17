@@ -12,15 +12,14 @@ export type AttendanceEntry = {
 
 export type TuitionEntry = {
   student_id: string
-  status: string
+  status: 'paid' | 'unpaid' | 'scholar'
+  amount: number
   remarks?: string
+  recorded?: boolean
 }
 
-// 1. Admin/Staff Bulk Save (Attendance + Tuition)
-export async function adminBulkSave(
-  date: string,
+export async function bulkSaveMonthlyTuition(
   monthYear: string,
-  attendanceData: AttendanceEntry[],
   tuitionData: TuitionEntry[]
 ) {
   const supabase = await createClient()
@@ -33,33 +32,51 @@ export async function adminBulkSave(
     return { error: 'Insufficient permissions' }
   }
 
-  // 1. Prepare Attendance Upserts
-  const attendanceUpserts = attendanceData.map(entry => ({
-    student_id: entry.student_id,
-    date: date,
-    morning_status: entry.morning_status,
-    afternoon_status: entry.afternoon_status,
-    remarks: entry.remarks || '',
-    staff_id: user.id
-  }))
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthYear)) {
+    return { error: 'Invalid tuition month' }
+  }
 
-  if (attendanceUpserts.length > 0) {
-    const { error: attError } = await supabase
-      .from('daily_attendance')
-      .upsert(attendanceUpserts, { onConflict: 'student_id, date' })
+  if (!Array.isArray(tuitionData) || tuitionData.length > 500) {
+    return { error: 'Invalid tuition data' }
+  }
 
-    if (attError) {
-      console.error('Error upserting attendance:', attError)
-      return { error: 'Failed to save attendance records' }
+  const entriesToSave = tuitionData.filter(entry =>
+    entry.recorded || entry.amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks?.trim())
+  )
+  const studentIds = [...new Set(entriesToSave.map(entry => entry.student_id))]
+  if (studentIds.length !== entriesToSave.length) {
+    return { error: 'Duplicate student records found' }
+  }
+
+  const invalidEntry = entriesToSave.find(entry => {
+    const amount = Number(entry.amount)
+    return !entry.student_id
+      || !['paid', 'unpaid', 'scholar'].includes(entry.status)
+      || !Number.isFinite(amount)
+      || amount < 0
+      || amount > 100000000
+      || (entry.remarks?.length || 0) > 500
+  })
+  if (invalidEntry) return { error: 'One or more tuition records are invalid' }
+
+  if (studentIds.length > 0) {
+    const { data: validStudents, error: studentError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'student')
+      .in('id', studentIds)
+
+    if (studentError || validStudents?.length !== studentIds.length) {
+      return { error: 'One or more student records are invalid' }
     }
   }
 
-  // 2. Prepare Tuition Upserts
-  const tuitionUpserts = tuitionData.map(entry => ({
+  const tuitionUpserts = entriesToSave.map(entry => ({
     student_id: entry.student_id,
     month_year: monthYear,
     status: entry.status,
-    remarks: entry.remarks || '',
+    amount: Math.round(Number(entry.amount) * 100) / 100,
+    remarks: entry.remarks?.trim() || '',
     staff_id: user.id
   }))
 
@@ -74,11 +91,12 @@ export async function adminBulkSave(
     }
   }
 
-  // Revalidate relevant paths so student dashboards update immediately
+  revalidatePath('/admin/students/fast-entry')
+  revalidatePath('/staff/students/fast-entry')
   revalidatePath('/dashboard/[id]', 'page')
   revalidatePath('/dashboard', 'page')
 
-  return { success: true }
+  return { success: true, savedCount: tuitionUpserts.length }
 }
 
 // 2. Teacher Submit Daily Report (Attendance Only)

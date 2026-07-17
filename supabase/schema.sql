@@ -233,7 +233,8 @@ CREATE TABLE public.monthly_tuition_fees (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   month_year TEXT NOT NULL, -- Format: YYYY-MM
-  status TEXT NOT NULL CHECK (status IN ('paid', 'unpaid')),
+  status TEXT NOT NULL CHECK (status IN ('paid', 'unpaid', 'scholar')),
+  amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0 AND amount <= 100000000),
   remarks TEXT,
   staff_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,

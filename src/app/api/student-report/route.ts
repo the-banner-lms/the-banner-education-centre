@@ -26,6 +26,7 @@ interface PerformanceRecord {
 interface TuitionFeeRecord {
   month_year: string
   status: string
+  amount: number
   remarks: string | null
   created_at: string
 }
@@ -352,16 +353,18 @@ export function buildStudentReportPdf(options: {
 
     sectionHeading(doc, 'Tuition Fees')
     row(doc, [
-      { text: 'Month', width: 150 },
-      { text: 'Status', width: 110 },
-      { text: 'Remarks', width: contentWidth - 260 },
+      { text: 'Month', width: 110 },
+      { text: 'Status', width: 90 },
+      { text: 'Amount (MMK)', width: 120 },
+      { text: 'Remarks', width: contentWidth - 320 },
     ], true)
     if (options.tuitionFees.length) {
       options.tuitionFees.forEach((fee, index) => {
         row(doc, [
-          { text: fee.month_year, width: 150 },
-          { text: fee.status.toUpperCase(), width: 110 },
-          { text: fee.remarks || '-', width: contentWidth - 260, myanmar: true },
+          { text: fee.month_year, width: 110 },
+          { text: fee.status.toUpperCase(), width: 90 },
+          { text: new Intl.NumberFormat('en-US').format(Number(fee.amount || 0)), width: 120 },
+          { text: fee.remarks || '-', width: contentWidth - 320, myanmar: true },
         ], index % 2 === 1)
       })
     } else {
@@ -429,7 +432,7 @@ export async function GET(request: Request) {
       .order('week_start_date', { ascending: false }),
     supabase
       .from('monthly_tuition_fees')
-      .select('month_year, status, remarks, created_at')
+      .select('month_year, status, amount, remarks, created_at')
       .eq('student_id', studentId)
       .order('month_year', { ascending: false })
       .limit(12),

@@ -9,7 +9,14 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function StaffFastEntryPage() {
+function getCurrentMyanmarMonth() {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() + 390)
+  return now.toISOString().slice(0, 7)
+}
+
+export default async function StaffFastEntryPage(props: { searchParams: Promise<{ month?: string }> }) {
+  const searchParams = await props.searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -20,24 +27,22 @@ export default async function StaffFastEntryPage() {
     redirect('/dashboard')
   }
 
-  const today = new Date().toISOString().split('T')[0]
-  const currentMonthYear = today.substring(0, 7)
+  const currentMonthYear = getCurrentMyanmarMonth()
+  const selectedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(searchParams.month || '')
+    ? searchParams.month!
+    : currentMonthYear
 
   const { data: students } = await supabase
     .from('profiles')
-    .select('id, full_name, email, avatar_url')
+    .select('id, full_name, email, student_number, assigned_class, address')
     .eq('role', 'student')
+    .order('assigned_class')
     .order('full_name')
-
-  const { data: existingAttendance } = await supabase
-    .from('daily_attendance')
-    .select('*')
-    .eq('date', today)
 
   const { data: existingTuition } = await supabase
     .from('monthly_tuition_fees')
     .select('*')
-    .eq('month_year', currentMonthYear)
+    .eq('month_year', selectedMonth)
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -46,7 +51,7 @@ export default async function StaffFastEntryPage() {
           <Link href="/staff/students" className="text-indigo-600 hover:text-indigo-800 mr-4 font-medium flex items-center">
             &larr; Manage Students
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Fast Data Entry</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Monthly Payment Data Entry</h1>
         </div>
       </div>
 
@@ -54,7 +59,7 @@ export default async function StaffFastEntryPage() {
         <div className="flex">
           <div className="ml-3">
             <p className="text-sm text-blue-700">
-              Update attendance and tuition fees for all students at once. Changes made here will instantly sync to the individual student dashboards.
+              Enter monthly fees, remarks and Paid / Unpaid / Scholar status. Class totals and the monthly summary update automatically.
             </p>
           </div>
         </div>
@@ -62,10 +67,9 @@ export default async function StaffFastEntryPage() {
 
       <FastEntryTable 
         students={students || []} 
-        initialDate={today} 
-        initialMonthYear={currentMonthYear}
-        existingAttendance={existingAttendance || []}
+        monthYear={selectedMonth}
         existingTuition={existingTuition || []}
+        basePath="/staff/students/fast-entry"
       />
     </div>
   )

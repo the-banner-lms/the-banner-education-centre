@@ -351,10 +351,25 @@ export async function recordMonthlyTuitionFee(data: {
   student_id: string;
   month_year: string;
   status: string;
+  amount: number;
   remarks: string;
 }) {
   // Only Staff and Admin can record tuition fees
   const staffId = await verifyStaffAccess()
+
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(data.month_year)) {
+    throw new Error('Select a valid tuition month')
+  }
+  if (!['paid', 'unpaid', 'scholar'].includes(data.status)) {
+    throw new Error('Select a valid tuition status')
+  }
+  const amount = Number(data.amount)
+  if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+    throw new Error('Enter a valid monthly fee amount')
+  }
+  if (data.remarks.length > 500) {
+    throw new Error('Remarks must be 500 characters or fewer')
+  }
 
   const { error } = await supabaseAdmin
     .from('monthly_tuition_fees')
@@ -362,6 +377,7 @@ export async function recordMonthlyTuitionFee(data: {
       student_id: data.student_id,
       month_year: data.month_year,
       status: data.status,
+      amount: Math.round(amount * 100) / 100,
       remarks: data.remarks,
       staff_id: staffId
     }, {
