@@ -3,15 +3,27 @@ import Link from 'next/link'
 export default function StudentDirectory({
   students,
   basePath,
-  title = "Student Directory"
+  title = "Student Directory",
+  canCreate = false,
 }: {
   students: any[]
   basePath: string
   title?: string
+  canCreate?: boolean
 }) {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">{title}</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        {canCreate && (
+          <Link
+            href={`${basePath}/new`}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#0f6630] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0b5226] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6630] focus-visible:ring-offset-2"
+          >
+            + Add Student
+          </Link>
+        )}
+      </div>
       
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
         <div className="divide-y divide-gray-200 md:hidden">

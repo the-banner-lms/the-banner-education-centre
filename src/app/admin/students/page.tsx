@@ -17,5 +17,5 @@ export default async function AdminStudentsPage() {
     return <div>Error loading students.</div>
   }
 
-  return <StudentDirectory students={students || []} basePath="/admin/students" />
+  return <StudentDirectory students={students || []} basePath="/admin/students" canCreate />
 }

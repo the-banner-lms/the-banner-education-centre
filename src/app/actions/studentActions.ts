@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 
 const supabaseAdmin = createClient(
@@ -45,6 +46,88 @@ async function verifyStaffAccess() {
     throw new Error('Unauthorized: Only staff/admins can perform this action.')
   }
   return user.id
+}
+
+export type ManualStudentState = {
+  error: string | null
+}
+
+export async function createManualStudent(
+  _previousState: ManualStudentState,
+  formData: FormData
+): Promise<ManualStudentState> {
+  try {
+    await verifyStaffAccess()
+  } catch {
+    return { error: 'You do not have permission to create student accounts.' }
+  }
+
+  const fullName = String(formData.get('full_name') || '').trim().replace(/\s+/g, ' ')
+  const email = String(formData.get('email') || '').trim().toLowerCase()
+  const password = String(formData.get('password') || '')
+  const confirmPassword = String(formData.get('confirm_password') || '')
+  const requestedStatus = String(formData.get('approval_status') || 'approved')
+  const approvalStatus = requestedStatus === 'pending' ? 'pending' : 'approved'
+  const requestedBasePath = String(formData.get('base_path') || '')
+  const basePath = requestedBasePath === '/staff/students'
+    ? '/staff/students'
+    : '/admin/students'
+
+  if (fullName.length < 2 || fullName.length > 100) {
+    return { error: 'Full name must be between 2 and 100 characters.' }
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: 'Enter a valid email address.' }
+  }
+
+  if (password.length < 8) {
+    return { error: 'Temporary password must contain at least 8 characters.' }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'The passwords do not match.' }
+  }
+
+  const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+    },
+  })
+
+  if (createError || !authData.user) {
+    const message = createError?.message?.toLowerCase().includes('already')
+      ? 'A user with this email address already exists.'
+      : createError?.message || 'Failed to create the student account.'
+    return { error: message }
+  }
+
+  const studentId = authData.user.id
+  const { error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      email,
+      full_name: fullName,
+      role: 'student',
+      approval_status: approvalStatus,
+    })
+    .eq('id', studentId)
+    .select('id')
+    .single()
+
+  if (profileError) {
+    console.error('Error creating manual student profile:', profileError)
+    await supabaseAdmin.auth.admin.deleteUser(studentId)
+    return { error: 'The login account could not be linked to a student profile.' }
+  }
+
+  revalidatePath('/admin/students')
+  revalidatePath('/staff/students')
+  revalidatePath('/admin/users')
+  redirect(`${basePath}/${studentId}`)
 }
 
 export async function uploadProfilePicture(studentId: string, formData: FormData) {
