@@ -8,6 +8,7 @@ import {
   BookOpenIcon,
   BoltIcon,
   BriefcaseIcon,
+  BuildingLibraryIcon,
   ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentCheckIcon,
   DocumentTextIcon,
@@ -54,6 +55,7 @@ const navigationGroups = [
   {
     label: 'Data & Reports',
     items: [
+      { href: '/admin/academic-setup', label: 'Academic Setup', shortLabel: 'Academic', icon: BuildingLibraryIcon },
       { href: enrollmentsHref, label: 'Enrollments', shortLabel: 'Enrollments', icon: ClipboardDocumentCheckIcon },
       { href: monthlyPaymentsHref, label: 'Monthly Payment', shortLabel: 'Payments', icon: BanknotesIcon },
       { href: '/admin/students/fast-entry', label: 'Fast Data Entry', shortLabel: 'Fast Entry', icon: BoltIcon },

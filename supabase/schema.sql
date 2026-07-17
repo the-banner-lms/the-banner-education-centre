@@ -273,6 +273,76 @@ CREATE POLICY "Staff can manage tuition fees" ON public.monthly_tuition_fees FOR
   )
 );
 
+-- 9a. Academic year, class, section and fee settings
+CREATE TABLE public.academic_settings (
+  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+  academic_year INTEGER NOT NULL CHECK (academic_year BETWEEN 2000 AND 2100),
+  current_term TEXT NOT NULL CHECK (char_length(current_term) BETWEEN 2 AND 40),
+  payment_due_day SMALLINT NOT NULL DEFAULT 5 CHECK (payment_due_day BETWEEN 1 AND 28),
+  receipt_prefix TEXT NOT NULL DEFAULT 'TBEC' CHECK (receipt_prefix ~ '^[A-Z0-9-]{2,16}$'),
+  updated_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE public.school_classes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  academic_year INTEGER NOT NULL CHECK (academic_year BETWEEN 2000 AND 2100),
+  code TEXT NOT NULL CHECK (code ~ '^[a-z0-9-]{2,32}$'),
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 2 AND 80),
+  monthly_fee NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (monthly_fee BETWEEN 0 AND 100000000),
+  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order BETWEEN 0 AND 10000),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE UNIQUE INDEX school_classes_year_code_uidx ON public.school_classes (academic_year, lower(code));
+
+CREATE TABLE public.class_sections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  class_id UUID NOT NULL REFERENCES public.school_classes(id) ON DELETE CASCADE,
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 60),
+  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order BETWEEN 0 AND 10000),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE UNIQUE INDEX class_sections_class_name_uidx ON public.class_sections (class_id, lower(name));
+
+INSERT INTO public.academic_settings (singleton, academic_year, current_term, payment_due_day, receipt_prefix)
+VALUES (TRUE, 2026, '2nd Term', 5, 'TBEC');
+
+INSERT INTO public.school_classes (academic_year, code, name, sort_order) VALUES
+  (2026, 'pre-kg', 'Pre-KG', 10),
+  (2026, 'kg', 'KG', 20),
+  (2026, 'yle', 'YLE', 30),
+  (2026, 'primary1', 'Primary 1', 40),
+  (2026, 'primary2', 'Primary 2', 50),
+  (2026, 'primary3', 'Primary 3', 60),
+  (2026, 'primary4', 'Primary 4', 70),
+  (2026, 'primary5', 'Primary 5', 80),
+  (2026, 'primary6', 'Primary 6', 90);
+
+ALTER TABLE public.academic_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.school_classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.class_sections ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admin and staff manage academic settings" ON public.academic_settings FOR ALL TO authenticated
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')))
+WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')));
+
+CREATE POLICY "Admin and staff manage school classes" ON public.school_classes FOR ALL TO authenticated
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')))
+WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')));
+
+CREATE POLICY "Admin and staff manage class sections" ON public.class_sections FOR ALL TO authenticated
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')))
+WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('super_admin', 'admin', 'staff')));
+
 -- 10. Direct Messages
 CREATE TABLE public.direct_messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

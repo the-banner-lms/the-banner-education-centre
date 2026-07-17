@@ -47,6 +47,11 @@ export default async function StaffLayout({
               </Link>
             </li>
             <li>
+              <Link href="/staff/academic-setup" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
+                <span className="ms-3">Academic Setup</span>
+              </Link>
+            </li>
+            <li>
               <Link href="/staff/teacher-reports" className="flex flex-shrink-0 items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group whitespace-nowrap">
                 <span className="ms-3">Teacher Reports</span>
               </Link>
@@ -85,7 +90,7 @@ export default async function StaffLayout({
         </div>
       </aside>
 
-      <main className="flex-1 p-8">
+      <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-8">
         {children}
       </main>
     </div>
