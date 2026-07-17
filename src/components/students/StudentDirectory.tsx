@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { updateStudentClass } from '@/app/actions/studentActions'
 import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
 
 type Student = {
@@ -9,7 +10,35 @@ type Student = {
   assigned_class?: string | null
 }
 
-function StudentList({ students, basePath }: { students: Student[]; basePath: string }) {
+function ClassAssignmentForm({ student, variant }: { student: Student; variant: 'mobile' | 'desktop' }) {
+  const fieldId = `assigned-class-${variant}-${student.id}`
+
+  return (
+    <form action={updateStudentClass.bind(null, student.id)} className="flex min-w-0 items-center gap-2">
+      <label htmlFor={fieldId} className="sr-only">Assigned class for {student.full_name || student.email}</label>
+      <select
+        id={fieldId}
+        name="assigned_class"
+        required
+        defaultValue={student.assigned_class || ''}
+        className="min-h-10 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-[#0f6630] focus:outline-none focus:ring-2 focus:ring-[#0f6630]/20"
+      >
+        <option value="" disabled>Select class</option>
+        {STUDENT_CLASSES.map((studentClass) => (
+          <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>
+        ))}
+      </select>
+      <button
+        type="submit"
+        className="min-h-10 shrink-0 rounded-lg bg-[#0f6630] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0b5226] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6630] focus-visible:ring-offset-1"
+      >
+        Save
+      </button>
+    </form>
+  )
+}
+
+function StudentList({ students, basePath, canAssign }: { students: Student[]; basePath: string; canAssign: boolean }) {
   if (students.length === 0) {
     return <p className="border-t border-gray-200 p-6 text-center text-sm text-gray-500">No students assigned to this class.</p>
   }
@@ -38,6 +67,12 @@ function StudentList({ students, basePath }: { students: Student[]; basePath: st
                 </span>
               </div>
             </div>
+            {canAssign && (
+              <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Assign / Change Class</p>
+                <ClassAssignmentForm student={student} variant="mobile" />
+              </div>
+            )}
             <Link
               href={`${basePath}/${student.id}`}
               className="mt-3 block rounded-md bg-indigo-50 px-3 py-2 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
@@ -77,9 +112,15 @@ function StudentList({ students, basePath }: { students: Student[]; basePath: st
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  <span className="inline-flex rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-[#0f6630]">
-                    {getStudentClassLabel(student.assigned_class)}
-                  </span>
+                  {canAssign ? (
+                    <div className="w-56">
+                      <ClassAssignmentForm student={student} variant="desktop" />
+                    </div>
+                  ) : (
+                    <span className="inline-flex rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-[#0f6630]">
+                      {getStudentClassLabel(student.assigned_class)}
+                    </span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{student.email}</td>
                 <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
@@ -101,11 +142,13 @@ export default function StudentDirectory({
   basePath,
   title = 'Student Directory',
   canCreate = false,
+  canAssign = false,
 }: {
   students: Student[]
   basePath: string
   title?: string
   canCreate?: boolean
+  canAssign?: boolean
 }) {
   const classGroups = STUDENT_CLASSES.map((studentClass) => ({
     ...studentClass,
@@ -153,7 +196,7 @@ export default function StudentDirectory({
                 <span aria-hidden="true" className="text-lg text-gray-400 transition-transform group-open:rotate-180">⌄</span>
               </span>
             </summary>
-            <StudentList students={group.students} basePath={basePath} />
+            <StudentList students={group.students} basePath={basePath} canAssign={canAssign} />
           </details>
         ))}
       </div>
