@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   AcademicCapIcon,
+  BanknotesIcon,
   BookOpenIcon,
   BoltIcon,
   BriefcaseIcon,
@@ -18,6 +19,9 @@ import {
   UserGroupIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
+
+const enrollmentsHref = '/admin/enrollments'
+const monthlyPaymentsHref = '/admin/enrollments?type=monthly_payment&status=all'
 
 const navigationGroups = [
   {
@@ -50,7 +54,8 @@ const navigationGroups = [
   {
     label: 'Data & Reports',
     items: [
-      { href: '/admin/enrollments', label: 'Enrollments', shortLabel: 'Enrollments', icon: ClipboardDocumentCheckIcon },
+      { href: enrollmentsHref, label: 'Enrollments', shortLabel: 'Enrollments', icon: ClipboardDocumentCheckIcon },
+      { href: monthlyPaymentsHref, label: 'Monthly Payment', shortLabel: 'Payments', icon: BanknotesIcon },
       { href: '/admin/students/fast-entry', label: 'Fast Data Entry', shortLabel: 'Fast Entry', icon: BoltIcon },
       { href: '/admin/teacher-reports', label: 'Teacher Reports', shortLabel: 'Reports', icon: ClipboardDocumentCheckIcon },
     ],
@@ -59,13 +64,22 @@ const navigationGroups = [
 
 export default function AdminNavigation({ isFullAdmin }: { isFullAdmin: boolean }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const visibleGroups = navigationGroups.map(group => ({
     ...group,
     items: group.items.filter(item => !item.fullAdminOnly || isFullAdmin),
   }))
   const visibleItems = visibleGroups.flatMap(group => group.items)
   const activeHref = visibleItems
-    .filter(item => pathname === item.href || (item.href !== '/admin' && pathname.startsWith(`${item.href}/`)))
+    .filter(item => {
+      if (item.href === monthlyPaymentsHref) {
+        return pathname === enrollmentsHref && searchParams.get('type') === 'monthly_payment'
+      }
+      if (item.href === enrollmentsHref) {
+        return pathname === enrollmentsHref && searchParams.get('type') !== 'monthly_payment'
+      }
+      return pathname === item.href || (item.href !== '/admin' && pathname.startsWith(`${item.href}/`))
+    })
     .sort((a, b) => b.href.length - a.href.length)[0]?.href
 
   return (
