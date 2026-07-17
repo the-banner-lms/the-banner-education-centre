@@ -89,7 +89,7 @@ export async function sendPaidTuitionInvoiceEmail(feeId: string): Promise<Delive
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': `tuition-paid-${feeId}`,
+        'Idempotency-Key': `tuition-paid-${feeId}-${invoice.fee.invoice_number}`,
       },
       body: JSON.stringify({
         from,
