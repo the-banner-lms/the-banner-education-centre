@@ -257,6 +257,8 @@ CREATE TABLE public.monthly_tuition_fees (
   student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   month_year TEXT NOT NULL, -- Format: YYYY-MM
   status TEXT NOT NULL CHECK (status IN ('paid', 'unpaid', 'scholar')),
+  base_status TEXT CHECK (base_status IS NULL OR base_status IN ('paid', 'unpaid', 'scholar')),
+  yle_status TEXT CHECK (yle_status IS NULL OR yle_status IN ('paid', 'unpaid', 'scholar')),
   amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0 AND amount <= 100000000),
   base_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (base_amount BETWEEN 0 AND 100000000),
   yle_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (yle_amount BETWEEN 0 AND 100000000),

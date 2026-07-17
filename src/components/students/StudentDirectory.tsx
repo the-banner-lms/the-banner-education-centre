@@ -168,7 +168,9 @@ export default function StudentDirectory({
 }) {
   const classGroups = STUDENT_CLASSES.map((studentClass) => ({
     ...studentClass,
-    students: students.filter((student) => student.assigned_class === studentClass.value),
+    students: students.filter((student) => studentClass.value === 'yle'
+      ? student.assigned_class === 'yle' || Boolean(student.assigned_subclass)
+      : student.assigned_class === studentClass.value),
   }))
   const unassignedStudents = students.filter(
     (student) => !STUDENT_CLASSES.some((studentClass) => studentClass.value === student.assigned_class)

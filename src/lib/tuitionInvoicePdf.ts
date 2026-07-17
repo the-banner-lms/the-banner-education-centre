@@ -8,6 +8,8 @@ export type TuitionInvoiceData = {
     invoice_number: string
     month_year: string
     status: 'paid' | 'unpaid' | 'scholar'
+    base_status: 'paid' | 'unpaid' | 'scholar' | null
+    yle_status: 'paid' | 'unpaid' | 'scholar' | null
     amount: number | string
     base_amount: number | string
     yle_amount: number | string
@@ -164,17 +166,19 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
         title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
         detail: 'YLE standalone tuition',
         amount: yleAmount || Number(data.fee.amount),
+        status: data.fee.yle_status || data.fee.status,
       }]
       : hasYle
       ? [
-        ...(baseAmount > 0 ? [{ title: `${classLabel} Tuition`, detail: 'Base class tuition', amount: baseAmount }] : []),
+        ...(baseAmount > 0 ? [{ title: `${classLabel} Tuition`, detail: 'Base class tuition', amount: baseAmount, status: data.fee.base_status || data.fee.status }] : []),
         {
           title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
           detail: 'YLE dual-class tuition',
           amount: yleAmount,
+          status: data.fee.yle_status || data.fee.status,
         },
       ]
-      : [{ title: `${classLabel} Tuition`, detail: `${data.fee.month_year} monthly tuition`, amount: Number(data.fee.amount) }]
+      : [{ title: `${classLabel} Tuition`, detail: `${data.fee.month_year} monthly tuition`, amount: Number(data.fee.amount), status: data.fee.base_status || data.fee.status }]
     const rowHeight = 58
 
     invoiceLines.forEach((line, index) => {
@@ -182,7 +186,8 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
       doc.rect(left, lineTop, contentWidth, rowHeight).strokeColor('#e2e8f0').stroke()
       doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text(line.title, left + 16, lineTop + 12, { width: 270 })
       doc.fillColor('#64748b').font('Latin').fontSize(9).text(line.detail, left + 16, lineTop + 33, { width: 270 })
-      doc.fillColor(badgeColor).font('LatinBold').fontSize(10).text(data.fee.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
+      const lineColor = line.status === 'paid' ? '#166534' : line.status === 'scholar' ? '#1d4ed8' : '#b91c1c'
+      doc.fillColor(lineColor).font('LatinBold').fontSize(10).text(line.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
       doc.fillColor('#0f172a').font('LatinBold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
     })
 

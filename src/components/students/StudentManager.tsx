@@ -223,8 +223,10 @@ export default function StudentManager({
               const data = {
                 student_id: studentId,
                 month_year: formData.get('month_year') as string,
-                status: formData.get('status') as string,
-                amount: Number(formData.get('amount') || 0),
+                base_status: formData.get('base_status') as string,
+                yle_status: formData.get('yle_status') as string,
+                base_amount: Number(formData.get('base_amount') || 0),
+                yle_amount: Number(formData.get('yle_amount') || 0),
                 remarks: formData.get('remarks') as string,
               }
               await recordMonthlyTuitionFee(data)
@@ -236,19 +238,29 @@ export default function StudentManager({
                     <MonthlyDatePicker recordedMonths={tuitionFees ? tuitionFees.map(r => r.month_year) : []} />
                   </div>
                 </div>
-                <div className="flex-1 h-min">
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Monthly Fee Amount (MMK)</label>
-                    <input type="number" name="amount" required min="0" max="100000000" step="1000" placeholder="0" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 md:w-1/2 lg:w-1/3" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border md:w-1/2 lg:w-1/3">
-                      <option value="paid">Paid</option>
-                      <option value="unpaid">Unpaid</option>
-                      <option value="scholar">Scholar</option>
-                    </select>
-                  </div>
+                <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                  {student.assigned_class !== 'yle' && (
+                    <div className="rounded-lg border border-green-200 bg-green-50/50 p-4">
+                      <p className="mb-3 font-bold text-banner-dark">Base Class</p>
+                      <label className="block text-sm font-medium text-gray-700">Fee Amount (MMK)</label>
+                      <input type="number" name="base_amount" required min="0" max="100000000" step="1000" placeholder="0" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
+                      <label className="mt-3 block text-sm font-medium text-gray-700">Base Status</label>
+                      <select name="base_status" required defaultValue="unpaid" className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2 text-sm shadow-sm">
+                        <option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="scholar">Scholar</option>
+                      </select>
+                    </div>
+                  )}
+                  {student.assigned_subclass && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+                      <p className="mb-3 font-bold text-blue-800">YLE {getYleSubclassLabel(student.assigned_subclass)}</p>
+                      <label className="block text-sm font-medium text-gray-700">YLE Fee Amount (MMK)</label>
+                      <input type="number" name="yle_amount" required min="0" max="100000000" step="1000" placeholder="0" className="mt-1 block w-full rounded-md border border-gray-300 p-2 shadow-sm" />
+                      <label className="mt-3 block text-sm font-medium text-gray-700">YLE Status</label>
+                      <select name="yle_status" required defaultValue="unpaid" className="mt-1 block w-full rounded-md border border-gray-300 bg-white p-2 text-sm shadow-sm">
+                        <option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="scholar">Scholar</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -303,7 +315,7 @@ export default function StudentManager({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-800">
-                        <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} assignedClass={student.assigned_class} yleSubclass={student.assigned_subclass} />
+                        <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} baseStatus={fee.base_status} yleStatus={fee.yle_status} dueDate={fee.due_date} assignedClass={student.assigned_class} yleSubclass={student.assigned_subclass} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">

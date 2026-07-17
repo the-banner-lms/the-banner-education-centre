@@ -416,6 +416,8 @@ export async function updateEnrollmentStatus(
         student_id: student.id,
         month_year: submission.payment_month,
         status: 'paid',
+        base_status: baseAmount > 0 ? 'paid' : null,
+        yle_status: yleAmount > 0 ? 'paid' : null,
         amount: totalAmount,
         base_amount: baseAmount,
         yle_amount: yleAmount,

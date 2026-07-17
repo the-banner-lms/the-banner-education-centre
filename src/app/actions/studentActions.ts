@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
-import { splitTuitionAmount } from '@/lib/tuition'
+import { getOverallTuitionStatus, type TuitionStatus } from '@/lib/tuition'
 import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
 
 const supabaseAdmin = createClient(
@@ -290,6 +290,12 @@ export async function uploadProfilePicture(studentId: string, formData: FormData
   
   const file = formData.get('file') as File
   if (!file) throw new Error('No file provided')
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Profile picture must be a JPG, PNG or WebP image')
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Profile picture must be compressed below 2 MB')
+  }
 
   const fileExt = file.name.split('.').pop()
   const fileName = `${studentId}-${Math.random()}.${fileExt}`
@@ -320,8 +326,12 @@ export async function uploadProfilePicture(studentId: string, formData: FormData
   }
 
   revalidatePath(`/admin/students/${studentId}`)
+  revalidatePath('/admin/students')
   revalidatePath(`/teacher/students/${studentId}`)
   revalidatePath(`/staff/students/${studentId}`)
+  revalidatePath('/staff/students')
+  revalidatePath(`/dashboard/${studentId}`)
+  revalidatePath('/dashboard')
   return { success: true, avatar_url: publicUrl }
 }
 
@@ -397,8 +407,10 @@ export async function markDailyAttendance(data: {
 export async function recordMonthlyTuitionFee(data: {
   student_id: string;
   month_year: string;
-  status: string;
-  amount: number;
+  base_status: string;
+  yle_status: string;
+  base_amount: number;
+  yle_amount: number;
   remarks: string;
 }) {
   // Only Staff and Admin can record tuition fees
@@ -407,11 +419,12 @@ export async function recordMonthlyTuitionFee(data: {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(data.month_year)) {
     throw new Error('Select a valid tuition month')
   }
-  if (!['paid', 'unpaid', 'scholar'].includes(data.status)) {
-    throw new Error('Select a valid tuition status')
-  }
-  const amount = Number(data.amount)
-  if (!Number.isFinite(amount) || amount < 0 || amount > 100000000) {
+  const validStatuses = ['paid', 'unpaid', 'scholar']
+  const baseAmount = Number(data.base_amount || 0)
+  const yleAmount = Number(data.yle_amount || 0)
+  const amount = baseAmount + yleAmount
+  if (!Number.isFinite(baseAmount) || !Number.isFinite(yleAmount)
+    || baseAmount < 0 || yleAmount < 0 || amount > 100000000) {
     throw new Error('Enter a valid monthly fee amount')
   }
   if (data.remarks.length > 500) {
@@ -432,28 +445,33 @@ export async function recordMonthlyTuitionFee(data: {
     .eq('id', data.student_id)
     .eq('role', 'student')
     .maybeSingle()
-  const { baseAmount, yleAmount } = splitTuitionAmount({
-    total: amount,
-    assignedClass: tuitionStudent?.assigned_class,
-    assignedSubclass: tuitionStudent?.assigned_subclass,
-    yleMonthlyFee: tuitionStudent?.yle_monthly_fee,
-  })
+  const baseStatus = tuitionStudent?.assigned_class === 'yle' ? null : data.base_status
+  const yleStatus = tuitionStudent?.assigned_subclass ? data.yle_status : null
+  if ((baseStatus && !validStatuses.includes(baseStatus)) || (yleStatus && !validStatuses.includes(yleStatus))) {
+    throw new Error('Select valid Base and YLE tuition statuses')
+  }
+  if ((tuitionStudent?.assigned_class === 'yle' && baseAmount !== 0) || (!tuitionStudent?.assigned_subclass && yleAmount !== 0)) {
+    throw new Error('Base or YLE payment does not match the student assignment')
+  }
+  const status = getOverallTuitionStatus(baseStatus as TuitionStatus | null, yleStatus as TuitionStatus | null)
 
   const { data: savedFee, error } = await supabaseAdmin
     .from('monthly_tuition_fees')
     .upsert({
       student_id: data.student_id,
       month_year: data.month_year,
-      status: data.status,
+      status,
+      base_status: baseStatus,
+      yle_status: yleStatus,
       amount: Math.round(amount * 100) / 100,
       base_amount: baseAmount,
       yle_amount: yleAmount,
       remarks: data.remarks,
       staff_id: staffId,
-      verified_by: data.status === 'paid' ? staffId : null,
-      verified_at: data.status === 'paid' ? now : null,
-      paid_at: data.status === 'paid' ? now : null,
-      email_status: data.status === 'paid'
+      verified_by: status === 'paid' ? staffId : null,
+      verified_at: status === 'paid' ? now : null,
+      paid_at: status === 'paid' ? now : null,
+      email_status: status === 'paid'
         ? emailAlreadySent ? 'sent' : 'pending'
         : 'not_applicable',
       email_sent_at: existingFee?.email_sent_at || null,
@@ -469,7 +487,7 @@ export async function recordMonthlyTuitionFee(data: {
     throw new Error('Failed to record tuition fee')
   }
 
-  if (data.status === 'paid') {
+  if (status === 'paid') {
     await approveStudentsWithVerifiedPayments([data.student_id])
   }
 
@@ -477,11 +495,11 @@ export async function recordMonthlyTuitionFee(data: {
   revalidatePath(`/staff/students/${data.student_id}`)
   revalidatePath(`/dashboard`)
   revalidatePath(`/dashboard/${data.student_id}`)
-  if (data.status === 'paid') {
+  if (status === 'paid') {
     revalidateStudentApprovalViews([data.student_id])
   }
 
-  const emailDelivery = data.status === 'paid' && !emailAlreadySent
+  const emailDelivery = status === 'paid' && !emailAlreadySent
     ? await sendPaidTuitionInvoiceEmail(savedFee.id)
     : null
   return { success: true, emailDelivery }

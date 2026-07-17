@@ -1,5 +1,15 @@
 export type TuitionStatus = 'paid' | 'unpaid' | 'scholar'
 
+export function getOverallTuitionStatus(
+  baseStatus: TuitionStatus | null | undefined,
+  yleStatus: TuitionStatus | null | undefined,
+): TuitionStatus {
+  const statuses = [baseStatus, yleStatus].filter((status): status is TuitionStatus => Boolean(status))
+  if (statuses.length === 0 || statuses.includes('unpaid')) return 'unpaid'
+  if (statuses.every(status => status === 'scholar')) return 'scholar'
+  return 'paid'
+}
+
 export function getTuitionStatusStyle(status: string) {
   if (status === 'paid') return 'bg-green-100 text-green-800'
   if (status === 'scholar') return 'bg-blue-100 text-blue-800'

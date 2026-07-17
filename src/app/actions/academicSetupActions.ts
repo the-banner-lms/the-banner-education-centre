@@ -160,6 +160,8 @@ export async function generateMonthlyInvoices(formData: FormData) {
       student_id: student.id,
       month_year: monthYear,
       status: 'unpaid',
+      base_status: baseAmount > 0 ? 'unpaid' : null,
+      yle_status: yleAmount > 0 ? 'unpaid' : null,
       amount: totalAmount,
       base_amount: baseAmount,
       yle_amount: yleAmount,

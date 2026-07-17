@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { bulkSaveMonthlyTuition, type TuitionEntry } from '@/app/actions/fastEntryActions'
 import { getYleSubclassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
+import { getOverallTuitionStatus, type TuitionStatus } from '@/lib/tuition'
 
 type Student = {
   id: string
@@ -20,6 +21,8 @@ type ExistingTuition = {
   student_id: string
   month_year: string
   status: 'paid' | 'unpaid' | 'scholar'
+  base_status: TuitionStatus | null
+  yle_status: TuitionStatus | null
   amount: number | string | null
   base_amount: number | string | null
   yle_amount: number | string | null
@@ -65,6 +68,8 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       nextState[student.id] = {
         student_id: student.id,
         status: existing?.status || 'unpaid',
+        base_status: existing?.base_status || (baseAmount > 0 ? existing?.status || 'unpaid' : 'unpaid'),
+        yle_status: existing?.yle_status || (yleAmount > 0 ? existing?.status || 'unpaid' : 'unpaid'),
         amount: baseAmount + yleAmount,
         base_amount: baseAmount,
         yle_amount: yleAmount,
@@ -77,25 +82,41 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
     setMessage(null)
   }, [students, existingTuition, monthYear])
 
-  const updateTuition = (studentId: string, field: 'status' | 'base_amount' | 'yle_amount' | 'remarks', value: string) => {
+  const updateTuition = (studentId: string, field: 'base_status' | 'yle_status' | 'base_amount' | 'yle_amount' | 'remarks', value: string) => {
     setTuitionState(previous => {
       const current = previous[studentId]
+      const student = students.find(item => item.id === studentId)
       const next = {
         ...current,
         [field]: field === 'base_amount' || field === 'yle_amount' ? Number(value || 0) : value,
         recorded: true,
       } as TuitionEntry
       next.amount = Number(next.base_amount || 0) + Number(next.yle_amount || 0)
+      next.status = getOverallTuitionStatus(
+        student?.assigned_class === 'yle' ? null : next.base_status,
+        student?.assigned_subclass ? next.yle_status : null,
+      )
       return { ...previous, [studentId]: next }
     })
     setHasChanges(true)
     setMessage(null)
   }
 
-  const classGroups = useMemo(() => STUDENT_CLASSES.map(studentClass => ({
-    ...studentClass,
-    students: students.filter(student => student.assigned_class === studentClass.value),
-  })), [students])
+  const classGroups = useMemo(() => [
+    ...STUDENT_CLASSES
+      .filter(studentClass => studentClass.value !== 'yle')
+      .map(studentClass => ({
+        ...studentClass,
+        chargeType: 'base' as const,
+        students: students.filter(student => student.assigned_class === studentClass.value),
+      })),
+    {
+      value: 'yle',
+      label: 'YLE',
+      chargeType: 'yle' as const,
+      students: students.filter(student => student.assigned_class === 'yle' || Boolean(student.assigned_subclass)),
+    },
+  ], [students])
 
   const summaries = useMemo(() => classGroups.map(studentClass => {
     const classStudents = studentClass.students
@@ -104,24 +125,23 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       .filter((entry): entry is TuitionEntry => Boolean(entry))
     const recordedEntries = entries
       .filter(entry => entry.recorded || entry.amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks))
-    const baseTotal = entries.reduce((sum, entry) => sum + entry.base_amount, 0)
-    const yleTotal = entries.reduce((sum, entry) => sum + entry.yle_amount, 0)
-    const total = baseTotal + yleTotal
-    const paid = entries.filter(entry => entry.status === 'paid')
-    const unpaid = entries.filter(entry => entry.status === 'unpaid')
-    const scholars = entries.filter(entry => entry.status === 'scholar')
+    const amountField = studentClass.chargeType === 'yle' ? 'yle_amount' : 'base_amount'
+    const statusField = studentClass.chargeType === 'yle' ? 'yle_status' : 'base_status'
+    const total = entries.reduce((sum, entry) => sum + Number(entry[amountField] || 0), 0)
+    const paid = entries.filter(entry => entry[statusField] === 'paid')
+    const unpaid = entries.filter(entry => entry[statusField] === 'unpaid')
+    const scholars = entries.filter(entry => entry[statusField] === 'scholar')
 
     return {
       value: studentClass.value,
       label: studentClass.label,
+      chargeType: studentClass.chargeType,
       studentCount: classStudents.length,
       recordedCount: recordedEntries.length,
-      baseTotal,
-      yleTotal,
       total,
-      collected: paid.reduce((sum, entry) => sum + entry.amount, 0),
-      outstanding: unpaid.reduce((sum, entry) => sum + entry.amount, 0),
-      waived: scholars.reduce((sum, entry) => sum + entry.amount, 0),
+      collected: paid.reduce((sum, entry) => sum + Number(entry[amountField] || 0), 0),
+      outstanding: unpaid.reduce((sum, entry) => sum + Number(entry[amountField] || 0), 0),
+      waived: scholars.reduce((sum, entry) => sum + Number(entry[amountField] || 0), 0),
       paidCount: paid.length,
       unpaidCount: unpaid.length,
       scholarCount: scholars.length,
@@ -131,8 +151,6 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
   const overall = useMemo(() => summaries.reduce((result, summary) => ({
     studentCount: result.studentCount + summary.studentCount,
     recordedCount: result.recordedCount + summary.recordedCount,
-    baseTotal: result.baseTotal + summary.baseTotal,
-    yleTotal: result.yleTotal + summary.yleTotal,
     total: result.total + summary.total,
     collected: result.collected + summary.collected,
     outstanding: result.outstanding + summary.outstanding,
@@ -143,8 +161,6 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
   }), {
     studentCount: 0,
     recordedCount: 0,
-    baseTotal: 0,
-    yleTotal: 0,
     total: 0,
     collected: 0,
     outstanding: 0,
@@ -154,14 +170,16 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
     scholarCount: 0,
   }), [summaries])
 
+  const baseOverall = summaries.filter(summary => summary.chargeType === 'base').reduce((sum, summary) => sum + summary.total, 0)
+  const yleOverall = summaries.find(summary => summary.chargeType === 'yle')?.total || 0
   const collectionBase = overall.collected + overall.outstanding
   const collectionRate = collectionBase > 0 ? Math.round((overall.collected / collectionBase) * 100) : 0
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
     .format(new Date(`${monthYear}-01T00:00:00Z`))
-  const autoRemark = `${monthLabel}: ${overall.recordedCount} payment records. Base ${formatAmount(overall.baseTotal)}, YLE ${formatAmount(overall.yleTotal)}. Paid ${overall.paidCount} (${formatAmount(overall.collected)} collected), unpaid ${overall.unpaidCount} (${formatAmount(overall.outstanding)} outstanding), scholar ${overall.scholarCount} (${formatAmount(overall.waived)} waived). Collection rate ${collectionRate}%.`
+  const autoRemark = `${monthLabel}: Base classes ${formatAmount(baseOverall)}; YLE ${formatAmount(yleOverall)}. Paid ${overall.paidCount} (${formatAmount(overall.collected)}), unpaid ${overall.unpaidCount} (${formatAmount(overall.outstanding)}), scholar ${overall.scholarCount} (${formatAmount(overall.waived)}). Collection rate ${collectionRate}%.`
 
   const classRemark = (summary: (typeof summaries)[number]) =>
-    `${summary.recordedCount}/${summary.studentCount} recorded. Base ${formatAmount(summary.baseTotal)}, YLE ${formatAmount(summary.yleTotal)}. Paid ${summary.paidCount} (${formatAmount(summary.collected)} collected), unpaid ${summary.unpaidCount} (${formatAmount(summary.outstanding)} outstanding), scholar ${summary.scholarCount} (${formatAmount(summary.waived)} waived).`
+    `${summary.recordedCount}/${summary.studentCount} recorded. Paid ${summary.paidCount} (${formatAmount(summary.collected)}), unpaid ${summary.unpaidCount} (${formatAmount(summary.outstanding)}), scholar ${summary.scholarCount} (${formatAmount(summary.waived)}).`
 
   const visibleGroups = classFilter === 'all'
     ? classGroups
@@ -231,7 +249,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       <div className="space-y-5">
         {visibleGroups.map(group => {
           const summary = summaries.find(item => item.value === group.value)!
-          const showsYleDual = group.value !== 'pre-kg'
+          const isYleGroup = group.chargeType === 'yle'
           return (
             <section key={group.value} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col gap-1 border-b border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -239,25 +257,27 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                 <p className="text-sm font-semibold text-gray-600">{summary.studentCount} students · {summary.recordedCount} recorded</p>
               </div>
               <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]" tabIndex={0} aria-label={`${group.label} monthly tuition table`}>
-                <table className={`w-full border-collapse text-left ${showsYleDual ? 'min-w-[980px]' : 'min-w-[700px]'}`}>
+                <table className="w-full min-w-[720px] border-collapse text-left">
                   <thead className="bg-white">
                     <tr className="border-b border-gray-200">
-                      {['Name + Student ID', ...(showsYleDual ? ['YLE Status'] : []), 'Payment Status', 'Base Fee (MMK)', ...(showsYleDual ? ['YLE Fee (MMK)'] : []), 'Total (MMK)'].map(label => (
+                      {['Name + Student ID', 'Programme', 'Payment Status', 'Fee (MMK)'].map(label => (
                         <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600 first:sticky first:left-0 first:z-20 first:bg-white">{label}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {group.students.length === 0 ? (
-                      <tr><td colSpan={showsYleDual ? 6 : 4} className="px-4 py-7 text-center text-sm text-gray-500">No students assigned to this class.</td></tr>
+                      <tr><td colSpan={4} className="px-4 py-7 text-center text-sm text-gray-500">No students assigned to this class.</td></tr>
                     ) : group.students.map(student => {
                       const tuition = tuitionState[student.id]
                       if (!tuition) return null
-                      const hasYle = Boolean(student.assigned_subclass)
                       const isYleStandalone = student.assigned_class === 'yle'
-                      const rowTone = tuition.status === 'paid' ? 'bg-green-50/40' : tuition.status === 'scholar' ? 'bg-blue-50/40' : 'bg-white'
+                      const chargeStatus = isYleGroup ? tuition.yle_status : tuition.base_status
+                      const amountField = isYleGroup ? 'yle_amount' : 'base_amount'
+                      const statusField = isYleGroup ? 'yle_status' : 'base_status'
+                      const rowTone = chargeStatus === 'paid' ? 'bg-green-50/40' : chargeStatus === 'scholar' ? 'bg-blue-50/40' : 'bg-white'
                       return (
-                        <tr key={student.id} className={`${rowTone} hover:bg-gray-50`}>
+                        <tr key={`${group.value}-${student.id}`} className={`${rowTone} hover:bg-gray-50`}>
                           <td className={`sticky left-0 z-10 min-w-52 px-4 py-3 sm:min-w-64 ${rowTone}`}>
                             <p className="font-bold text-gray-900">{student.full_name || 'No Name'}</p>
                             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -269,33 +289,27 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                               )}
                             </div>
                           </td>
-                          {showsYleDual && (
-                            <td className="min-w-40 px-4 py-3 text-sm font-semibold">
-                              {hasYle ? (
-                                <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-black text-blue-800">
-                                  {isYleStandalone ? 'Standalone' : 'Dual'} · {getYleSubclassLabel(student.assigned_subclass)}
-                                </span>
-                              ) : (
-                                <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">Not assigned</span>
-                              )}
-                            </td>
-                          )}
+                          <td className="min-w-48 px-4 py-3 text-sm font-semibold">
+                            {isYleGroup ? (
+                              <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-black text-blue-800">
+                                {isYleStandalone ? 'YLE Standalone' : 'YLE Dual'} · {getYleSubclassLabel(student.assigned_subclass)}
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-green-50 px-2.5 py-1 text-xs font-black text-banner-dark">
+                                {group.label} Base Class
+                              </span>
+                            )}
+                          </td>
                           <td className="min-w-48 px-4 py-3">
-                            <select aria-label={`Payment status for ${student.full_name || student.email}`} value={tuition.status} onChange={event => updateTuition(student.id, 'status', event.target.value)} className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${tuition.status === 'paid' ? 'text-green-700' : tuition.status === 'scholar' ? 'text-blue-700' : 'text-red-700'}`}>
+                            <select aria-label={`${isYleGroup ? 'YLE' : 'Base class'} payment status for ${student.full_name || student.email}`} value={chargeStatus} onChange={event => updateTuition(student.id, statusField, event.target.value)} className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${chargeStatus === 'paid' ? 'text-green-700' : chargeStatus === 'scholar' ? 'text-blue-700' : 'text-red-700'}`}>
                               <option value="paid">Paid</option>
                               <option value="unpaid">Unpaid</option>
                               <option value="scholar">Scholar</option>
                             </select>
                           </td>
                           <td className="min-w-48 px-4 py-3">
-                            <input aria-label={`Base class fee for ${student.full_name || student.email}`} type="number" inputMode="numeric" min="0" max="100000000" step="1000" value={tuition.base_amount || ''} onChange={event => updateTuition(student.id, 'base_amount', event.target.value)} disabled={isYleStandalone} placeholder="0" className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-right font-semibold text-gray-900 focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
+                            <input aria-label={`${isYleGroup ? 'YLE' : 'Base class'} fee for ${student.full_name || student.email}`} type="number" inputMode="numeric" min="0" max="100000000" step="1000" value={tuition[amountField] || ''} onChange={event => updateTuition(student.id, amountField, event.target.value)} placeholder="0" className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-right font-semibold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${isYleGroup ? 'text-blue-800' : 'text-gray-900'}`} />
                           </td>
-                          {showsYleDual && (
-                            <td className="min-w-48 px-4 py-3">
-                              <input aria-label={`YLE fee for ${student.full_name || student.email}`} type="number" inputMode="numeric" min="0" max="100000000" step="1000" value={tuition.yle_amount || ''} onChange={event => updateTuition(student.id, 'yle_amount', event.target.value)} disabled={!hasYle} placeholder={hasYle ? '0' : 'Not assigned'} className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-right font-semibold text-blue-800 focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                            </td>
-                          )}
-                          <td className="min-w-40 px-4 py-3 text-right text-sm font-black text-banner-dark">{formatAmount(tuition.amount)}</td>
                         </tr>
                       )
                     })}
@@ -303,11 +317,9 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                   <tfoot className="border-t-2 border-banner-dark bg-green-50">
                     <tr>
                       <th className="sticky left-0 z-10 bg-green-50 px-4 py-3 text-sm font-black text-gray-900">{group.label} Total · {summary.studentCount} students</th>
-                      {showsYleDual && <td className="px-4 py-3 text-sm font-semibold text-gray-600">YLE assignment status</td>}
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-600">{isYleGroup ? 'YLE only' : 'Base class only'}</td>
                       <td className="px-4 py-3 text-xs font-semibold text-gray-700">Paid {summary.paidCount} · Unpaid {summary.unpaidCount} · Scholar {summary.scholarCount}</td>
-                      <td className="px-4 py-3 text-right text-sm font-black text-gray-900">{formatAmount(summary.baseTotal)}</td>
-                      {showsYleDual && <td className="px-4 py-3 text-right text-sm font-black text-blue-800">{formatAmount(summary.yleTotal)}</td>}
-                      <td className="px-4 py-3 text-right text-base font-black text-banner-dark">{formatAmount(summary.total)}</td>
+                      <td className={`px-4 py-3 text-right text-base font-black ${isYleGroup ? 'text-blue-800' : 'text-banner-dark'}`}>{formatAmount(summary.total)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -324,10 +336,10 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
           <p className="mt-1 text-sm text-gray-500">Live totals update as fee amounts and statuses change.</p>
         </div>
         <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]" tabIndex={0} aria-label="All class monthly tuition summary">
-          <table className="w-full min-w-[860px] border-collapse text-left sm:min-w-[980px]">
+          <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
               <tr className="border-b border-gray-200 bg-white">
-                {['Month + Year', 'Class', 'Base Amount', 'YLE Amount', 'Total Amount', 'Remark (Auto-generated)'].map(label => (
+                {['Month + Year', 'Class / Programme', 'Amount', 'Remark (Auto-generated)'].map(label => (
                   <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600">{label}</th>
                 ))}
               </tr>
@@ -337,9 +349,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
                 <tr key={summary.value} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-700">{monthLabel}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-black text-gray-900">{summary.label}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-bold text-gray-900">{formatAmount(summary.baseTotal)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-bold text-blue-800">{formatAmount(summary.yleTotal)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-black text-banner-dark">{formatAmount(summary.total)}</td>
+                  <td className={`whitespace-nowrap px-4 py-3 text-right text-sm font-black ${summary.chargeType === 'yle' ? 'text-blue-800' : 'text-banner-dark'}`}>{formatAmount(summary.total)}</td>
                   <td className="min-w-[430px] px-4 py-3 text-sm leading-5 text-gray-600">{classRemark(summary)}</td>
                 </tr>
               ))}
@@ -347,16 +357,14 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
             <tfoot className="border-t-2 border-banner-dark bg-green-50">
               <tr>
                 <th className="px-4 py-4 text-sm font-black text-gray-900">{monthLabel}</th>
-                <th className="px-4 py-4 text-sm font-black text-gray-900">All Classes Total</th>
-                <th className="whitespace-nowrap px-4 py-4 text-right text-sm font-black text-gray-900">{formatAmount(overall.baseTotal)}</th>
-                <th className="whitespace-nowrap px-4 py-4 text-right text-sm font-black text-blue-800">{formatAmount(overall.yleTotal)}</th>
-                <th className="whitespace-nowrap px-4 py-4 text-right text-base font-black text-banner-dark">{formatAmount(overall.total)}</th>
+                <th className="px-4 py-4 text-sm font-black text-gray-900">Base {formatAmount(baseOverall)} · YLE {formatAmount(yleOverall)}</th>
+                <th className="whitespace-nowrap px-4 py-4 text-right text-sm font-black text-gray-900">Kept separate</th>
                 <td className="px-4 py-4 text-sm font-semibold leading-5 text-gray-700">{autoRemark}</td>
               </tr>
             </tfoot>
           </table>
         </div>
-        <p className="border-t border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500"><span className="sm:hidden">Swipe horizontally to view every column. </span>Amount is the recorded fee total. The auto remark separates collected, outstanding and scholar-waived amounts.</p>
+        <p className="border-t border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500"><span className="sm:hidden">Swipe horizontally to view every column. </span>Base-class and YLE amounts/statuses are kept as separate accounting entries. A scholarship can apply to either programme independently.</p>
       </section>
     </div>
   )

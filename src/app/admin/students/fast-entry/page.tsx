@@ -67,7 +67,7 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
         <div className="flex">
           <div className="ml-3">
             <p className="text-sm text-blue-700">
-              Enter Base and YLE fees separately with one Paid / Unpaid / Scholar status. Per-class and monthly accounting totals update automatically.
+              Base-class payments stay under each base class. Every YLE standalone/dual payment stays under YLE with its own Paid / Unpaid / Scholar status.
             </p>
           </div>
         </div>

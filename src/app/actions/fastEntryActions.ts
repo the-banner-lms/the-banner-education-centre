@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
 import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
+import { getOverallTuitionStatus, type TuitionStatus } from '@/lib/tuition'
 
 export type AttendanceEntry = {
   student_id: string
@@ -14,7 +15,9 @@ export type AttendanceEntry = {
 
 export type TuitionEntry = {
   student_id: string
-  status: 'paid' | 'unpaid' | 'scholar'
+  status: TuitionStatus
+  base_status: TuitionStatus
+  yle_status: TuitionStatus
   amount: number
   base_amount: number
   yle_amount: number
@@ -45,7 +48,9 @@ export async function bulkSaveMonthlyTuition(
   }
 
   const entriesToSave = tuitionData.filter(entry =>
-    entry.recorded || entry.base_amount > 0 || entry.yle_amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks?.trim())
+    entry.recorded || entry.base_amount > 0 || entry.yle_amount > 0
+      || entry.base_status !== 'unpaid' || entry.yle_status !== 'unpaid'
+      || Boolean(entry.remarks?.trim())
   )
   const studentIds = [...new Set(entriesToSave.map(entry => entry.student_id))]
   if (studentIds.length !== entriesToSave.length) {
@@ -57,7 +62,8 @@ export async function bulkSaveMonthlyTuition(
     const yleAmount = Number(entry.yle_amount)
     const amount = baseAmount + yleAmount
     return !entry.student_id
-      || !['paid', 'unpaid', 'scholar'].includes(entry.status)
+      || !['paid', 'unpaid', 'scholar'].includes(entry.base_status)
+      || !['paid', 'unpaid', 'scholar'].includes(entry.yle_status)
       || !Number.isFinite(baseAmount)
       || !Number.isFinite(yleAmount)
       || amount < 0
@@ -92,7 +98,7 @@ export async function bulkSaveMonthlyTuition(
   const { data: existingFees, error: existingFeeError } = studentIds.length > 0
     ? await supabase
       .from('monthly_tuition_fees')
-      .select('student_id, status, email_status, email_sent_at')
+      .select('student_id, status, base_status, yle_status, email_status, email_sent_at')
       .eq('month_year', monthYear)
       .in('student_id', studentIds)
     : { data: [], error: null }
@@ -107,19 +113,25 @@ export async function bulkSaveMonthlyTuition(
     const baseAmount = Math.round(Number(entry.base_amount) * 100) / 100
     const yleAmount = Math.round(Number(entry.yle_amount) * 100) / 100
     const totalAmount = Math.round((baseAmount + yleAmount) * 100) / 100
+    const student = studentsById.get(entry.student_id)
+    const baseStatus = student?.assigned_class === 'yle' ? null : entry.base_status
+    const yleStatus = student?.assigned_subclass ? entry.yle_status : null
+    const overallStatus = getOverallTuitionStatus(baseStatus, yleStatus)
     return {
       student_id: entry.student_id,
       month_year: monthYear,
-      status: entry.status,
+      status: overallStatus,
+      base_status: baseStatus,
+      yle_status: yleStatus,
       amount: totalAmount,
       base_amount: baseAmount,
       yle_amount: yleAmount,
       remarks: entry.remarks?.trim() || '',
       staff_id: user.id,
-      verified_by: entry.status === 'paid' ? user.id : null,
-      verified_at: entry.status === 'paid' ? now : null,
-      paid_at: entry.status === 'paid' ? now : null,
-      email_status: entry.status === 'paid'
+      verified_by: overallStatus === 'paid' ? user.id : null,
+      verified_at: overallStatus === 'paid' ? now : null,
+      paid_at: overallStatus === 'paid' ? now : null,
+      email_status: overallStatus === 'paid'
         ? emailAlreadySent ? 'sent' : 'pending'
         : 'not_applicable',
       email_sent_at: existing?.email_sent_at || null,
@@ -142,7 +154,13 @@ export async function bulkSaveMonthlyTuition(
   }
 
   const paidStudentIds = entriesToSave
-    .filter(entry => entry.status === 'paid')
+    .filter(entry => {
+      const student = studentsById.get(entry.student_id)
+      return getOverallTuitionStatus(
+        student?.assigned_class === 'yle' ? null : entry.base_status,
+        student?.assigned_subclass ? entry.yle_status : null,
+      ) === 'paid'
+    })
     .map(entry => entry.student_id)
   await approveStudentsWithVerifiedPayments(paidStudentIds)
 
