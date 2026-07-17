@@ -161,6 +161,8 @@ export async function generateMonthlyInvoices(formData: FormData) {
       month_year: monthYear,
       status: 'unpaid',
       amount: totalAmount,
+      base_amount: baseAmount,
+      yle_amount: yleAmount,
       remarks: `${settings.current_term} · ${breakdown}`,
       staff_id: access.userId,
       email_status: 'not_applicable',

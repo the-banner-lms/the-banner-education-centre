@@ -20,7 +20,7 @@ function escapeHtml(value: string) {
 export async function getTuitionInvoiceData(feeId: string): Promise<TuitionInvoiceData | null> {
   const { data: fee, error: feeError } = await supabaseAdmin
     .from('monthly_tuition_fees')
-    .select('id, student_id, invoice_number, month_year, status, amount, remarks, due_date, paid_at, verified_at, created_at')
+    .select('id, student_id, invoice_number, month_year, status, amount, base_amount, yle_amount, remarks, due_date, paid_at, verified_at, created_at')
     .eq('id', feeId)
     .maybeSingle()
 

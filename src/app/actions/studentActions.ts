@@ -424,6 +424,15 @@ export async function recordMonthlyTuitionFee(data: {
     .maybeSingle()
   const emailAlreadySent = existingFee?.email_status === 'sent' && Boolean(existingFee.email_sent_at)
   const now = new Date().toISOString()
+  const { data: tuitionStudent } = await supabaseAdmin
+    .from('profiles')
+    .select('assigned_subclass, yle_monthly_fee')
+    .eq('id', data.student_id)
+    .eq('role', 'student')
+    .maybeSingle()
+  const yleAmount = tuitionStudent?.assigned_subclass && tuitionStudent.yle_monthly_fee !== null
+    ? Math.min(amount, Math.max(0, Number(tuitionStudent.yle_monthly_fee)))
+    : 0
 
   const { data: savedFee, error } = await supabaseAdmin
     .from('monthly_tuition_fees')
@@ -432,6 +441,8 @@ export async function recordMonthlyTuitionFee(data: {
       month_year: data.month_year,
       status: data.status,
       amount: Math.round(amount * 100) / 100,
+      base_amount: Math.round((amount - yleAmount) * 100) / 100,
+      yle_amount: Math.round(yleAmount * 100) / 100,
       remarks: data.remarks,
       staff_id: staffId,
       verified_by: data.status === 'paid' ? staffId : null,

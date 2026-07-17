@@ -4,11 +4,13 @@ import { redirect } from 'next/navigation'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
 import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
 import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
+import TuitionAmountBreakdown from '@/components/TuitionAmountBreakdown'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import { getRoleBadgeStyle } from '@/utils/theme'
-import { formatTuitionAmount, getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
+import { getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
 import { getEnrollmentReviewNotices } from '@/lib/enrollmentNotices'
+import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
 
 export const dynamic = 'force-dynamic'
 
@@ -142,9 +144,11 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{profile.full_name || 'My Dashboard'}</h1>
             <p className="text-gray-500">{profile.email}</p>
             {profile.role === 'student' && (
-              <p className="mt-1 text-sm font-semibold text-gray-700">
-                Student ID: {profile.student_number || 'Pending assignment'}
-              </p>
+              <div className="mt-1 space-y-1 text-sm font-semibold text-gray-700">
+                <p>Student ID: {profile.student_number || 'Pending assignment'}</p>
+                <p>Class: {getStudentClassLabel(profile.assigned_class)}</p>
+                {profile.assigned_subclass && <p className="text-blue-700">YLE: {getYleSubclassLabel(profile.assigned_subclass)}</p>}
+              </div>
             )}
             <p className={`inline-block mt-2 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
               {profile.role}
@@ -186,7 +190,9 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
                         {displayStatus.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                      <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} yleSubclass={profile.assigned_subclass} />
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       <p className="mb-2 whitespace-nowrap font-mono text-xs font-semibold text-gray-700">{fee.invoice_number || 'Preparing invoice'}</p>

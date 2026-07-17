@@ -5,8 +5,9 @@ import { getRoleBannerGradient } from '@/utils/theme'
 import { DailyDatePicker, WeeklyDatePicker, MonthlyDatePicker } from '@/components/CustomDatePickers'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
+import TuitionAmountBreakdown from '@/components/TuitionAmountBreakdown'
 import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
-import { formatTuitionAmount, getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
+import { getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
 import StudentAssignmentForm from '@/components/students/StudentAssignmentForm'
 
 export default function StudentManager({
@@ -301,7 +302,9 @@ export default function StudentManager({
                           {displayStatus.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                        <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} yleSubclass={student.assigned_subclass} />
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">
                         <p className="mb-1 whitespace-nowrap font-mono text-xs font-semibold text-gray-700">{fee.invoice_number || 'Preparing invoice'}</p>

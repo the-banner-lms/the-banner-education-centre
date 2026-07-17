@@ -60,16 +60,18 @@ export async function bulkSaveMonthlyTuition(
   })
   if (invalidEntry) return { error: 'One or more tuition records are invalid' }
 
+  let studentsById = new Map<string, { assigned_subclass: string | null; yle_monthly_fee: number | string | null }>()
   if (studentIds.length > 0) {
     const { data: validStudents, error: studentError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, assigned_subclass, yle_monthly_fee')
       .eq('role', 'student')
       .in('id', studentIds)
 
     if (studentError || validStudents?.length !== studentIds.length) {
       return { error: 'One or more student records are invalid' }
     }
+    studentsById = new Map(validStudents.map(student => [student.id, student]))
   }
 
   const { data: existingFees, error: existingFeeError } = studentIds.length > 0
@@ -87,11 +89,18 @@ export async function bulkSaveMonthlyTuition(
   const tuitionUpserts = entriesToSave.map(entry => {
     const existing = existingByStudent.get(entry.student_id)
     const emailAlreadySent = existing?.email_status === 'sent' && Boolean(existing.email_sent_at)
+    const student = studentsById.get(entry.student_id)
+    const totalAmount = Math.round(Number(entry.amount) * 100) / 100
+    const yleAmount = student?.assigned_subclass && student.yle_monthly_fee !== null
+      ? Math.min(totalAmount, Math.max(0, Number(student.yle_monthly_fee)))
+      : 0
     return {
       student_id: entry.student_id,
       month_year: monthYear,
       status: entry.status,
-      amount: Math.round(Number(entry.amount) * 100) / 100,
+      amount: totalAmount,
+      base_amount: totalAmount - yleAmount,
+      yle_amount: yleAmount,
       remarks: entry.remarks?.trim() || '',
       staff_id: user.id,
       verified_by: entry.status === 'paid' ? user.id : null,

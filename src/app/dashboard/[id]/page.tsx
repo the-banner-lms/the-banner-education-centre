@@ -4,11 +4,13 @@ import { canViewDashboard } from '@/utils/supabase/queries'
 import RecentAnnouncementsInbox from '@/components/announcements/RecentAnnouncementsInbox'
 import StudentReportDownloadButton from '@/components/StudentReportDownloadButton'
 import TuitionInvoiceDownloadLink from '@/components/TuitionInvoiceDownloadLink'
+import TuitionAmountBreakdown from '@/components/TuitionAmountBreakdown'
 import WeeklyAttendanceTracker, { AttendanceStatus } from '@/components/WeeklyAttendanceTracker'
 import WeeklyPerformanceDisplay from '@/components/WeeklyPerformanceDisplay'
 import Link from 'next/link'
 import { getRoleBannerGradient, getRoleBadgeStyle } from '@/utils/theme'
-import { formatTuitionAmount, getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
+import { getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
+import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
 
 export const dynamic = 'force-dynamic'
 
@@ -164,9 +166,11 @@ export default async function UniversalUserDashboardView(props: {
             <p className="text-gray-600 font-medium">{profile.role === 'student' ? 'Student at The Banner Education Centre' : 'Staff Member'}</p>
             <p className="text-sm text-gray-500 mt-1">{profile.email}</p>
             {isStudent && (
-              <p className="mt-1 text-sm font-semibold text-gray-700">
-                Student ID: {profile.student_number || 'Pending assignment'}
-              </p>
+              <div className="mt-1 space-y-1 text-sm font-semibold text-gray-700">
+                <p>Student ID: {profile.student_number || 'Pending assignment'}</p>
+                <p>Class: {getStudentClassLabel(profile.assigned_class)}</p>
+                {profile.assigned_subclass && <p className="text-blue-700">YLE: {getYleSubclassLabel(profile.assigned_subclass)}</p>}
+              </div>
             )}
             <p className={`inline-block mt-3 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
               {profile.role}
@@ -208,7 +212,9 @@ export default async function UniversalUserDashboardView(props: {
                         {displayStatus.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatTuitionAmount(fee.amount)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                      <TuitionAmountBreakdown total={fee.amount} baseAmount={fee.base_amount} yleAmount={fee.yle_amount} yleSubclass={profile.assigned_subclass} />
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{fee.remarks}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       <p className="mb-2 whitespace-nowrap font-mono text-xs font-semibold text-gray-700">{fee.invoice_number || 'Preparing invoice'}</p>

@@ -9,6 +9,8 @@ export type TuitionInvoiceData = {
     month_year: string
     status: 'paid' | 'unpaid' | 'scholar'
     amount: number | string
+    base_amount: number | string
+    yle_amount: number | string
     remarks: string | null
     due_date: string
     paid_at: string | null
@@ -153,13 +155,31 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.text('AMOUNT', left + 390, tableTop + 16, { width: contentWidth - 406, align: 'right' })
 
     const rowTop = tableTop + 42
-    doc.rect(left, rowTop, contentWidth, 70).strokeColor('#e2e8f0').stroke()
-    doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text(`${data.fee.month_year} Monthly Tuition`, left + 16, rowTop + 18, { width: 260 })
-    doc.fillColor('#64748b').font('Latin').fontSize(9).text(`${classLabel}${subclassLabel}`, left + 16, rowTop + 39, { width: 260 })
-    doc.fillColor(badgeColor).font('LatinBold').fontSize(10).text(data.fee.status.toUpperCase(), left + 302, rowTop + 27, { width: 80 })
-    doc.fillColor('#0f172a').font('LatinBold').fontSize(12).text(formatAmount(data.fee.amount), left + 390, rowTop + 25, { width: contentWidth - 406, align: 'right' })
+    const baseAmount = Number(data.fee.base_amount || 0)
+    const yleAmount = Number(data.fee.yle_amount || 0)
+    const hasYle = Boolean(data.student.assigned_subclass)
+    const invoiceLines = hasYle
+      ? [
+        ...(baseAmount > 0 ? [{ title: `${classLabel} Tuition`, detail: 'Base class tuition', amount: baseAmount }] : []),
+        {
+          title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
+          detail: 'YLE dual-class tuition',
+          amount: yleAmount,
+        },
+      ]
+      : [{ title: `${classLabel} Tuition`, detail: `${data.fee.month_year} monthly tuition`, amount: Number(data.fee.amount) }]
+    const rowHeight = 58
 
-    const totalTop = rowTop + 92
+    invoiceLines.forEach((line, index) => {
+      const lineTop = rowTop + (index * rowHeight)
+      doc.rect(left, lineTop, contentWidth, rowHeight).strokeColor('#e2e8f0').stroke()
+      doc.fillColor('#0f172a').font('LatinBold').fontSize(11).text(line.title, left + 16, lineTop + 12, { width: 270 })
+      doc.fillColor('#64748b').font('Latin').fontSize(9).text(line.detail, left + 16, lineTop + 33, { width: 270 })
+      doc.fillColor(badgeColor).font('LatinBold').fontSize(10).text(data.fee.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
+      doc.fillColor('#0f172a').font('LatinBold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
+    })
+
+    const totalTop = rowTop + (invoiceLines.length * rowHeight) + 22
     doc.fillColor('#475569').font('LatinBold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 210, totalTop, { width: 120, align: 'right', lineBreak: false })
     doc.fillColor('#0d6831').fontSize(16).text(formatAmount(data.fee.amount), left + 344, totalTop - 3, { width: contentWidth - 344, align: 'right', lineBreak: false })
 
