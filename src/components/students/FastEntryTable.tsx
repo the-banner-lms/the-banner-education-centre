@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { bulkSaveMonthlyTuition, type TuitionEntry } from '@/app/actions/fastEntryActions'
-import { getStudentClassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
+import { getYleSubclassLabel, STUDENT_CLASSES } from '@/lib/studentClasses'
 
 type Student = {
   id: string
@@ -11,6 +11,7 @@ type Student = {
   email: string
   student_number: string | null
   assigned_class: string | null
+  assigned_subclass: string | null
   address: string | null
 }
 
@@ -74,11 +75,17 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
     setMessage(null)
   }
 
-  const summaries = useMemo(() => STUDENT_CLASSES.map(studentClass => {
-    const classStudents = students.filter(student => student.assigned_class === studentClass.value)
+  const classGroups = useMemo(() => STUDENT_CLASSES.map(studentClass => ({
+    ...studentClass,
+    students: students.filter(student => student.assigned_class === studentClass.value),
+  })), [students])
+
+  const summaries = useMemo(() => classGroups.map(studentClass => {
+    const classStudents = studentClass.students
     const entries = classStudents
       .map(student => tuitionState[student.id])
       .filter((entry): entry is TuitionEntry => Boolean(entry))
+    const recordedEntries = entries
       .filter(entry => entry.recorded || entry.amount > 0 || entry.status !== 'unpaid' || Boolean(entry.remarks))
     const total = entries.reduce((sum, entry) => sum + entry.amount, 0)
     const paid = entries.filter(entry => entry.status === 'paid')
@@ -89,7 +96,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       value: studentClass.value,
       label: studentClass.label,
       studentCount: classStudents.length,
-      recordedCount: entries.length,
+      recordedCount: recordedEntries.length,
       total,
       collected: paid.reduce((sum, entry) => sum + entry.amount, 0),
       outstanding: unpaid.reduce((sum, entry) => sum + entry.amount, 0),
@@ -98,7 +105,7 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
       unpaidCount: unpaid.length,
       scholarCount: scholars.length,
     }
-  }), [students, tuitionState])
+  }), [classGroups, tuitionState])
 
   const overall = useMemo(() => summaries.reduce((result, summary) => ({
     studentCount: result.studentCount + summary.studentCount,
@@ -128,9 +135,12 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
     .format(new Date(`${monthYear}-01T00:00:00Z`))
   const autoRemark = `${monthLabel}: ${overall.recordedCount} payment records. Paid ${overall.paidCount} (${formatAmount(overall.collected)} collected), unpaid ${overall.unpaidCount} (${formatAmount(overall.outstanding)} outstanding), scholar ${overall.scholarCount} (${formatAmount(overall.waived)} waived). Collection rate ${collectionRate}%.`
 
-  const visibleStudents = classFilter === 'all'
-    ? students
-    : students.filter(student => student.assigned_class === classFilter)
+  const classRemark = (summary: (typeof summaries)[number]) =>
+    `${summary.recordedCount}/${summary.studentCount} recorded. Paid ${summary.paidCount} (${formatAmount(summary.collected)} collected), unpaid ${summary.unpaidCount} (${formatAmount(summary.outstanding)} outstanding), scholar ${summary.scholarCount} (${formatAmount(summary.waived)} waived).`
+
+  const visibleGroups = classFilter === 'all'
+    ? classGroups
+    : classGroups.filter(group => group.value === classFilter)
 
   const handleMonthChange = (value: string) => {
     if (!value || value === monthYear) return
@@ -160,61 +170,17 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-green-200 bg-gradient-to-br from-[#0f6630] to-[#08451f] p-5 text-white shadow-lg sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-green-100">All Classes Total · {monthLabel}</p>
-            <p className="mt-2 text-3xl font-black sm:text-4xl">{formatAmount(overall.total)}</p>
-            <p className="mt-2 text-sm text-green-100">{overall.recordedCount} recorded / {overall.studentCount} students</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white/10 px-4 py-3"><p className="text-xs text-green-100">Collected</p><p className="mt-1 font-bold">{formatAmount(overall.collected)}</p></div>
-            <div className="rounded-xl bg-white/10 px-4 py-3"><p className="text-xs text-green-100">Outstanding</p><p className="mt-1 font-bold">{formatAmount(overall.outstanding)}</p></div>
-            <div className="rounded-xl bg-white/10 px-4 py-3"><p className="text-xs text-green-100">Scholar</p><p className="mt-1 font-bold">{formatAmount(overall.waived)}</p></div>
-            <div className="rounded-xl bg-white/10 px-4 py-3"><p className="text-xs text-green-100">Collection Rate</p><p className="mt-1 font-bold">{collectionRate}%</p></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-black text-gray-900">Class Totals</h2>
-            <p className="text-sm text-gray-500">Live totals update as amounts and statuses change.</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
-          {summaries.map(summary => (
-            <button
-              key={summary.value}
-              type="button"
-              onClick={() => setClassFilter(classFilter === summary.value ? 'all' : summary.value)}
-              className={`rounded-xl border p-3 text-left transition ${classFilter === summary.value ? 'border-banner-dark bg-green-50 ring-2 ring-banner-light/40' : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'}`}
-            >
-              <span className="block text-sm font-black text-gray-900">{summary.label}</span>
-              <span className="mt-2 block text-base font-black text-banner-dark">{formatAmount(summary.total)}</span>
-              <span className="mt-1 block text-xs text-gray-500">Paid {summary.paidCount} · Unpaid {summary.unpaidCount} · Scholar {summary.scholarCount}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
-        <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-800">Auto-generated Monthly Remark</p>
-        <p className="mt-2 text-sm font-medium leading-6 text-gray-800">{autoRemark}</p>
-      </section>
-
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-gray-200 bg-gray-50 p-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div>
+        <div className="flex flex-col gap-4 bg-gray-50 p-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <div className="w-full sm:w-auto">
               <label htmlFor="tuition-month" className="mb-1 block text-sm font-bold text-gray-700">Tuition Month</label>
-              <input id="tuition-month" type="month" value={monthYear} onChange={event => handleMonthChange(event.target.value)} disabled={isMonthPending || hasChanges} className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 text-gray-900 disabled:cursor-not-allowed disabled:opacity-60" />
+              <input id="tuition-month" type="month" value={monthYear} onChange={event => handleMonthChange(event.target.value)} disabled={isMonthPending || hasChanges} className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-gray-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" />
               {hasChanges && <p className="mt-1 text-xs text-amber-700">Save changes before switching month.</p>}
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <label htmlFor="class-filter" className="mb-1 block text-sm font-bold text-gray-700">Class Filter</label>
-              <select id="class-filter" value={classFilter} onChange={event => setClassFilter(event.target.value)} className="min-h-11 rounded-lg border border-gray-300 bg-white px-3 text-gray-900">
+              <select id="class-filter" value={classFilter} onChange={event => setClassFilter(event.target.value)} className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-gray-900 sm:w-auto">
                 <option value="all">All Classes</option>
                 {STUDENT_CLASSES.map(studentClass => <option key={studentClass.value} value={studentClass.value}>{studentClass.label}</option>)}
               </select>
@@ -222,55 +188,112 @@ export default function FastEntryTable({ students, monthYear, existingTuition, b
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             {message && <p aria-live="polite" className={`text-sm font-semibold ${message.type === 'success' ? 'text-green-700' : 'text-red-700'}`}>{message.text}</p>}
-            <button type="button" onClick={handleSave} disabled={isSaving || isMonthPending || !hasChanges} className="min-h-11 rounded-lg bg-banner-dark px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#0b5226] disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={handleSave} disabled={isSaving || isMonthPending || !hasChanges} className="min-h-11 w-full rounded-lg bg-banner-dark px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#0b5226] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
               {isSaving ? 'Saving…' : 'Save Monthly Payments'}
             </button>
           </div>
         </div>
+      </section>
 
-        <div className="overflow-x-auto overscroll-x-contain">
-          <table className="min-w-[1180px] w-full border-collapse text-left">
-            <thead className="bg-gray-50">
-              <tr className="border-b border-gray-200">
-                {['Student', 'Student ID', 'Class', 'Address', 'Monthly Fees (MMK)', 'Remark', 'Status'].map(label => (
-                  <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600 first:sticky first:left-0 first:z-20 first:bg-gray-50">{label}</th>
+      <div className="space-y-5">
+        {visibleGroups.map(group => {
+          const summary = summaries.find(item => item.value === group.value)!
+          return (
+            <section key={group.value} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-1 border-b border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-lg font-black text-gray-900">{group.label}</h2>
+                <p className="text-sm font-semibold text-gray-600">{summary.studentCount} students · {summary.recordedCount} recorded</p>
+              </div>
+              <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]" tabIndex={0} aria-label={`${group.label} monthly tuition table`}>
+                <table className={`w-full border-collapse text-left ${group.value === 'yle' ? 'min-w-[720px]' : 'min-w-[570px]'}`}>
+                  <thead className="bg-white">
+                    <tr className="border-b border-gray-200">
+                      {['Name + Student ID', ...(group.value === 'yle' ? ['YLE Status'] : []), 'Tuition Fee Status', 'Fees (MMK)'].map(label => (
+                        <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600 first:sticky first:left-0 first:z-20 first:bg-white">{label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {group.students.length === 0 ? (
+                      <tr><td colSpan={group.value === 'yle' ? 4 : 3} className="px-4 py-7 text-center text-sm text-gray-500">No students assigned to this class.</td></tr>
+                    ) : group.students.map(student => {
+                      const tuition = tuitionState[student.id]
+                      if (!tuition) return null
+                      const rowTone = tuition.status === 'paid' ? 'bg-green-50/40' : tuition.status === 'scholar' ? 'bg-blue-50/40' : 'bg-white'
+                      return (
+                        <tr key={student.id} className={`${rowTone} hover:bg-gray-50`}>
+                          <td className={`sticky left-0 z-10 min-w-52 px-4 py-3 sm:min-w-64 ${rowTone}`}>
+                            <p className="font-bold text-gray-900">{student.full_name || 'No Name'}</p>
+                            <p className="mt-1 text-xs font-semibold text-gray-500">{student.student_number || 'Pending ID'}</p>
+                          </td>
+                          {group.value === 'yle' && (
+                            <td className="min-w-40 px-4 py-3 text-sm font-semibold text-blue-700">{getYleSubclassLabel(student.assigned_subclass)}</td>
+                          )}
+                          <td className="min-w-48 px-4 py-3">
+                            <select aria-label={`Payment status for ${student.full_name || student.email}`} value={tuition.status} onChange={event => updateTuition(student.id, 'status', event.target.value)} className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${tuition.status === 'paid' ? 'text-green-700' : tuition.status === 'scholar' ? 'text-blue-700' : 'text-red-700'}`}>
+                              <option value="paid">Paid</option>
+                              <option value="unpaid">Unpaid</option>
+                              <option value="scholar">Scholar</option>
+                            </select>
+                          </td>
+                          <td className="min-w-48 px-4 py-3">
+                            <input aria-label={`Monthly fee for ${student.full_name || student.email}`} type="number" inputMode="numeric" min="0" max="100000000" step="1000" value={tuition.amount || ''} onChange={event => updateTuition(student.id, 'amount', event.target.value)} placeholder="0" className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-right font-semibold text-gray-900 focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30" />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot className="border-t-2 border-banner-dark bg-green-50">
+                    <tr>
+                      <th className="sticky left-0 z-10 bg-green-50 px-4 py-3 text-sm font-black text-gray-900">{group.label} Total · {summary.studentCount} students</th>
+                      {group.value === 'yle' && <td className="px-4 py-3 text-sm font-semibold text-gray-600">YLE</td>}
+                      <td className="px-4 py-3 text-xs font-semibold text-gray-700">Paid {summary.paidCount} · Unpaid {summary.unpaidCount} · Scholar {summary.scholarCount}</td>
+                      <td className="px-4 py-3 text-right text-base font-black text-banner-dark">{formatAmount(summary.total)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <p className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-500 sm:hidden">Swipe horizontally to edit every column.</p>
+            </section>
+          )
+        })}
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-200 bg-gray-50 px-4 py-4">
+          <h2 className="text-lg font-black text-gray-900">All Class Monthly Summary</h2>
+          <p className="mt-1 text-sm text-gray-500">Live totals update as fee amounts and statuses change.</p>
+        </div>
+        <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]" tabIndex={0} aria-label="All class monthly tuition summary">
+          <table className="w-full min-w-[860px] border-collapse text-left sm:min-w-[980px]">
+            <thead>
+              <tr className="border-b border-gray-200 bg-white">
+                {['Month + Year', 'Class', 'Amount', 'Remark (Auto-generated)'].map(label => (
+                  <th key={label} className="px-4 py-3 text-xs font-black uppercase tracking-wide text-gray-600">{label}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {visibleStudents.map(student => {
-                const tuition = tuitionState[student.id]
-                if (!tuition) return null
-                const rowTone = tuition.status === 'paid' ? 'bg-green-50/40' : tuition.status === 'scholar' ? 'bg-blue-50/40' : 'bg-white'
-                return (
-                  <tr key={student.id} className={`${rowTone} hover:bg-gray-50`}>
-                    <td className={`sticky left-0 z-10 min-w-52 px-4 py-3 ${rowTone}`}>
-                      <p className="font-bold text-gray-900">{student.full_name || 'No Name'}</p>
-                      <p className="mt-1 text-xs text-gray-500">{student.email}</p>
-                    </td>
-                    <td className="min-w-44 px-4 py-3 text-sm font-semibold text-gray-700">{student.student_number || 'Pending assignment'}</td>
-                    <td className="min-w-32 px-4 py-3 text-sm font-semibold text-banner-dark">{getStudentClassLabel(student.assigned_class)}</td>
-                    <td className="min-w-60 max-w-72 px-4 py-3 text-sm leading-5 text-gray-600">{student.address || 'No address'}</td>
-                    <td className="min-w-44 px-4 py-3">
-                      <input aria-label={`Monthly fee for ${student.full_name || student.email}`} type="number" min="0" max="100000000" step="1000" value={tuition.amount || ''} onChange={event => updateTuition(student.id, 'amount', event.target.value)} placeholder="0" className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-right font-semibold text-gray-900 focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30" />
-                    </td>
-                    <td className="min-w-64 px-4 py-3">
-                      <input aria-label={`Remark for ${student.full_name || student.email}`} type="text" maxLength={500} value={tuition.remarks || ''} onChange={event => updateTuition(student.id, 'remarks', event.target.value)} placeholder="Payment reference or note" className="min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30" />
-                    </td>
-                    <td className="min-w-36 px-4 py-3">
-                      <select aria-label={`Payment status for ${student.full_name || student.email}`} value={tuition.status} onChange={event => updateTuition(student.id, 'status', event.target.value)} className={`min-h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm font-bold focus:border-banner-dark focus:outline-none focus:ring-2 focus:ring-banner-light/30 ${tuition.status === 'paid' ? 'text-green-700' : tuition.status === 'scholar' ? 'text-blue-700' : 'text-red-700'}`}>
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                        <option value="scholar">Scholar</option>
-                      </select>
-                    </td>
-                  </tr>
-                )
-              })}
+              {summaries.map(summary => (
+                <tr key={summary.value} className="hover:bg-gray-50">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-700">{monthLabel}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-black text-gray-900">{summary.label}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-black text-banner-dark">{formatAmount(summary.total)}</td>
+                  <td className="min-w-[430px] px-4 py-3 text-sm leading-5 text-gray-600">{classRemark(summary)}</td>
+                </tr>
+              ))}
             </tbody>
+            <tfoot className="border-t-2 border-banner-dark bg-green-50">
+              <tr>
+                <th className="px-4 py-4 text-sm font-black text-gray-900">{monthLabel}</th>
+                <th className="px-4 py-4 text-sm font-black text-gray-900">All Classes Total</th>
+                <th className="whitespace-nowrap px-4 py-4 text-right text-base font-black text-banner-dark">{formatAmount(overall.total)}</th>
+                <td className="px-4 py-4 text-sm font-semibold leading-5 text-gray-700">{autoRemark}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-        <p className="border-t border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500">On mobile, swipe the table horizontally to edit every column.</p>
+        <p className="border-t border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500"><span className="sm:hidden">Swipe horizontally to view every column. </span>Amount is the recorded fee total. The auto remark separates collected, outstanding and scholar-waived amounts.</p>
       </section>
     </div>
   )

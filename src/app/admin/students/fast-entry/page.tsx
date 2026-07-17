@@ -35,7 +35,7 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
   // Fetch all students
   const { data: students } = await supabase
     .from('profiles')
-    .select('id, full_name, email, student_number, assigned_class, address')
+    .select('id, full_name, email, student_number, assigned_class, assigned_subclass, address')
     .eq('role', 'student')
     .order('assigned_class')
     .order('full_name')
@@ -46,13 +46,13 @@ export default async function AdminFastEntryPage(props: { searchParams: Promise<
     .eq('month_year', selectedMonth)
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
           <Link href="/admin/students" className="text-indigo-600 hover:text-indigo-800 mr-4 font-medium flex items-center">
             &larr; Manage Students
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Monthly Payment Data Entry</h1>
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Monthly Payment Data Entry</h1>
         </div>
       </div>
 
