@@ -94,7 +94,7 @@ export default function AcademicSetupPanel({
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="school-settings-title">
         <div className="mb-5">
           <h2 id="school-settings-title" className="text-xl font-black text-gray-950">Year, Term & Payment Rules</h2>
-          <p className="mt-1 text-sm text-gray-600">Receipt example: {settings.receipt_prefix}-{settings.academic_year}-0001</p>
+          <p className="mt-1 text-sm text-gray-600">Receipt example: {settings.receipt_prefix}-KG-{settings.academic_year}-0001</p>
         </div>
         <form action={saveAcademicSettings} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1.4fr_1fr_1fr_auto] lg:items-end">
           <ReturnPath value={returnPath} />
