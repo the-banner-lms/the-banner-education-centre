@@ -94,37 +94,58 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     const paid = data.fee.status === 'paid'
     const scholar = data.fee.status === 'scholar'
 
-    doc.roundedRect(left, 48, contentWidth, 96, 12).fill('#0d6831')
-    doc.fillColor('#ffffff').font('LatinBold').fontSize(22).text('The Banner Education Centre', left + 22, 69)
-    doc.font('Latin').fontSize(11).text('Tuition Invoice & Payment Receipt', left + 22, 103)
-    doc.font('LatinBold').fontSize(12).text(data.fee.invoice_number, left + 320, 78, { width: contentWidth - 342, align: 'right' })
-    doc.font('Latin').fontSize(10).text(`${data.settings.academic_year} · ${data.settings.current_term}`, left + 320, 105, { width: contentWidth - 342, align: 'right' })
+    doc.roundedRect(left, 48, contentWidth, 118, 12).fill('#0d6831')
+    doc.fillColor('#ffffff').font('LatinBold').fontSize(21).text(
+      'The Banner Education Centre',
+      left + 22,
+      67,
+      { width: contentWidth - 44, align: 'center', lineBreak: false },
+    )
+    doc.font('Latin').fontSize(10).text(
+      'Tuition Invoice & Payment Receipt',
+      left + 22,
+      99,
+      { width: contentWidth - 44, align: 'center', lineBreak: false },
+    )
+    doc.moveTo(left + 82, 118).lineTo(left + contentWidth - 82, 118).lineWidth(0.6).strokeColor('#8bc6a3').stroke()
+    doc.fillColor('#ffffff').font('LatinBold').fontSize(11).text(
+      data.fee.invoice_number,
+      left + 22,
+      126,
+      { width: contentWidth - 44, align: 'center', lineBreak: false },
+    )
+    doc.font('Latin').fontSize(8).text(
+      `${data.settings.academic_year} · ${data.settings.current_term}`,
+      left + 22,
+      146,
+      { width: contentWidth - 44, align: 'center', lineBreak: false },
+    )
 
     const badgeColor = paid ? '#166534' : scholar ? '#1d4ed8' : '#b91c1c'
     const badgeText = paid ? 'PAID & VERIFIED' : scholar ? 'SCHOLARSHIP' : new Date(data.fee.due_date).getTime() < Date.now() ? 'OVERDUE' : 'UNPAID'
-    doc.roundedRect(left, 164, 132, 28, 14).fill(badgeColor)
-    doc.fillColor('#ffffff').font('LatinBold').fontSize(10).text(badgeText, left, 173, { width: 132, align: 'center' })
+    doc.roundedRect(left, 184, 132, 28, 14).fill(badgeColor)
+    doc.fillColor('#ffffff').font('LatinBold').fontSize(10).text(badgeText, left, 193, { width: 132, align: 'center' })
 
-    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('STUDENT', left, 218)
+    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('STUDENT', left, 238)
     doc.fillColor('#0f172a').fontSize(15)
-    writeMixedText(doc, data.student.full_name || 'Student', left, 236, { width: 250 })
-    doc.fillColor('#475569').font('Latin').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 266)
-    doc.text(data.student.email, left, 283, { width: 250 })
+    writeMixedText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
+    doc.fillColor('#475569').font('Latin').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
+    doc.text(data.student.email, left, 303, { width: 250 })
     const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
     const subclassLabel = data.student.assigned_class === 'yle' && data.student.assigned_subclass
       ? ` · ${getYleSubclassLabel(data.student.assigned_subclass)}`
       : ''
-    doc.text(`Class: ${classLabel}${subclassLabel}`, left, 300, { width: 250 })
+    doc.text(`Class: ${classLabel}${subclassLabel}`, left, 320, { width: 250 })
 
     const detailsX = left + 300
-    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('INVOICE DETAILS', detailsX, 218)
+    doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('INVOICE DETAILS', detailsX, 238)
     doc.fillColor('#334155').font('Latin').fontSize(10)
-    doc.text(`Invoice date: ${formatDate(data.fee.created_at)}`, detailsX, 240)
-    doc.text(`Payment month: ${data.fee.month_year}`, detailsX, 258)
-    doc.text(`Due date: ${formatDate(data.fee.due_date)}`, detailsX, 276)
-    doc.text(`Verified date: ${formatDate(data.fee.verified_at || data.fee.paid_at)}`, detailsX, 294)
+    doc.text(`Invoice date: ${formatDate(data.fee.created_at)}`, detailsX, 260)
+    doc.text(`Payment month: ${data.fee.month_year}`, detailsX, 278)
+    doc.text(`Due date: ${formatDate(data.fee.due_date)}`, detailsX, 296)
+    doc.text(`Verified date: ${formatDate(data.fee.verified_at || data.fee.paid_at)}`, detailsX, 314)
 
-    const tableTop = 344
+    const tableTop = 364
     doc.roundedRect(left, tableTop, contentWidth, 42, 8).fill('#f1f5f9')
     doc.fillColor('#475569').font('LatinBold').fontSize(9)
     doc.text('DESCRIPTION', left + 16, tableTop + 16)
@@ -139,8 +160,8 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.fillColor('#0f172a').font('LatinBold').fontSize(12).text(formatAmount(data.fee.amount), left + 390, rowTop + 25, { width: contentWidth - 406, align: 'right' })
 
     const totalTop = rowTop + 92
-    doc.fillColor('#475569').font('LatinBold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 280, totalTop, { width: 120, align: 'right' })
-    doc.fillColor('#0d6831').fontSize(17).text(formatAmount(data.fee.amount), left + 408, totalTop - 4, { width: contentWidth - 408, align: 'right' })
+    doc.fillColor('#475569').font('LatinBold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 210, totalTop, { width: 120, align: 'right', lineBreak: false })
+    doc.fillColor('#0d6831').fontSize(16).text(formatAmount(data.fee.amount), left + 344, totalTop - 3, { width: contentWidth - 344, align: 'right', lineBreak: false })
 
     if (data.fee.remarks) {
       doc.fillColor('#64748b').font('LatinBold').fontSize(9).text('REMARK', left, totalTop + 54)
@@ -160,7 +181,7 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.fillColor('#94a3b8').font('Latin').fontSize(8).text(
       `Generated ${formatDate(new Date().toISOString())} · The Banner Education Centre`,
       left,
-      780,
+      758,
       { width: contentWidth, align: 'center' },
     )
     doc.end()
