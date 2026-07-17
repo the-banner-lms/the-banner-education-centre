@@ -7,6 +7,7 @@ import { createClient as createServerClient } from '@/utils/supabase/server'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
 import { splitTuitionAmount } from '@/lib/tuition'
+import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -468,10 +469,17 @@ export async function recordMonthlyTuitionFee(data: {
     throw new Error('Failed to record tuition fee')
   }
 
+  if (data.status === 'paid') {
+    await approveStudentsWithVerifiedPayments([data.student_id])
+  }
+
   revalidatePath(`/admin/students/${data.student_id}`)
   revalidatePath(`/staff/students/${data.student_id}`)
   revalidatePath(`/dashboard`)
   revalidatePath(`/dashboard/${data.student_id}`)
+  if (data.status === 'paid') {
+    revalidateStudentApprovalViews([data.student_id])
+  }
 
   const emailDelivery = data.status === 'paid' && !emailAlreadySent
     ? await sendPaidTuitionInvoiceEmail(savedFee.id)

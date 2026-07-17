@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sendPaidTuitionInvoiceEmails } from '@/lib/tuitionInvoiceService'
+import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
 
 export type AttendanceEntry = {
   student_id: string
@@ -140,10 +141,16 @@ export async function bulkSaveMonthlyTuition(
     savedRows = data || []
   }
 
+  const paidStudentIds = entriesToSave
+    .filter(entry => entry.status === 'paid')
+    .map(entry => entry.student_id)
+  await approveStudentsWithVerifiedPayments(paidStudentIds)
+
   revalidatePath('/admin/students/fast-entry')
   revalidatePath('/staff/students/fast-entry')
   revalidatePath('/dashboard/[id]', 'page')
   revalidatePath('/dashboard', 'page')
+  revalidateStudentApprovalViews(paidStudentIds)
 
   const pendingEmailIds = savedRows
     .filter(row => row.status === 'paid' && row.email_status !== 'sent')

@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/utils/supabase/admin'
 import { isStudentClass, isYleSubclass } from '@/lib/studentClasses'
 import { sendPaidTuitionInvoiceEmail } from '@/lib/tuitionInvoiceService'
 import { splitTuitionAmount } from '@/lib/tuition'
+import { approveStudentsWithVerifiedPayments, revalidateStudentApprovalViews } from '@/lib/studentApproval'
 import {
   analyzePaymentSlip,
   hashSubmissionFingerprint,
@@ -332,6 +333,7 @@ export async function updateEnrollmentStatus(
   }
 
   let paidFeeId: string | null = null
+  let paidStudentId: string | null = null
   if (status === 'completed' && submission.submission_type === 'monthly_payment') {
     let student: { id: string; email: string; assigned_class: string | null; assigned_subclass: string | null; yle_monthly_fee: number | string | null } | null = null
     if (submission.student_number) {
@@ -403,6 +405,7 @@ export async function updateEnrollmentStatus(
       return { status: 'error', message: 'Payment could not be linked to the student tuition record.' }
     }
     paidFeeId = paidFee.id
+    paidStudentId = student.id
   }
 
   const { error } = await supabaseAdmin
@@ -421,10 +424,23 @@ export async function updateEnrollmentStatus(
     return { status: 'error', message: 'Failed to update submission status.' }
   }
 
+  if (paidStudentId) {
+    try {
+      await approveStudentsWithVerifiedPayments([paidStudentId])
+    } catch (approvalError) {
+      console.error('Verified payment account approval failed:', approvalError)
+      return {
+        status: 'error',
+        message: 'Payment was verified, but the student pending status could not be cleared. Please retry.',
+      }
+    }
+  }
+
   revalidatePath('/admin/enrollments')
   revalidatePath('/staff/enrollments')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/[id]', 'page')
+  revalidateStudentApprovalViews(paidStudentId ? [paidStudentId] : [])
 
   if (paidFeeId) {
     const delivery = await sendPaidTuitionInvoiceEmail(paidFeeId)
