@@ -70,7 +70,6 @@ const PdfBookPageContent = memo(function PdfBookPageContent({
       ) : (
         <PagePlaceholder pageNumber={pageNumber} />
       )}
-      <span className="flipbook-page-number">{pageNumber}</span>
     </div>
   )
 })
@@ -307,14 +306,14 @@ export default function FlipbookReader({
   const viewportHeight = viewportSize.height
   const isMobile = viewportWidth < 640
   const widthLimitedPageWidth = isMobile
-    ? viewportWidth - 28
-    : Math.floor((viewportWidth - 128) / 2)
+    ? viewportWidth - 16
+    : Math.floor((viewportWidth - 64) / 2)
   const heightLimitedPageWidth = Math.floor(
-    Math.max(250, viewportHeight - (isMobile ? 250 : 170)) / BOOK_PAGE_ASPECT_RATIO
+    Math.max(250, viewportHeight - (isMobile ? 120 : 80)) / BOOK_PAGE_ASPECT_RATIO
   )
   const pageWidth = Math.max(
     180,
-    Math.min(isMobile ? 360 : 650, widthLimitedPageWidth, heightLimitedPageWidth)
+    Math.min(isMobile ? 450 : 1000, widthLimitedPageWidth, heightLimitedPageWidth)
   )
   const pageHeight = Math.round(pageWidth * BOOK_PAGE_ASPECT_RATIO)
   const bookWidth = isMobile ? pageWidth : pageWidth * 2
@@ -495,13 +494,13 @@ export default function FlipbookReader({
       aria-label={`${title} book reader`}
     >
       <div className="flipbook-reader-toolbar-shell z-40 shrink-0 border-b border-banner-light/25 bg-white/95 shadow-sm backdrop-blur">
-        <div className="flipbook-reader-toolbar mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flipbook-reader-toolbar mx-auto flex max-w-7xl flex-col gap-2 px-2 py-1.5 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/textbook"
               prefetch
               aria-label="Close book and return to bookshelf"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-banner-light/40 px-3 py-2 text-sm font-bold text-banner-dark transition-colors hover:bg-banner-light/10"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-banner-light/40 px-2.5 py-1 text-sm font-bold text-banner-dark transition-colors hover:bg-banner-light/10"
             >
               <CloseReaderLinkContent />
             </Link>
@@ -517,10 +516,10 @@ export default function FlipbookReader({
                 type="button"
                 onClick={() => schedulePageTurn('previous')}
                 disabled={!isBookReady || currentPageIndex <= 0}
-                className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-full p-1.5 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous page"
               >
-                <ChevronLeftIcon className="pointer-events-none h-5 w-5" aria-hidden="true" focusable="false" />
+                <ChevronLeftIcon className="pointer-events-none h-4 w-4" aria-hidden="true" focusable="false" />
               </button>
               <label className="flex items-center gap-1 px-1 text-xs font-bold text-gray-600">
                 <span className="hidden sm:inline">Page</span>
@@ -541,7 +540,7 @@ export default function FlipbookReader({
               <button
                 type="button"
                 onClick={goToPage}
-                className="mx-1 rounded-full bg-banner-dark px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0b5427]"
+                className="mx-1 rounded-full bg-banner-dark px-2.5 py-1 text-xs font-bold text-white hover:bg-[#0b5427]"
               >
                 Go
               </button>
@@ -549,10 +548,10 @@ export default function FlipbookReader({
                 type="button"
                 onClick={() => schedulePageTurn('next')}
                 disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
-                className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-full p-1.5 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Next page"
               >
-                <ChevronRightIcon className="pointer-events-none h-5 w-5" aria-hidden="true" focusable="false" />
+                <ChevronRightIcon className="pointer-events-none h-4 w-4" aria-hidden="true" focusable="false" />
               </button>
             </div>
 
@@ -560,27 +559,27 @@ export default function FlipbookReader({
               <button
                 type="button"
                 onClick={() => setZoom(value => Math.max(0.75, Number((value - 0.1).toFixed(2))))}
-                className="rounded-full p-2 text-gray-600 hover:bg-gray-100"
+                className="rounded-full p-1.5 text-gray-600 hover:bg-gray-100"
                 aria-label="Zoom out"
               >
-                <MagnifyingGlassMinusIcon className="h-5 w-5" />
+                <MagnifyingGlassMinusIcon className="h-4 w-4" />
               </button>
               <span className="min-w-11 text-center text-xs font-bold text-gray-500">{Math.round(zoom * 100)}%</span>
               <button
                 type="button"
                 onClick={() => setZoom(value => Math.min(1.5, Number((value + 0.1).toFixed(2))))}
-                className="rounded-full p-2 text-gray-600 hover:bg-gray-100"
+                className="rounded-full p-1.5 text-gray-600 hover:bg-gray-100"
                 aria-label="Zoom in"
               >
-                <MagnifyingGlassPlusIcon className="h-5 w-5" />
+                <MagnifyingGlassPlusIcon className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className={`rounded-full p-2 hover:bg-gray-100 ${isFullscreen ? 'text-banner-dark' : 'text-gray-600'}`}
+                className={`rounded-full p-1.5 hover:bg-gray-100 ${isFullscreen ? 'text-banner-dark' : 'text-gray-600'}`}
                 aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
-                <ArrowsPointingOutIcon className="h-5 w-5" />
+                <ArrowsPointingOutIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
