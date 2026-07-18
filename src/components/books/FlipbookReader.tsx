@@ -155,12 +155,12 @@ function RealPageFlipWindow({
       height: pageHeight,
       size: 'fixed',
       startPage,
-      drawShadow: true,
-      flippingTime: 450,
+      drawShadow: false,
+      flippingTime: 540,
       usePortrait: isMobile,
       startZIndex: 0,
       autoSize: false,
-      maxShadowOpacity: 0.65,
+      maxShadowOpacity: 0,
       showCover: true,
       mobileScrollSupport: true,
       clickEventForward: false,
@@ -179,7 +179,7 @@ function RealPageFlipWindow({
       readyTimer = window.setTimeout(() => {
         acceptFlipEvents = true
         onReady()
-      }, 240)
+      }, 60)
     })
     pageFlip.loadFromHTML(portalTargets.map(target => target.element))
     onInstanceChange(pageFlip)
@@ -195,7 +195,7 @@ function RealPageFlipWindow({
         bookElement.remove()
       }
     }
-  }, [onFlip, onInstanceChange, onReady, pageHeight, pageNumbers.length, pageWidth, portalTargets])
+  }, [isMobile, onFlip, onInstanceChange, onReady, pageHeight, pageNumbers.length, pageWidth, portalTargets])
 
   return (
     <>
@@ -209,7 +209,7 @@ function RealPageFlipWindow({
           pageNumber={pageNumber}
           pageWidth={pageWidth}
           devicePixelRatio={devicePixelRatio}
-          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= 3}
+          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= (isMobile ? 1 : 2)}
           onFirstPageRendered={onFirstPageRendered}
         />,
         element,
@@ -318,12 +318,10 @@ export default function FlipbookReader({
   const pageHeight = Math.round(pageWidth * BOOK_PAGE_ASPECT_RATIO)
   const bookWidth = isMobile ? pageWidth : pageWidth * 2
   const devicePixelRatio = isMobile
-    ? Math.min(window.devicePixelRatio || 1, 1.35)
-    : Math.min(window.devicePixelRatio || 1, 2)
+    ? Math.min(window.devicePixelRatio || 1, 1.15)
+    : Math.min(window.devicePixelRatio || 1, 1.5)
   const documentOptions = useMemo(
-    () => isMobile
-      ? { disableAutoFetch: true, disableStream: true, rangeChunkSize: 256 * 1024 }
-      : { rangeChunkSize: 256 * 1024 },
+    () => ({ rangeChunkSize: (isMobile ? 128 : 256) * 1024 }),
     [isMobile]
   )
   const windowPages = useMemo(() => {
@@ -470,9 +468,9 @@ export default function FlipbookReader({
       pendingPageTurnTimerRef.current = window.setTimeout(() => {
         pendingPageTurnTimerRef.current = null
         const pageFlip = bookRef.current
-        if (direction === 'previous') pageFlip?.flipPrev('bottom')
-        else pageFlip?.flipNext('bottom')
-      }, 120)
+        if (direction === 'previous') pageFlip?.flipPrev('top')
+        else pageFlip?.flipNext('top')
+      }, 32)
     })
   }, [])
 
