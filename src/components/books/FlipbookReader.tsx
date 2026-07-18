@@ -265,57 +265,62 @@ export default function FlipbookReader({
 
   const initializeBookContainer = useCallback((container: HTMLDivElement | null) => {
     if (!container || numPages === 0 || windowPages.length === 0) return
+    let pageFlip: PageFlip | null = null
+    const initializationFrame = window.requestAnimationFrame(() => {
+      if (!container.isConnected) return
+      const pageElements = Array.from(container.querySelectorAll<HTMLElement>(':scope > .flipbook-page'))
+      if (pageElements.length !== windowPages.length) return
 
-    const pageElements = Array.from(container.querySelectorAll<HTMLElement>(':scope > .flipbook-page'))
-    if (pageElements.length !== windowPages.length) return
+      const localStartPage = Math.max(
+        0,
+        Math.min(windowPages.length - 1, currentPageIndexRef.current - pageWindowStart)
+      )
 
-    const localStartPage = Math.max(
-      0,
-      Math.min(windowPages.length - 1, currentPageIndexRef.current - pageWindowStart)
-    )
+      pageFlip = new PageFlip(container, {
+        width: pageWidth,
+        height: pageHeight,
+        size: 'fixed',
+        startPage: localStartPage,
+        drawShadow: true,
+        flippingTime: 360,
+        usePortrait: true,
+        startZIndex: 0,
+        autoSize: false,
+        maxShadowOpacity: 0.45,
+        showCover: false,
+        mobileScrollSupport: true,
+        clickEventForward: true,
+        useMouseEvents: true,
+        swipeDistance: 24,
+        showPageCorners: true,
+        disableFlipByClick: false,
+      })
 
-    const pageFlip = new PageFlip(container, {
-      width: pageWidth,
-      height: pageHeight,
-      size: 'fixed',
-      startPage: localStartPage,
-      drawShadow: true,
-      flippingTime: 360,
-      usePortrait: true,
-      startZIndex: 0,
-      autoSize: false,
-      maxShadowOpacity: 0.45,
-      showCover: false,
-      mobileScrollSupport: true,
-      clickEventForward: true,
-      useMouseEvents: true,
-      swipeDistance: 24,
-      showPageCorners: true,
-      disableFlipByClick: false,
-    })
+      bookRef.current = pageFlip
+      pageFlip.on('flip', event => {
+        const logicalIndex = pageWindowStart + Number(event.data)
+        updateCurrentPage(logicalIndex)
 
-    bookRef.current = pageFlip
-    pageFlip.on('flip', event => {
-      const logicalIndex = pageWindowStart + Number(event.data)
-      updateCurrentPage(logicalIndex)
-
-      const windowEnd = pageWindowStart + windowPages.length
-      const edgeBuffer = isMobile ? 2 : 3
-      if (
-        logicalIndex <= pageWindowStart + 1 ||
-        logicalIndex >= windowEnd - edgeBuffer
-      ) {
-        const nextWindowStart = getPageWindowStart(logicalIndex, numPages, isMobile)
-        if (nextWindowStart !== pageWindowStart) {
-          setIsBookReady(false)
-          setPageWindowStart(nextWindowStart)
+        const windowEnd = pageWindowStart + windowPages.length
+        const edgeBuffer = isMobile ? 2 : 3
+        if (
+          logicalIndex <= pageWindowStart + 1 ||
+          logicalIndex >= windowEnd - edgeBuffer
+        ) {
+          const nextWindowStart = getPageWindowStart(logicalIndex, numPages, isMobile)
+          if (nextWindowStart !== pageWindowStart) {
+            setIsBookReady(false)
+            setPageWindowStart(nextWindowStart)
+          }
         }
-      }
+      })
+      pageFlip.on('init', () => setIsBookReady(true))
+      pageFlip.loadFromHTML(pageElements)
     })
-    pageFlip.on('init', () => setIsBookReady(true))
-    pageFlip.loadFromHTML(pageElements)
 
     return () => {
+      window.cancelAnimationFrame(initializationFrame)
+      if (!pageFlip) return
       pageFlip.off('flip')
       pageFlip.off('init')
       if (bookRef.current === pageFlip) bookRef.current = null
