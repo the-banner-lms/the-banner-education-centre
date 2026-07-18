@@ -169,7 +169,9 @@ function RealPageFlipWindow({
 
   useEffect(() => {
     const bookElement = bookElementRef.current
-    if (!bookElement || portalTargets.length !== pageNumbers.length) return
+    const targetsMatchWindow = portalTargets.length === pageNumbers.length
+      && portalTargets.every((target, index) => target.pageNumber === pageNumbers[index])
+    if (!bookElement || !targetsMatchWindow) return
 
     const requestedStartPage = pageNumbers.indexOf(currentPageIndexRef.current + 1)
     const startPage = Math.max(0, requestedStartPage)
