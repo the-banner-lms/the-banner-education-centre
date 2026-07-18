@@ -319,12 +319,22 @@ body {
 }
 
 .flipbook-page {
+  position: absolute;
+  top: 0;
+  left: 0;
   box-sizing: border-box;
   width: var(--flipbook-page-width, 35rem);
   height: var(--flipbook-book-height, 48rem);
   contain: strict;
   overflow: hidden;
   background: #fffef9;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.banner-flipbook .flipbook-page[style*="display: block"] {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* page-flip normally collapses inactive pages to 0×0 with display:none.
