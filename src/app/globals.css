@@ -373,110 +373,6 @@ body {
   filter: drop-shadow(0 22px 22px rgba(24, 45, 30, 0.24));
 }
 
-.flipbook-stable-spread {
-  position: relative;
-  display: flex;
-  contain: strict;
-  overflow: hidden;
-  background: #fffef9;
-  filter: drop-shadow(0 22px 22px rgba(24, 45, 30, 0.24));
-  perspective: 1800px;
-  transform-style: preserve-3d;
-  animation: flipbook-spread-reveal 140ms ease-out;
-}
-
-.flipbook-static-page {
-  position: relative;
-  box-sizing: border-box;
-  flex: 0 0 auto;
-  contain: strict;
-  overflow: hidden;
-  background: #fffef9;
-  backface-visibility: hidden;
-}
-
-.flipbook-stable-spread[data-turn-direction="next"]::after,
-.flipbook-stable-spread[data-turn-direction="previous"]::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 8;
-  width: 50%;
-  pointer-events: none;
-  backface-visibility: hidden;
-  background:
-    linear-gradient(90deg, rgba(73, 58, 39, 0.18), transparent 7%),
-    linear-gradient(100deg, #f2eee4 0%, #fffef9 18%, #fffdf7 82%, #e8e2d5 100%);
-  box-shadow: 0 0 28px rgba(31, 40, 33, 0.3);
-  will-change: transform, opacity;
-}
-
-.flipbook-stable-spread[data-turn-direction="next"]::after {
-  left: 50%;
-  transform-origin: left center;
-  animation: flipbook-sheet-next 560ms cubic-bezier(0.2, 0.68, 0.2, 1) both;
-}
-
-.flipbook-stable-spread[data-turn-direction="previous"]::after {
-  left: 0;
-  transform-origin: right center;
-  animation: flipbook-sheet-previous 560ms cubic-bezier(0.2, 0.68, 0.2, 1) both;
-}
-
-.flipbook-static-page:nth-child(odd) .flipbook-page-paper {
-  box-shadow: inset -12px 0 22px rgba(56, 45, 34, 0.06);
-}
-
-.flipbook-static-page:nth-child(even) .flipbook-page-paper {
-  box-shadow: inset 12px 0 22px rgba(56, 45, 34, 0.06);
-}
-
-.flipbook-static-page .react-pdf__Page,
-.flipbook-static-page .react-pdf__Page__canvas {
-  display: block;
-  max-height: 100%;
-  max-width: 100%;
-}
-
-.flipbook-static-page .react-pdf__Page {
-  width: 100%;
-  height: 100%;
-}
-
-.flipbook-static-page .react-pdf__Page__canvas {
-  width: 100% !important;
-  height: auto !important;
-  object-fit: contain;
-}
-
-@keyframes flipbook-spread-reveal {
-  from { opacity: 0.88; }
-  to { opacity: 1; }
-}
-
-@keyframes flipbook-sheet-next {
-  0% { opacity: 1; transform: rotateY(0deg); }
-  48% { opacity: 1; transform: rotateY(-86deg); }
-  52% { opacity: 0.92; transform: rotateY(-94deg); }
-  100% { opacity: 0; transform: rotateY(-178deg); }
-}
-
-@keyframes flipbook-sheet-previous {
-  0% { opacity: 1; transform: rotateY(0deg); }
-  48% { opacity: 1; transform: rotateY(86deg); }
-  52% { opacity: 0.92; transform: rotateY(94deg); }
-  100% { opacity: 0; transform: rotateY(178deg); }
-}
-
-@media (max-width: 639px) {
-  .flipbook-stable-spread[data-turn-direction="next"]::after,
-  .flipbook-stable-spread[data-turn-direction="previous"]::after {
-    left: 0;
-    width: 100%;
-  }
-}
-
 .flipbook-page {
   position: absolute;
   top: 0;
@@ -494,15 +390,6 @@ body {
 .banner-flipbook .flipbook-page[style*="display: block"] {
   visibility: visible;
   pointer-events: auto;
-}
-
-/* page-flip normally collapses inactive pages to 0×0 with display:none.
-   Keep their layout box stable and hide only their paint so page turns do not
-   create layout-shift records when the library swaps the visible spread. */
-.banner-flipbook .flipbook-page[style*="display: none"] {
-  display: block !important;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .flipbook-page-paper {
@@ -560,7 +447,7 @@ body {
 
 .flipbook-reader-shell:fullscreen {
   overflow: auto;
-  background: #eaf0ec;
+  background: #fff;
 }
 
 .flipbook-reader-shell:fullscreen > div:first-child {

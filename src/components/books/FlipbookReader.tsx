@@ -165,7 +165,8 @@ function RealPageFlipWindow({
       0,
       Math.min(pageNumbers.length - 1, initialPageIndexRef.current - windowStart)
     )
-    let ignoreInitialFlip = true
+    let acceptFlipEvents = false
+    let readyTimer = 0
     const pageFlip = new PageFlip(bookElement, {
       width: pageWidth,
       height: pageHeight,
@@ -188,13 +189,14 @@ function RealPageFlipWindow({
 
     pageFlip.on('flip', event => {
       const localIndex = Number(event.data)
-      if (ignoreInitialFlip && localIndex === startPage) return
-      ignoreInitialFlip = false
+      if (!acceptFlipEvents) return
       onFlip(localIndex)
     })
     pageFlip.on('init', () => {
-      ignoreInitialFlip = false
-      onReady()
+      readyTimer = window.setTimeout(() => {
+        acceptFlipEvents = true
+        onReady()
+      }, 240)
     })
     pageFlip.loadFromHTML(portalTargets.map(target => target.element))
     onInstanceChange(pageFlip)
@@ -202,6 +204,7 @@ function RealPageFlipWindow({
     return () => {
       pageFlip.off('flip')
       pageFlip.off('init')
+      if (readyTimer) window.clearTimeout(readyTimer)
       onInstanceChange(null)
       try {
         pageFlip.destroy()
@@ -502,7 +505,7 @@ export default function FlipbookReader({
   }
 
   return (
-    <div ref={readerRef} className="flipbook-reader-shell bg-[#eaf0ec]">
+    <div ref={readerRef} className="flipbook-reader-shell bg-white">
       <div className="flipbook-reader-toolbar-shell sticky top-20 z-40 border-b border-banner-light/25 bg-white/95 shadow-sm backdrop-blur md:top-24">
         <div className="flipbook-reader-toolbar mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
