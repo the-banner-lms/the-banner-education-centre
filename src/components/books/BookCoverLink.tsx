@@ -39,7 +39,9 @@ export default function BookCoverLink({ id, title, gradeLevel, coverUrl, isRestr
           <img
             src={coverUrl}
             alt={`${title} cover`}
-            className="h-full w-full object-cover"
+            width="700"
+            height="972"
+            className="absolute inset-0 block h-full w-full object-cover"
             loading="lazy"
             decoding="async"
           />

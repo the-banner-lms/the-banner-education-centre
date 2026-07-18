@@ -29,6 +29,15 @@ import Loading from '@/app/loading';
 import AuthGuard from '@/components/AuthGuard';
 import { Suspense } from "react";
 
+function NavbarFallback() {
+  return (
+    <div
+      className="sticky top-0 z-50 h-20 shrink-0 border-b border-banner-light/20 bg-white/80 backdrop-blur-md md:h-24"
+      aria-hidden="true"
+    />
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,16 +51,18 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-gray-50">
         <NextTopLoader color="#0f6630" height={4} showSpinner={false} />
         
-        <Suspense fallback={<Loading />}>
-          <PresenceProvider>
+        <PresenceProvider>
+          <Suspense fallback={<NavbarFallback />}>
             <Navbar />
-            <main className="flex-grow">
+          </Suspense>
+          <main className="flex-grow">
+            <Suspense fallback={<Loading />}>
               <AuthGuard>
                 {children}
               </AuthGuard>
-            </main>
-          </PresenceProvider>
-        </Suspense>
+            </Suspense>
+          </main>
+        </PresenceProvider>
       </body>
     </html>
   );
