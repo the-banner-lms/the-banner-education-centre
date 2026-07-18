@@ -6,7 +6,7 @@ export default function LoadingBookshelf() {
       <section className="mx-auto max-w-7xl">
         <header className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-banner-dark text-white shadow-lg">
-            <BookOpenIcon className="h-9 w-9 animate-pulse" aria-hidden="true" />
+            <BookOpenIcon className="h-9 w-9 animate-pulse" aria-hidden="true" focusable="false" />
           </div>
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-banner-dark/65">The Banner Library</p>
           <h1 className="mt-2 text-4xl font-black tracking-tight text-banner-brown sm:text-5xl">Bookshelf</h1>

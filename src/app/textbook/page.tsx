@@ -26,7 +26,7 @@ export default async function TextbookPage() {
       <section className="mx-auto max-w-7xl">
         <header className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-banner-dark text-white shadow-lg shadow-green-900/15">
-            <BookOpenIcon className="h-9 w-9" aria-hidden="true" />
+            <BookOpenIcon className="h-9 w-9" aria-hidden="true" focusable="false" />
           </div>
           <p className="mb-2 text-sm font-bold uppercase tracking-[0.25em] text-banner-dark/65">The Banner Library</p>
           <h1 className="text-4xl font-black tracking-tight text-banner-brown sm:text-5xl">Bookshelf</h1>
@@ -41,7 +41,7 @@ export default async function TextbookPage() {
           </div>
         ) : books.length === 0 ? (
           <div className="mx-auto max-w-xl rounded-3xl border border-banner-light/30 bg-white/90 p-10 text-center shadow-sm">
-            <BookOpenIcon className="mx-auto h-12 w-12 text-banner-dark/35" aria-hidden="true" />
+            <BookOpenIcon className="mx-auto h-12 w-12 text-banner-dark/35" aria-hidden="true" focusable="false" />
             <h2 className="mt-4 text-xl font-bold text-banner-brown">The shelf is being prepared</h2>
             <p className="mt-2 text-gray-600">Books added by the administrator will appear here.</p>
           </div>

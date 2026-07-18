@@ -106,7 +106,7 @@ export default async function BlogSidebar({ activeLabel = '', activeQuery = '' }
             className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:bg-white transition-all outline-none text-sm"
           />
           <button type="submit" aria-label="Search blog" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-600 group-hover:text-orange-700 transition-colors">
-            <MagnifyingGlassIcon className="w-5 h-5" aria-hidden="true" />
+            <MagnifyingGlassIcon className="w-5 h-5" aria-hidden="true" focusable="false" />
           </button>
         </form>
       </div>

@@ -19,7 +19,7 @@ function PendingOverlay() {
   return (
     <span className="absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-banner-dark/75 text-white backdrop-blur-[2px]" role="status">
       <span className="flex flex-col items-center gap-2 text-xs font-bold">
-        <ArrowPathIcon className="h-8 w-8 animate-spin" aria-hidden="true" />
+        <ArrowPathIcon className="h-8 w-8 animate-spin" aria-hidden="true" focusable="false" />
         Opening…
       </span>
     </span>
@@ -47,7 +47,7 @@ export default function BookCoverLink({ id, title, gradeLevel, coverUrl, isRestr
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-banner-dark to-[#154926] p-5 text-center text-white">
-            <BookOpenIcon className="mb-4 h-12 w-12 text-banner-light" aria-hidden="true" />
+            <BookOpenIcon className="mb-4 h-12 w-12 text-banner-light" aria-hidden="true" focusable="false" />
             <span className="text-lg font-black leading-tight">{title}</span>
           </div>
         )}

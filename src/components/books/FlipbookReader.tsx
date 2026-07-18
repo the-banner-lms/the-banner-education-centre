@@ -118,7 +118,7 @@ function BookshelfLinkContent() {
 
   return (
     <>
-      <ArrowLeftIcon className={`h-4 w-4 ${pending ? 'animate-pulse' : ''}`} aria-hidden="true" />
+      <ArrowLeftIcon className={`h-4 w-4 ${pending ? 'animate-pulse' : ''}`} aria-hidden="true" focusable="false" />
       <span className="hidden sm:inline">{pending ? 'Opening…' : 'Bookshelf'}</span>
     </>
   )
@@ -444,7 +444,7 @@ export default function FlipbookReader({
           className="flipbook-side-navigation flipbook-side-navigation-left"
           aria-label="Previous page from left side"
         >
-          <ChevronLeftIcon className="h-7 w-7" aria-hidden="true" />
+          <ChevronLeftIcon className="h-7 w-7" aria-hidden="true" focusable="false" />
         </button>
 
         {canLoadDocument ? <Document
@@ -509,7 +509,7 @@ export default function FlipbookReader({
           className="flipbook-side-navigation flipbook-side-navigation-right"
           aria-label="Next page from right side"
         >
-          <ChevronRightIcon className="h-7 w-7" aria-hidden="true" />
+          <ChevronRightIcon className="h-7 w-7" aria-hidden="true" focusable="false" />
         </button>
       </div>
 

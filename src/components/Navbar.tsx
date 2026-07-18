@@ -112,7 +112,7 @@ export default async function Navbar() {
             {user && (
               <Link href="/messages" className="p-2 rounded-full text-banner-dark/60 hover:text-banner-dark hover:bg-banner-light/10 transition-all duration-200 relative group" title="Messages">
                 <span className="sr-only">View messages</span>
-                <EnvelopeIcon className="h-6 w-6 transform group-hover:scale-110 transition-transform" aria-hidden="true" />
+                <EnvelopeIcon className="h-6 w-6 transform group-hover:scale-110 transition-transform" aria-hidden="true" focusable="false" />
               </Link>
             )}
             {user ? (

@@ -23,9 +23,9 @@ export default function PasswordInput({ className = '', ...props }: PasswordInpu
         className="absolute inset-y-0 right-1 flex min-h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-banner-dark/40"
       >
         {visible ? (
-          <EyeSlashIcon className="h-5 w-5" aria-hidden="true" />
+          <EyeSlashIcon className="h-5 w-5" aria-hidden="true" focusable="false" />
         ) : (
-          <EyeIcon className="h-5 w-5" aria-hidden="true" />
+          <EyeIcon className="h-5 w-5" aria-hidden="true" focusable="false" />
         )}
       </button>
     </div>

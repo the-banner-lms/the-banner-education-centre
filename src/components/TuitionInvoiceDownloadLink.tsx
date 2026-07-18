@@ -68,7 +68,7 @@ export default function TuitionInvoiceDownloadLink({
         aria-label={`Download invoice ${invoiceNumber}`}
         aria-busy={downloading}
       >
-        <ArrowDownTrayIcon className="h-4 w-4" aria-hidden="true" />
+        <ArrowDownTrayIcon className="h-4 w-4" aria-hidden="true" focusable="false" />
         {downloading ? 'Preparing…' : 'Download PDF'}
       </button>
       {error && <p className="mt-1 max-w-36 text-xs font-semibold leading-4 text-red-700" role="alert">{error}</p>}

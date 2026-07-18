@@ -24,9 +24,9 @@ export default function MobileMenu({ userRole, isAuthenticated = false }: Mobile
       >
         <span className="sr-only">Open main menu</span>
         {isOpen ? (
-          <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+          <XMarkIcon className="block h-6 w-6" aria-hidden="true" focusable="false" />
         ) : (
-          <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+          <Bars3Icon className="block h-6 w-6" aria-hidden="true" focusable="false" />
         )}
       </button>
 

@@ -107,7 +107,7 @@ export default function AdminNavigation({ isFullAdmin }: { isFullAdmin: boolean 
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
-                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <Icon className="h-5 w-5" aria-hidden="true" focusable="false" />
                     <span>{item.shortLabel}</span>
                   </Link>
                 </li>
@@ -148,6 +148,7 @@ export default function AdminNavigation({ isFullAdmin }: { isFullAdmin: boolean 
                               isActive ? 'text-[#0f6630]' : 'text-gray-500 group-hover:text-gray-900'
                             }`}
                             aria-hidden="true"
+                            focusable="false"
                           />
                           <span className="ms-3">{item.label}</span>
                         </Link>

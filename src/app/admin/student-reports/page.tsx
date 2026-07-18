@@ -38,10 +38,10 @@ export default async function StudentReportsAdminPage(props: {
   const deliveryByKey = new Map((deliveries || []).map(delivery => [`${delivery.student_id}:${delivery.report_type}:${delivery.period_key}`, delivery]))
 
   return (
-    <main className="mx-auto max-w-7xl">
+    <section className="mx-auto max-w-7xl" aria-labelledby="student-reports-heading">
       <div className="mb-6">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-banner-dark">Data &amp; Reports</p>
-        <h1 className="mt-1 text-3xl font-black text-gray-950">Student Reports</h1>
+        <h1 id="student-reports-heading" className="mt-1 text-3xl font-black text-gray-950">Student Reports</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">Admin can preview every report before its student release date. Weekly email releases run on Monday; monthly releases run on the first day of the next month.</p>
       </div>
 
@@ -94,6 +94,6 @@ export default async function StudentReportsAdminPage(props: {
         {!students?.length && <p className="p-8 text-center text-gray-500">No students found for this class.</p>}
       </div>
       <p className="mt-3 text-xs text-gray-500">Selected month runs from {monthBounds(month).start} to {monthBounds(month).end}.</p>
-    </main>
+    </section>
   )
 }
