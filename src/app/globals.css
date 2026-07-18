@@ -421,11 +421,29 @@ body {
 }
 
 .flipbook-page:nth-child(odd) .flipbook-page-paper {
-  box-shadow: inset 50px 0 50px -20px rgba(0, 0, 0, 0.15), inset 3px 0 6px rgba(0, 0, 0, 0.15);
+  /* Spine shadow from left, Stacked pages from right */
+  box-shadow: 
+    inset 50px 0 50px -20px rgba(0, 0, 0, 0.15), 
+    inset 3px 0 6px rgba(0, 0, 0, 0.15),
+    inset -1px 0 0 #fffef9,
+    inset -2px 0 0 #c7c7c7,
+    inset -3px 0 0 #fffef9,
+    inset -4px 0 0 #c7c7c7,
+    inset -5px 0 0 #fffef9,
+    inset -6px 0 0 #d9ddd9;
 }
 
 .flipbook-page:nth-child(even) .flipbook-page-paper {
-  box-shadow: inset -50px 0 50px -20px rgba(0, 0, 0, 0.15), inset -3px 0 6px rgba(0, 0, 0, 0.15);
+  /* Spine shadow from right, Stacked pages from left */
+  box-shadow: 
+    inset -50px 0 50px -20px rgba(0, 0, 0, 0.15), 
+    inset -3px 0 6px rgba(0, 0, 0, 0.15),
+    inset 1px 0 0 #fffef9,
+    inset 2px 0 0 #c7c7c7,
+    inset 3px 0 0 #fffef9,
+    inset 4px 0 0 #c7c7c7,
+    inset 5px 0 0 #fffef9,
+    inset 6px 0 0 #d9ddd9;
 }
 
 .flipbook-page-paper::after {
