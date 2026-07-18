@@ -327,6 +327,15 @@ body {
   background: #fffef9;
 }
 
+/* page-flip normally collapses inactive pages to 0×0 with display:none.
+   Keep their layout box stable and hide only their paint so page turns do not
+   create layout-shift records when the library swaps the visible spread. */
+.banner-flipbook .flipbook-page[style*="display: none"] {
+  display: block !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .flipbook-page-paper {
   position: relative;
   display: flex;
