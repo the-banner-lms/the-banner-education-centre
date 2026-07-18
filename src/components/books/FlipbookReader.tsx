@@ -31,13 +31,15 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString()
 
 const BOOK_PAGE_ASPECT_RATIO = 1.414
-const PAGE_WINDOW_SIZE = 3
+const MOBILE_PAGE_WINDOW_SIZE = 3
+const DESKTOP_PAGE_WINDOW_SIZE = 4
 
 function getPageWindowStart(targetIndex: number, totalPages: number, isMobile: boolean) {
-  if (totalPages <= PAGE_WINDOW_SIZE) return 0
+  const windowSize = isMobile ? MOBILE_PAGE_WINDOW_SIZE : DESKTOP_PAGE_WINDOW_SIZE
+  if (totalPages <= windowSize) return 0
 
   if (isMobile) {
-    return Math.max(0, Math.min(totalPages - PAGE_WINDOW_SIZE, targetIndex - 1))
+    return Math.max(0, Math.min(totalPages - windowSize, targetIndex - 1))
   }
 
   // Landscape spreads pair global pages 2+3, 4+5, etc. Start the tiny
@@ -183,7 +185,7 @@ function RealPageFlipWindow({
       size: 'fixed',
       startPage,
       drawShadow: false,
-      flippingTime: 540,
+      flippingTime: 420,
       usePortrait: isMobile,
       startZIndex: 0,
       autoSize: false,
@@ -237,7 +239,7 @@ function RealPageFlipWindow({
           pageNumber={pageNumber}
           pageWidth={pageWidth}
           devicePixelRatio={devicePixelRatio}
-          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= (isMobile ? 1 : 2)}
+          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= (isMobile ? 1 : 3)}
           onFirstPageRendered={onFirstPageRendered}
         />,
         element,
@@ -353,10 +355,11 @@ export default function FlipbookReader({
     () => ({ rangeChunkSize: (isMobile ? 128 : 256) * 1024 }),
     [isMobile]
   )
+  const pageWindowSize = isMobile ? MOBILE_PAGE_WINDOW_SIZE : DESKTOP_PAGE_WINDOW_SIZE
   const windowPages = useMemo(() => {
-    const count = Math.min(PAGE_WINDOW_SIZE, Math.max(0, numPages - windowStartIndex))
+    const count = Math.min(pageWindowSize, Math.max(0, numPages - windowStartIndex))
     return Array.from({ length: count }, (_, index) => windowStartIndex + index + 1)
-  }, [numPages, windowStartIndex])
+  }, [numPages, pageWindowSize, windowStartIndex])
 
   const stageStyle = {
     '--flipbook-book-width': `${bookWidth}px`,
@@ -463,7 +466,7 @@ export default function FlipbookReader({
       startTransition(() => {
         setRenderPageIndex(safeIndex)
         setWindowStartIndex(previousStart => {
-          const previousEnd = Math.min(numPages - 1, previousStart + PAGE_WINDOW_SIZE - 1)
+          const previousEnd = Math.min(numPages - 1, previousStart + pageWindowSize - 1)
           const staysInsideSafeWindow = isMobile
             ? safeIndex > previousStart && safeIndex < previousEnd
             : safeIndex === previousStart || safeIndex === previousStart + 1
@@ -474,7 +477,7 @@ export default function FlipbookReader({
       })
       localStorage.setItem(storageKey, String(safeIndex + 1))
     }, 500)
-  }, [isMobile, numPages, storageKey])
+  }, [isMobile, numPages, pageWindowSize, storageKey])
 
   const goToPage = () => {
     if (!numPages) return
@@ -505,14 +508,17 @@ export default function FlipbookReader({
       || pendingPageTurnTimerRef.current !== null
     ) return
 
+    if (readerRef.current) readerRef.current.dataset.turning = direction
+
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
       pendingPageTurnFrameRef.current = null
       pendingPageTurnTimerRef.current = window.setTimeout(() => {
         pendingPageTurnTimerRef.current = null
+        if (readerRef.current) delete readerRef.current.dataset.turning
         const pageFlip = bookRef.current
         if (direction === 'previous') pageFlip?.flipPrev('top')
         else pageFlip?.flipNext('top')
-      }, 32)
+      }, 64)
     })
   }, [])
 

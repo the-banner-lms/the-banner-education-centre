@@ -352,6 +352,14 @@ body {
   transform: translateY(-50%) scale(1.06);
 }
 
+.flipbook-reader-shell[data-turning='previous'] .flipbook-side-navigation-left,
+.flipbook-reader-shell[data-turning='next'] .flipbook-side-navigation-right {
+  background: #0f6630;
+  color: white;
+  transform: translateY(-50%) scale(0.92);
+  transition-duration: 40ms;
+}
+
 .flipbook-side-navigation:disabled {
   cursor: not-allowed;
   opacity: 0.28;
