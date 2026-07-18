@@ -445,11 +445,15 @@ export default function FlipbookReader({
 
   const onFirstPageRendered = useCallback(() => setIsFirstPageRendered(true), [])
 
-  const updateCurrentPage = useCallback((index: number) => {
+  const updateCurrentPage = useCallback((index: number, deferUi = false) => {
     const safeIndex = Math.max(0, Math.min(numPages - 1, index))
     currentPageIndexRef.current = safeIndex
-    setCurrentPageIndex(safeIndex)
-    setPageInput(String(safeIndex + 1))
+    const updatePageControls = () => {
+      setCurrentPageIndex(safeIndex)
+      setPageInput(String(safeIndex + 1))
+    }
+    if (deferUi) startTransition(updatePageControls)
+    else updatePageControls()
 
     if (pendingPageRenderTimerRef.current !== null) {
       window.clearTimeout(pendingPageRenderTimerRef.current)
@@ -483,7 +487,7 @@ export default function FlipbookReader({
 
   const handleEngineFlip = useCallback((localIndex: number) => {
     const logicalIndex = pageWindowStart + localIndex
-    updateCurrentPage(logicalIndex)
+    updateCurrentPage(logicalIndex, true)
 
     const edgeBuffer = isMobile ? 2 : 3
     const nearStart = localIndex <= 1
