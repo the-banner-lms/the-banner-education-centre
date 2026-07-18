@@ -449,7 +449,7 @@ body {
   z-index: 10;
   width: 46%;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.38;
 }
 
 .banner-flipbook .stf__item.--right:not(.--simple) .flipbook-page-paper::before {
@@ -466,7 +466,8 @@ body {
 .banner-flipbook .stf__innerShadow,
 .banner-flipbook .stf__hardShadow,
 .banner-flipbook .stf__hardInnerShadow {
-  display: none !important;
+  pointer-events: none;
+  will-change: transform;
 }
 
 .flipbook-page .react-pdf__Page,
