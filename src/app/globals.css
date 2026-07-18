@@ -263,6 +263,7 @@ body {
   transform: translateY(-50%);
   transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
   backdrop-filter: blur(8px);
+  touch-action: manipulation;
 }
 
 .flipbook-side-navigation:hover:not(:disabled) {

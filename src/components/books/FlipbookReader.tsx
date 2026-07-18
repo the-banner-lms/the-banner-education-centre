@@ -138,6 +138,7 @@ export default function FlipbookReader({
   const bookRef = useRef<PageFlip | null>(null)
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
+  const pendingPageTurnFrameRef = useRef<number | null>(null)
   const [numPages, setNumPages] = useState(0)
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -196,6 +197,12 @@ export default function FlipbookReader({
     const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === readerRef.current)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  useEffect(() => () => {
+    if (pendingPageTurnFrameRef.current !== null) {
+      window.cancelAnimationFrame(pendingPageTurnFrameRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -287,6 +294,26 @@ export default function FlipbookReader({
     window.requestAnimationFrame(() => bookRef.current?.turnToPage(targetIndex))
   }
 
+  const schedulePageTurn = useCallback((direction: 'previous' | 'next') => {
+    // page-flip performs synchronous DOM measurements before its animation starts.
+    // Give the click/tap a paint first so that work is not charged to the input event.
+    if (pendingPageTurnFrameRef.current !== null) return
+
+    pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
+      pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
+        pendingPageTurnFrameRef.current = null
+        const pageFlip = bookRef.current
+        if (!pageFlip) return
+
+        if (direction === 'previous') {
+          pageFlip.flipPrev('bottom')
+        } else {
+          pageFlip.flipNext('bottom')
+        }
+      })
+    })
+  }, [])
+
   const toggleFullscreen = async () => {
     if (!readerRef.current) return
     if (document.fullscreenElement) {
@@ -318,7 +345,7 @@ export default function FlipbookReader({
             <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 p-1 shadow-inner">
               <button
                 type="button"
-                onClick={() => bookRef.current?.flipPrev('bottom')}
+                onClick={() => schedulePageTurn('previous')}
                 disabled={!isBookReady || currentPageIndex <= 0}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous page"
@@ -350,7 +377,7 @@ export default function FlipbookReader({
               </button>
               <button
                 type="button"
-                onClick={() => bookRef.current?.flipNext('bottom')}
+                onClick={() => schedulePageTurn('next')}
                 disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Next page"
@@ -393,7 +420,7 @@ export default function FlipbookReader({
       <div className="flipbook-stage" aria-live="polite">
         <button
           type="button"
-          onClick={() => bookRef.current?.flipPrev('bottom')}
+          onClick={() => schedulePageTurn('previous')}
           disabled={!isBookReady || currentPageIndex <= 0}
           className="flipbook-side-navigation flipbook-side-navigation-left"
           aria-label="Previous page from left side"
@@ -459,7 +486,7 @@ export default function FlipbookReader({
 
         <button
           type="button"
-          onClick={() => bookRef.current?.flipNext('bottom')}
+          onClick={() => schedulePageTurn('next')}
           disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
           className="flipbook-side-navigation flipbook-side-navigation-right"
           aria-label="Next page from right side"
