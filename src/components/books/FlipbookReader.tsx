@@ -301,6 +301,7 @@ export default function FlipbookReader({
   const bookRef = useRef<PageFlip | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
+  const pendingPageTurnTimerRef = useRef<number | null>(null)
   const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
   const pendingPageRenderTimerRef = useRef<number | null>(null)
   const pendingWindowTimerRef = useRef<number | null>(null)
@@ -416,6 +417,9 @@ export default function FlipbookReader({
     if (pendingPageTurnFrameRef.current !== null) {
       window.cancelAnimationFrame(pendingPageTurnFrameRef.current)
     }
+    if (pendingPageTurnTimerRef.current !== null) {
+      window.clearTimeout(pendingPageTurnTimerRef.current)
+    }
     if (pendingPageRenderTimerRef.current !== null) {
       window.clearTimeout(pendingPageRenderTimerRef.current)
     }
@@ -513,15 +517,19 @@ export default function FlipbookReader({
     direction: 'previous' | 'next',
     trigger: HTMLButtonElement
   ) => {
-    if (pendingPageTurnFrameRef.current !== null) return
+    if (
+      pendingPageTurnFrameRef.current !== null
+      || pendingPageTurnTimerRef.current !== null
+    ) return
 
     pendingPageTurnButtonRef.current = trigger
     trigger.dataset.turning = 'true'
     trigger.setAttribute('aria-busy', 'true')
 
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
-      pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
-        pendingPageTurnFrameRef.current = null
+      pendingPageTurnFrameRef.current = null
+      pendingPageTurnTimerRef.current = window.setTimeout(() => {
+        pendingPageTurnTimerRef.current = null
         try {
           const pageFlip = bookRef.current
           if (direction === 'previous') pageFlip?.flipPrev('bottom')
@@ -531,7 +539,7 @@ export default function FlipbookReader({
           trigger.removeAttribute('aria-busy')
           pendingPageTurnButtonRef.current = null
         }
-      })
+      }, 0)
     })
   }, [])
 

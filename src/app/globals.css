@@ -334,7 +334,8 @@ body {
   box-shadow: 0 8px 22px rgba(24, 45, 30, 0.2);
   transform: translateY(-50%);
   transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
-  backdrop-filter: blur(8px);
+  contain: layout paint;
+  will-change: transform;
   touch-action: manipulation;
 }
 
