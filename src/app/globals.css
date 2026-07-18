@@ -325,6 +325,8 @@ body {
   overflow: hidden;
   background: #fffef9;
   filter: drop-shadow(0 22px 22px rgba(24, 45, 30, 0.24));
+  perspective: 1800px;
+  transform-style: preserve-3d;
   animation: flipbook-spread-reveal 140ms ease-out;
 }
 
@@ -335,6 +337,19 @@ body {
   contain: strict;
   overflow: hidden;
   background: #fffef9;
+  backface-visibility: hidden;
+}
+
+.flipbook-stable-spread[data-turn-direction="next"] .flipbook-static-page:last-child {
+  z-index: 2;
+  transform-origin: left center;
+  animation: flipbook-turn-next 420ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
+}
+
+.flipbook-stable-spread[data-turn-direction="previous"] .flipbook-static-page:first-child {
+  z-index: 2;
+  transform-origin: right center;
+  animation: flipbook-turn-previous 420ms cubic-bezier(0.22, 0.72, 0.24, 1) both;
 }
 
 .flipbook-static-page:nth-child(odd) .flipbook-page-paper {
@@ -368,8 +383,21 @@ body {
   to { opacity: 1; }
 }
 
+@keyframes flipbook-turn-next {
+  0% { opacity: 0.62; transform: rotateY(-82deg) scaleX(0.96); }
+  58% { opacity: 0.92; transform: rotateY(-14deg) scaleX(0.99); }
+  100% { opacity: 1; transform: rotateY(0deg) scaleX(1); }
+}
+
+@keyframes flipbook-turn-previous {
+  0% { opacity: 0.62; transform: rotateY(82deg) scaleX(0.96); }
+  58% { opacity: 0.92; transform: rotateY(14deg) scaleX(0.99); }
+  100% { opacity: 1; transform: rotateY(0deg) scaleX(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .flipbook-stable-spread { animation: none; }
+  .flipbook-stable-spread,
+  .flipbook-stable-spread .flipbook-static-page { animation: none !important; }
 }
 
 .flipbook-page {

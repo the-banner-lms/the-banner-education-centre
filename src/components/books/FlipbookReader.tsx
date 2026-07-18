@@ -184,6 +184,7 @@ export default function FlipbookReader({
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [renderPageIndex, setRenderPageIndex] = useState(0)
+  const [renderDirection, setRenderDirection] = useState<'previous' | 'next' | null>(null)
   const [pageInput, setPageInput] = useState('1')
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -263,6 +264,7 @@ export default function FlipbookReader({
     currentPageIndexRef.current = targetIndex
     setCurrentPageIndex(targetIndex)
     setRenderPageIndex(targetIndex)
+    setRenderDirection(null)
     setPageInput(String(targetIndex + 1))
     setNumPages(pdf.numPages)
     setIsBookReady(true)
@@ -272,6 +274,9 @@ export default function FlipbookReader({
 
   const updateCurrentPage = useCallback((index: number) => {
     const safeIndex = Math.max(0, Math.min(numPages - 1, index))
+    const direction = safeIndex === currentPageIndexRef.current
+      ? null
+      : safeIndex < currentPageIndexRef.current ? 'previous' : 'next'
     currentPageIndexRef.current = safeIndex
     setCurrentPageIndex(safeIndex)
     setPageInput(String(safeIndex + 1))
@@ -281,7 +286,10 @@ export default function FlipbookReader({
     }
     pendingPageRenderTimerRef.current = window.setTimeout(() => {
       pendingPageRenderTimerRef.current = null
-      startTransition(() => setRenderPageIndex(safeIndex))
+      startTransition(() => {
+        setRenderDirection(direction)
+        setRenderPageIndex(safeIndex)
+      })
       localStorage.setItem(storageKey, String(safeIndex + 1))
     }, 140)
   }, [numPages, storageKey])
@@ -491,6 +499,7 @@ export default function FlipbookReader({
                 <div
                   key={`${renderPageIndex}-${bookWidth}x${pageHeight}`}
                   className="flipbook-stable-spread"
+                  data-turn-direction={renderDirection || undefined}
                   style={{ width: bookWidth, height: pageHeight, margin: '0 auto', touchAction: 'pan-y' }}
                   onPointerDown={handlePagePointerDown}
                   onPointerUp={handlePagePointerUp}
