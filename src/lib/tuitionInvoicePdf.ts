@@ -3,6 +3,15 @@ import path from 'node:path'
 import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
 import { writeMixedPdfText } from '@/lib/pdfMixedText'
 
+type TuitionStatus = 'paid' | 'unpaid' | 'scholar'
+
+type InvoiceLine = {
+  title: string
+  detail: string
+  amount: number
+  status: TuitionStatus
+}
+
 export type TuitionInvoiceData = {
   fee: {
     id: string
@@ -75,8 +84,48 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     const pageWidth = doc.page.width
     const left = 48
     const contentWidth = pageWidth - 96
-    const paid = data.fee.status === 'paid'
-    const scholar = data.fee.status === 'scholar'
+    const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
+    const subclassLabel = data.student.assigned_subclass
+      ? ` · YLE ${getYleSubclassLabel(data.student.assigned_subclass)}`
+      : ''
+    const baseAmount = Number(data.fee.base_amount || 0)
+    const yleAmount = Number(data.fee.yle_amount || 0)
+    const hasYle = Boolean(data.student.assigned_subclass)
+    const isYleStandalone = data.student.assigned_class === 'yle'
+    const invoiceLines: InvoiceLine[] = isYleStandalone
+      ? [{
+        title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
+        detail: 'YLE standalone tuition',
+        amount: yleAmount || Number(data.fee.amount),
+        status: data.fee.yle_status || data.fee.status,
+      }]
+      : hasYle
+        ? [
+          {
+            title: `${classLabel} Tuition`,
+            detail: 'Base class tuition',
+            amount: baseAmount,
+            status: data.fee.base_status || data.fee.status,
+          },
+          {
+            title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
+            detail: 'YLE dual-class tuition',
+            amount: yleAmount,
+            status: data.fee.yle_status || data.fee.status,
+          },
+        ]
+        : [{
+          title: `${classLabel} Tuition`,
+          detail: `${data.fee.month_year} monthly tuition`,
+          amount: Number(data.fee.amount),
+          status: data.fee.base_status || data.fee.status,
+        }]
+    const paidValue = invoiceLines.reduce((sum, line) => sum + (line.status === 'paid' ? line.amount : 0), 0)
+    const scholarshipValue = invoiceLines.reduce((sum, line) => sum + (line.status === 'scholar' ? line.amount : 0), 0)
+    const amountDue = invoiceLines.reduce((sum, line) => sum + (line.status === 'unpaid' ? line.amount : 0), 0)
+    const hasPaid = invoiceLines.some(line => line.status === 'paid')
+    const hasScholarship = invoiceLines.some(line => line.status === 'scholar')
+    const hasUnpaid = invoiceLines.some(line => line.status === 'unpaid')
 
     doc.roundedRect(left, 48, contentWidth, 118, 12).fill('#0d6831')
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(21).text(
@@ -105,20 +154,20 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
       { width: contentWidth - 44, align: 'center', lineBreak: false },
     )
 
-    const badgeColor = paid ? '#166534' : scholar ? '#1d4ed8' : '#b91c1c'
-    const badgeText = paid ? 'PAID & VERIFIED' : scholar ? 'SCHOLARSHIP' : new Date(data.fee.due_date).getTime() < Date.now() ? 'OVERDUE' : 'UNPAID'
-    doc.roundedRect(left, 184, 132, 28, 14).fill(badgeColor)
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text(badgeText, left, 193, { width: 132, align: 'center' })
+    const overdue = hasUnpaid && new Date(data.fee.due_date).getTime() < Date.now()
+    const badgeColor = hasUnpaid ? '#b91c1c' : hasScholarship ? '#1d4ed8' : '#166534'
+    const badgeText = hasUnpaid
+      ? hasScholarship ? `${overdue ? 'OVERDUE' : 'UNPAID'} + SCHOLARSHIP` : overdue ? 'OVERDUE' : 'UNPAID'
+      : hasScholarship && hasPaid ? 'PAID + SCHOLARSHIP' : hasScholarship ? 'SCHOLARSHIP' : 'PAID & VERIFIED'
+    const badgeWidth = badgeText.length > 16 ? 176 : 132
+    doc.roundedRect(left, 184, badgeWidth, 28, 14).fill(badgeColor)
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(badgeText.length > 16 ? 8.5 : 10).text(badgeText, left, 193, { width: badgeWidth, align: 'center' })
 
     doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('STUDENT', left, 238)
     doc.fillColor('#0f172a').fontSize(15)
     await writeMixedPdfText(doc, data.student.full_name || 'Student', left, 256, { width: 250 })
     doc.fillColor('#475569').font('Helvetica').fontSize(10).text(`Student ID: ${data.student.student_number || 'Pending assignment'}`, left, 286)
     doc.text(data.student.email, left, 303, { width: 250 })
-    const classLabel = data.student.assigned_class ? getStudentClassLabel(data.student.assigned_class) : 'Not assigned'
-    const subclassLabel = data.student.assigned_subclass
-      ? ` · YLE ${getYleSubclassLabel(data.student.assigned_subclass)}`
-      : ''
     doc.text(`Class: ${classLabel}${subclassLabel}`, left, 320, { width: 250 })
 
     const detailsX = left + 300
@@ -137,53 +186,48 @@ export function buildTuitionInvoicePdf(data: TuitionInvoiceData) {
     doc.text('AMOUNT', left + 390, tableTop + 16, { width: contentWidth - 406, align: 'right' })
 
     const rowTop = tableTop + 42
-    const baseAmount = Number(data.fee.base_amount || 0)
-    const yleAmount = Number(data.fee.yle_amount || 0)
-    const hasYle = Boolean(data.student.assigned_subclass)
-    const isYleStandalone = data.student.assigned_class === 'yle'
-    const invoiceLines = isYleStandalone
-      ? [{
-        title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
-        detail: 'YLE standalone tuition',
-        amount: yleAmount || Number(data.fee.amount),
-        status: data.fee.yle_status || data.fee.status,
-      }]
-      : hasYle
-      ? [
-        ...(baseAmount > 0 ? [{ title: `${classLabel} Tuition`, detail: 'Base class tuition', amount: baseAmount, status: data.fee.base_status || data.fee.status }] : []),
-        {
-          title: `YLE ${getYleSubclassLabel(data.student.assigned_subclass)} Tuition`,
-          detail: 'YLE dual-class tuition',
-          amount: yleAmount,
-          status: data.fee.yle_status || data.fee.status,
-        },
-      ]
-      : [{ title: `${classLabel} Tuition`, detail: `${data.fee.month_year} monthly tuition`, amount: Number(data.fee.amount), status: data.fee.base_status || data.fee.status }]
     const rowHeight = 58
 
     invoiceLines.forEach((line, index) => {
       const lineTop = rowTop + (index * rowHeight)
       doc.rect(left, lineTop, contentWidth, rowHeight).strokeColor('#e2e8f0').stroke()
       doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(11).text(line.title, left + 16, lineTop + 12, { width: 270 })
-      doc.fillColor('#64748b').font('Helvetica').fontSize(9).text(line.detail, left + 16, lineTop + 33, { width: 270 })
+      const lineDetail = line.status === 'scholar' ? `${line.detail} - fee waived` : line.detail
+      doc.fillColor('#64748b').font('Helvetica').fontSize(9).text(lineDetail, left + 16, lineTop + 33, { width: 270 })
       const lineColor = line.status === 'paid' ? '#166534' : line.status === 'scholar' ? '#1d4ed8' : '#b91c1c'
-      doc.fillColor(lineColor).font('Helvetica-Bold').fontSize(10).text(line.status.toUpperCase(), left + 302, lineTop + 22, { width: 80 })
-      doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
+      const lineStatus = line.status === 'scholar' ? 'SCHOLARSHIP' : line.status.toUpperCase()
+      doc.fillColor(lineColor).font('Helvetica-Bold').fontSize(line.status === 'scholar' ? 8.5 : 10).text(lineStatus, left + 302, lineTop + 22, { width: 80 })
+      doc.fillColor(line.status === 'scholar' ? '#1d4ed8' : '#0f172a').font('Helvetica-Bold').fontSize(12).text(formatAmount(line.amount), left + 390, lineTop + 20, { width: contentWidth - 406, align: 'right' })
     })
 
     const totalTop = rowTop + (invoiceLines.length * rowHeight) + 22
-    doc.fillColor('#475569').font('Helvetica-Bold').fontSize(11).text(paid ? 'TOTAL PAID' : scholar ? 'SCHOLARSHIP VALUE' : 'AMOUNT DUE', left + 210, totalTop, { width: 120, align: 'right', lineBreak: false })
-    doc.fillColor('#0d6831').fontSize(16).text(formatAmount(data.fee.amount), left + 344, totalTop - 3, { width: contentWidth - 344, align: 'right', lineBreak: false })
+    const summaryRows = [
+      ...(hasPaid ? [{ label: 'TOTAL PAID', value: paidValue, color: '#0d6831' }] : []),
+      ...(hasScholarship ? [{ label: 'SCHOLARSHIP VALUE', value: scholarshipValue, color: '#1d4ed8' }] : []),
+      ...(hasUnpaid ? [{ label: 'AMOUNT DUE', value: amountDue, color: '#b91c1c' }] : []),
+    ]
+    summaryRows.forEach((summary, index) => {
+      const y = totalTop + (index * 21)
+      doc.fillColor('#475569').font('Helvetica-Bold').fontSize(10).text(summary.label, left + 180, y, { width: 150, align: 'right', lineBreak: false })
+      doc.fillColor(summary.color).fontSize(14).text(formatAmount(summary.value), left + 344, y - 2, { width: contentWidth - 344, align: 'right', lineBreak: false })
+    })
+    const summaryBottom = totalTop + (summaryRows.length * 21)
 
     if (data.fee.remarks) {
-      doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('REMARK', left, totalTop + 54)
+      doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(9).text('REMARK', left, summaryBottom + 24)
       doc.fillColor('#334155').fontSize(10)
-      await writeMixedPdfText(doc, data.fee.remarks, left, totalTop + 72, { width: contentWidth, lineGap: 3 })
+      await writeMixedPdfText(doc, data.fee.remarks, left, summaryBottom + 42, { width: contentWidth, lineGap: 3 })
     }
 
     doc.roundedRect(left, 670, contentWidth, 70, 10).fill('#f8fafc')
     doc.fillColor('#334155').font('Helvetica-Bold').fontSize(10).text(
-      paid ? 'Payment confirmed. Thank you.' : scholar ? 'This student is recorded as a scholarship student.' : `Please pay by ${formatDate(data.fee.due_date)}.`,
+      hasUnpaid
+        ? `Please pay the outstanding ${formatAmount(amountDue)} by ${formatDate(data.fee.due_date)}.`
+        : hasScholarship && hasPaid
+          ? 'Payment confirmed. Scholarship applied to the eligible tuition line.'
+          : hasScholarship
+            ? 'This tuition is fully covered by scholarship.'
+            : 'Payment confirmed. Thank you.',
       left + 18,
       691,
       { width: contentWidth - 36, align: 'center' },
