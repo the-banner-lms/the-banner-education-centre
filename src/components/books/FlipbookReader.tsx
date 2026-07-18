@@ -88,6 +88,7 @@ function RealPageFlipWindow({
   pageHeight,
   bookWidth,
   devicePixelRatio,
+  isMobile,
   onFirstPageRendered,
   onFlip,
   onReady,
@@ -100,6 +101,7 @@ function RealPageFlipWindow({
   pageHeight: number
   bookWidth: number
   devicePixelRatio: number
+  isMobile: boolean
   onFirstPageRendered: () => void
   onFlip: (localIndex: number) => void
   onReady: () => void
@@ -123,7 +125,7 @@ function RealPageFlipWindow({
     const targets = pageNumbers.map(pageNumber => {
       const element = document.createElement('div')
       element.className = 'flipbook-page'
-      element.dataset.density = 'soft'
+      element.dataset.density = (pageNumber === 1 || pageNumber === pageNumbers.length) ? 'hard' : 'soft'
       element.dataset.pageNumber = String(pageNumber)
       bookElement.appendChild(element)
       return { pageNumber, element }
@@ -154,12 +156,12 @@ function RealPageFlipWindow({
       height: pageHeight,
       size: 'fixed',
       startPage,
-      drawShadow: false,
-      flippingTime: 480,
-      usePortrait: true,
+      drawShadow: true,
+      flippingTime: 750,
+      usePortrait: isMobile,
       startZIndex: 0,
       autoSize: false,
-      maxShadowOpacity: 0,
+      maxShadowOpacity: 0.65,
       showCover: true,
       mobileScrollSupport: true,
       clickEventForward: false,
@@ -631,6 +633,7 @@ export default function FlipbookReader({
                   pageHeight={pageHeight}
                   bookWidth={bookWidth}
                   devicePixelRatio={devicePixelRatio}
+                  isMobile={isMobile}
                   onFirstPageRendered={onFirstPageRendered}
                   onFlip={handleEngineFlip}
                   onReady={handleBookReady}

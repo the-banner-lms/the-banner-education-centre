@@ -421,11 +421,11 @@ body {
 }
 
 .flipbook-page:nth-child(odd) .flipbook-page-paper {
-  box-shadow: inset -12px 0 22px rgba(56, 45, 34, 0.06);
+  box-shadow: inset -40px 0 50px -20px rgba(0, 0, 0, 0.15), inset -2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .flipbook-page:nth-child(even) .flipbook-page-paper {
-  box-shadow: inset 12px 0 22px rgba(56, 45, 34, 0.06);
+  box-shadow: inset 40px 0 50px -20px rgba(0, 0, 0, 0.15), inset 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .flipbook-page .react-pdf__Page,
