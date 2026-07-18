@@ -12,16 +12,17 @@ import {
 import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import Link, { useLinkStatus } from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PageFlip } from 'page-flip'
 import { Document, Page, pdfjs } from 'react-pdf'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import {
-  ArrowLeftIcon,
   ArrowsPointingOutIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MagnifyingGlassMinusIcon,
   MagnifyingGlassPlusIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -278,13 +279,13 @@ function PagePlaceholder({ pageNumber }: { pageNumber: number }) {
   )
 }
 
-function BookshelfLinkContent() {
+function CloseReaderLinkContent() {
   const { pending } = useLinkStatus()
 
   return (
     <>
-      <ArrowLeftIcon className={`h-4 w-4 ${pending ? 'animate-pulse' : ''}`} aria-hidden="true" focusable="false" />
-      <span className="hidden sm:inline">{pending ? 'Opening…' : 'Bookshelf'}</span>
+      <XMarkIcon className={`h-5 w-5 ${pending ? 'animate-pulse' : ''}`} aria-hidden="true" focusable="false" />
+      <span className="hidden sm:inline">{pending ? 'Closing…' : 'Close'}</span>
     </>
   )
 }
@@ -296,6 +297,7 @@ export default function FlipbookReader({
   pdfUrl,
   coverUrl,
 }: FlipbookReaderProps) {
+  const router = useRouter()
   const bookRef = useRef<PageFlip | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
@@ -314,13 +316,25 @@ export default function FlipbookReader({
   const [isBookReady, setIsBookReady] = useState(false)
   const [isFirstPageRendered, setIsFirstPageRendered] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
   const storageKey = `banner-book-progress:${bookId}`
 
+  const viewportWidth = viewportSize.width
+  const viewportHeight = viewportSize.height
   const isMobile = viewportWidth < 640
-  const pageWidth = isMobile
-    ? Math.max(260, Math.min(360, viewportWidth - 28))
-    : Math.max(360, Math.min(650, Math.floor((viewportWidth - 40) / 2)))
+  const widthLimitedPageWidth = isMobile
+    ? viewportWidth - 28
+    : Math.floor((viewportWidth - 128) / 2)
+  const heightLimitedPageWidth = Math.floor(
+    Math.max(250, viewportHeight - (isMobile ? 250 : 170)) / BOOK_PAGE_ASPECT_RATIO
+  )
+  const pageWidth = Math.max(
+    180,
+    Math.min(isMobile ? 360 : 650, widthLimitedPageWidth, heightLimitedPageWidth)
+  )
   const pageHeight = Math.round(pageWidth * BOOK_PAGE_ASPECT_RATIO)
   const bookWidth = isMobile ? pageWidth : pageWidth * 2
   const devicePixelRatio = isMobile
@@ -348,11 +362,37 @@ export default function FlipbookReader({
   } as CSSProperties
 
   useEffect(() => {
-    const updateViewportWidth = () => setViewportWidth(window.innerWidth)
-    updateViewportWidth()
-    window.addEventListener('resize', updateViewportWidth, { passive: true })
-    return () => window.removeEventListener('resize', updateViewportWidth)
+    const updateViewportSize = () => setViewportSize({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    })
+    updateViewportSize()
+    window.addEventListener('resize', updateViewportSize, { passive: true })
+    return () => window.removeEventListener('resize', updateViewportSize)
   }, [])
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow
+    const previousRootOverflow = document.documentElement.style.overflow
+    const previousOverscrollBehavior = document.body.style.overscrollBehavior
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overscrollBehavior = 'none'
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.fullscreenElement) {
+        router.push('/textbook')
+      }
+    }
+    window.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousRootOverflow
+      document.body.style.overscrollBehavior = previousOverscrollBehavior
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [router])
 
   useEffect(() => {
     let secondFrame = 0
@@ -505,16 +545,23 @@ export default function FlipbookReader({
   }
 
   return (
-    <div ref={readerRef} className="flipbook-reader-shell bg-white">
+    <div
+      ref={readerRef}
+      className="flipbook-reader-shell bg-white"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${title} book reader`}
+    >
       <div className="flipbook-reader-toolbar-shell sticky top-20 z-40 border-b border-banner-light/25 bg-white/95 shadow-sm backdrop-blur md:top-24">
         <div className="flipbook-reader-toolbar mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/textbook"
               prefetch
+              aria-label="Close book and return to bookshelf"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-banner-light/40 px-3 py-2 text-sm font-bold text-banner-dark transition-colors hover:bg-banner-light/10"
             >
-              <BookshelfLinkContent />
+              <CloseReaderLinkContent />
             </Link>
             <div className="min-w-0">
               <h1 className="truncate text-base font-black text-banner-brown sm:text-lg">{title}</h1>
@@ -677,9 +724,6 @@ export default function FlipbookReader({
         </div>
       )}
 
-      <p className="px-4 pb-6 text-center text-xs font-medium text-gray-500 sm:text-sm">
-        Tap a page corner, use the arrows, or swipe to turn the page. Your reading position is saved on this device.
-      </p>
     </div>
   )
 }

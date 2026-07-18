@@ -99,8 +99,14 @@ body {
 
 /* Flipbook reader */
 .flipbook-reader-shell {
-  position: relative;
-  min-height: calc(100vh - 5rem);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
   color: #171717;
 }
 
@@ -155,18 +161,23 @@ body {
 .flipbook-stage {
   position: relative;
   display: flex;
-  min-height: max(calc(100vh - 12rem), calc(var(--flipbook-book-height, 48rem) + 5.5rem));
-  align-items: flex-start;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
   justify-content: center;
-  overflow: auto;
-  padding: 6.5rem 1rem 4.5rem;
+  overflow: hidden;
+  padding: 6rem 4rem 3.5rem;
   background: #fff;
 }
 
 .flipbook-stage > .react-pdf__Document {
+  display: flex;
   width: 100%;
+  height: 100%;
   min-width: 0;
-  min-height: var(--flipbook-book-height, 48rem);
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .flipbook-loading-preview {
@@ -446,7 +457,7 @@ body {
 }
 
 .flipbook-reader-shell:fullscreen {
-  overflow: auto;
+  overflow: hidden;
   background: #fff;
 }
 
@@ -481,7 +492,7 @@ body {
   .book-shelf-slot { padding-right: 0.45rem; padding-left: 0.45rem; }
   .book-cover-card { width: min(100%, 9.5rem); }
   .flipbook-stage {
-    min-height: max(calc(100vh - 15rem), calc(var(--flipbook-book-height, 28rem) + 4rem));
+    min-height: 0;
     padding: 1rem 0.45rem 3rem;
   }
   .flipbook-page-number { right: 0.4rem; bottom: 0.25rem; }
