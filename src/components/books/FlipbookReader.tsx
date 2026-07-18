@@ -157,7 +157,7 @@ function RealPageFlipWindow({
       size: 'fixed',
       startPage,
       drawShadow: true,
-      flippingTime: 750,
+      flippingTime: 450,
       usePortrait: isMobile,
       startZIndex: 0,
       autoSize: false,
