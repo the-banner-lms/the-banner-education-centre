@@ -205,12 +205,9 @@ function FlipbookWindow({
       pageFlip.off('flip')
       pageFlip.off('init')
       onInstanceChange(null)
-      try {
-        // The full destroy method removes the React-owned container.
-        pageFlip.getUI().destroy()
-      } catch {
-        // React may already have removed the old page window.
-      }
+      // React owns and removes this keyed page window. Calling page-flip's
+      // destroy methods here can empty the replacement window during the
+      // same commit, leaving the reader controls active with no pages.
     }
   }, [onFlip, onInstanceChange, onReady, pageCount, pageHeight, pageWidth])
 
