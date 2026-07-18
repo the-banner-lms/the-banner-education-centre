@@ -9,6 +9,7 @@ import {
   memo,
   startTransition,
 } from 'react'
+import type { CSSProperties } from 'react'
 import Link, { useLinkStatus } from 'next/link'
 import { PageFlip } from 'page-flip'
 import { Document, Page, pdfjs } from 'react-pdf'
@@ -26,6 +27,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString()
+
+const BOOK_PAGE_ASPECT_RATIO = 1.414
 
 export type FlipbookReaderProps = {
   bookId: string
@@ -135,27 +138,25 @@ export default function FlipbookReader({
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
-  const pendingPageTurnTimerRef = useRef<number | null>(null)
   const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
   const [numPages, setNumPages] = useState(0)
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const [pageAspectRatio, setPageAspectRatio] = useState(1.414)
   const [pageInput, setPageInput] = useState('1')
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isBookReady, setIsBookReady] = useState(false)
   const [isFirstPageRendered, setIsFirstPageRendered] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [viewportWidth, setViewportWidth] = useState(1024)
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
   const storageKey = `banner-book-progress:${bookId}`
 
   const isMobile = viewportWidth < 640
-  const pageWidth = isMobile ? Math.max(260, Math.min(360, viewportWidth - 28)) : 560
-  const pageHeight = isMobile
-    ? Math.round(pageWidth * pageAspectRatio)
-    : Math.max(680, Math.round(pageWidth * pageAspectRatio))
-  const maxPageHeight = isMobile ? pageHeight : Math.max(860, Math.round(720 * pageAspectRatio))
+  const pageWidth = isMobile
+    ? Math.max(260, Math.min(360, viewportWidth - 28))
+    : Math.max(360, Math.min(560, Math.floor((viewportWidth - 64) / 2)))
+  const pageHeight = Math.round(pageWidth * BOOK_PAGE_ASPECT_RATIO)
+  const bookWidth = isMobile ? pageWidth : pageWidth * 2
   const renderRadius = isMobile ? 1 : 3
   const devicePixelRatio = isMobile
     ? Math.min(window.devicePixelRatio || 1, 1.35)
@@ -171,6 +172,11 @@ export default function FlipbookReader({
     () => Array.from({ length: numPages }, (_, index) => index + 1),
     [numPages]
   )
+  const stageStyle = {
+    '--flipbook-book-width': `${bookWidth}px`,
+    '--flipbook-book-height': `${pageHeight}px`,
+    '--flipbook-page-width': `${pageWidth}px`,
+  } as CSSProperties
 
   useEffect(() => {
     const updateViewportWidth = () => setViewportWidth(window.innerWidth)
@@ -201,9 +207,6 @@ export default function FlipbookReader({
     if (pendingPageTurnFrameRef.current !== null) {
       window.cancelAnimationFrame(pendingPageTurnFrameRef.current)
     }
-    if (pendingPageTurnTimerRef.current !== null) {
-      window.clearTimeout(pendingPageTurnTimerRef.current)
-    }
     if (pendingPageTurnButtonRef.current) {
       delete pendingPageTurnButtonRef.current.dataset.turning
       pendingPageTurnButtonRef.current.removeAttribute('aria-busy')
@@ -221,12 +224,9 @@ export default function FlipbookReader({
     window.requestAnimationFrame(() => bookRef.current?.turnToPage(targetIndex))
   }, [isBookReady, numPages, storageKey])
 
-  const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
+  const onDocumentLoadSuccess = useCallback((pdf: PDFDocumentProxy) => {
     setLoadError('')
     setIsFirstPageRendered(false)
-    const firstPage = await pdf.getPage(1)
-    const viewport = firstPage.getViewport({ scale: 1 })
-    setPageAspectRatio(Math.min(1.75, Math.max(0.72, viewport.height / viewport.width)))
     setNumPages(pdf.numPages)
   }, [])
 
@@ -251,17 +251,13 @@ export default function FlipbookReader({
     const pageFlip = new PageFlip(container, {
       width: pageWidth,
       height: pageHeight,
-      size: 'stretch',
-      minWidth: 260,
-      maxWidth: 660,
-      minHeight: Math.round(260 * pageAspectRatio),
-      maxHeight: maxPageHeight,
+      size: 'fixed',
       startPage: 0,
       drawShadow: true,
-      flippingTime: 850,
+      flippingTime: 360,
       usePortrait: true,
       startZIndex: 0,
-      autoSize: true,
+      autoSize: false,
       maxShadowOpacity: 0.45,
       showCover: false,
       mobileScrollSupport: true,
@@ -287,7 +283,7 @@ export default function FlipbookReader({
         // The page container may already be removed during route transitions.
       }
     }
-  }, [maxPageHeight, numPages, pageAspectRatio, pageHeight, pageWidth, updateCurrentPage])
+  }, [numPages, pageHeight, pageWidth, updateCurrentPage])
 
   const goToPage = () => {
     if (!numPages) return
@@ -306,30 +302,31 @@ export default function FlipbookReader({
     trigger: HTMLButtonElement
   ) => {
     // page-flip performs synchronous DOM measurements before its animation starts.
-    // Paint visible feedback first, then begin that work in a separate browser task.
-    if (pendingPageTurnFrameRef.current !== null || pendingPageTurnTimerRef.current !== null) return
+    // Keep one complete paint between feedback and that work so the interaction is responsive.
+    if (pendingPageTurnFrameRef.current !== null) return
 
     pendingPageTurnButtonRef.current = trigger
     trigger.dataset.turning = 'true'
     trigger.setAttribute('aria-busy', 'true')
 
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
-      pendingPageTurnFrameRef.current = null
-      pendingPageTurnTimerRef.current = window.setTimeout(() => {
-        pendingPageTurnTimerRef.current = null
-        const pageFlip = bookRef.current
-        if (pageFlip) {
-          if (direction === 'previous') {
-            pageFlip.flipPrev('bottom')
-          } else {
-            pageFlip.flipNext('bottom')
+      pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
+        pendingPageTurnFrameRef.current = null
+        try {
+          const pageFlip = bookRef.current
+          if (pageFlip) {
+            if (direction === 'previous') {
+              pageFlip.flipPrev('bottom')
+            } else {
+              pageFlip.flipNext('bottom')
+            }
           }
+        } finally {
+          delete trigger.dataset.turning
+          trigger.removeAttribute('aria-busy')
+          pendingPageTurnButtonRef.current = null
         }
-
-        delete trigger.dataset.turning
-        trigger.removeAttribute('aria-busy')
-        pendingPageTurnButtonRef.current = null
-      }, 0)
+      })
     })
   }, [])
 
@@ -369,7 +366,7 @@ export default function FlipbookReader({
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous page"
               >
-                <ChevronLeftIcon className="h-5 w-5" />
+                <ChevronLeftIcon className="pointer-events-none h-5 w-5" aria-hidden="true" focusable="false" />
               </button>
               <label className="flex items-center gap-1 px-1 text-xs font-bold text-gray-600">
                 <span className="hidden sm:inline">Page</span>
@@ -401,7 +398,7 @@ export default function FlipbookReader({
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Next page"
               >
-                <ChevronRightIcon className="h-5 w-5" />
+                <ChevronRightIcon className="pointer-events-none h-5 w-5" aria-hidden="true" focusable="false" />
               </button>
             </div>
 
@@ -436,7 +433,7 @@ export default function FlipbookReader({
         </div>
       </div>
 
-      <div className="flipbook-stage" aria-live="polite">
+      <div className="flipbook-stage" style={stageStyle} aria-live="polite">
         <button
           type="button"
           onClick={event => schedulePageTurn('previous', event.currentTarget)}
@@ -444,7 +441,7 @@ export default function FlipbookReader({
           className="flipbook-side-navigation flipbook-side-navigation-left"
           aria-label="Previous page from left side"
         >
-          <ChevronLeftIcon className="h-7 w-7" aria-hidden="true" focusable="false" />
+          <ChevronLeftIcon className="pointer-events-none h-7 w-7" aria-hidden="true" focusable="false" />
         </button>
 
         {canLoadDocument ? <Document
@@ -466,7 +463,7 @@ export default function FlipbookReader({
           )}
         >
           {numPages > 0 && (
-            <div className="relative w-full">
+            <div className="flipbook-viewport-frame relative w-full">
               {!isFirstPageRendered && (
                 <div className="absolute inset-x-0 top-0 z-30">
                   <BookLoadingPreview coverUrl={coverUrl} message="Preparing first page…" />
@@ -476,13 +473,13 @@ export default function FlipbookReader({
                 <div
                   ref={bookContainerRef}
                   className="banner-flipbook"
-                  style={{ margin: '0 auto' }}
+                  style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
                 >
                   {pages.map(pageNumber => (
                     <div
                       key={pageNumber}
                       className="flipbook-page"
-                      data-density={pageNumber === 1 ? 'hard' : 'soft'}
+                      data-density="soft"
                     >
                       <PdfBookPageContent
                         pageNumber={pageNumber}
@@ -509,7 +506,7 @@ export default function FlipbookReader({
           className="flipbook-side-navigation flipbook-side-navigation-right"
           aria-label="Next page from right side"
         >
-          <ChevronRightIcon className="h-7 w-7" aria-hidden="true" focusable="false" />
+          <ChevronRightIcon className="pointer-events-none h-7 w-7" aria-hidden="true" focusable="false" />
         </button>
       </div>
 
