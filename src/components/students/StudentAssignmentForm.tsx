@@ -40,7 +40,7 @@ export default function StudentAssignmentForm({
       action={formAction}
       className={compact
         ? 'grid min-w-0 gap-3 xl:grid-cols-[minmax(8rem,.6fr)_minmax(10rem,.75fr)_minmax(14rem,1.2fr)_auto] xl:items-end'
-        : 'mt-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2 sm:items-end'}
+        : 'mt-5 grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2 sm:items-start'}
     >
       <div className="min-w-0">
         <label htmlFor={`assigned-class-${studentId}`} className={compact ? 'mb-1 block text-xs font-semibold text-gray-600' : 'block text-sm font-semibold text-gray-800'}>
