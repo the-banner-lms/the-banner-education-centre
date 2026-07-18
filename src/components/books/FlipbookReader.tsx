@@ -471,6 +471,7 @@ export default function FlipbookReader({
               )}
               <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
                 <div
+                  key={`${bookWidth}x${pageHeight}`}
                   ref={bookContainerRef}
                   className="banner-flipbook"
                   style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
