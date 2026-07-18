@@ -29,7 +29,7 @@ VALUES (
   'textbook-pdfs',
   'textbook-pdfs',
   false,
-  52428800,
+  524288000,
   ARRAY['application/pdf']
 )
 ON CONFLICT (id) DO UPDATE SET

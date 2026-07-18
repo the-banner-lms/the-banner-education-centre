@@ -5,6 +5,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { pdfjs } from 'react-pdf'
+import { Upload } from 'tus-js-client'
 import {
   ArrowPathIcon,
   BookOpenIcon,
@@ -29,7 +30,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString()
 
-const maximumPdfSize = 50 * 1024 * 1024
+const maximumPdfSize = 500 * 1024 * 1024
 const maximumCoverSize = 5 * 1024 * 1024
 const accessRoleLabels: Record<BookAccessRole, string> = {
   all: 'Everyone',
@@ -64,27 +65,32 @@ function fileSizeLabel(bytes: number) {
 }
 
 async function createCoverFromPdf(file: File) {
-  const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise
-  const page = await pdf.getPage(1)
-  const baseViewport = page.getViewport({ scale: 1 })
-  const scale = Math.min(2, 620 / baseViewport.width)
-  const viewport = page.getViewport({ scale })
-  const canvas = document.createElement('canvas')
-  const context = canvas.getContext('2d', { alpha: false })
-  if (!context) throw new Error('Unable to create the book cover.')
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const pdf = await pdfjs.getDocument(objectUrl).promise
+    const page = await pdf.getPage(1)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const scale = Math.min(2, 620 / baseViewport.width)
+    const viewport = page.getViewport({ scale })
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d', { alpha: false })
+    if (!context) throw new Error('Unable to create the book cover.')
 
-  canvas.width = Math.ceil(viewport.width)
-  canvas.height = Math.ceil(viewport.height)
-  context.fillStyle = '#ffffff'
-  context.fillRect(0, 0, canvas.width, canvas.height)
-  await page.render({ canvas, canvasContext: context, viewport }).promise
+    canvas.width = Math.ceil(viewport.width)
+    canvas.height = Math.ceil(viewport.height)
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvas, canvasContext: context, viewport }).promise
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(result => result ? resolve(result) : reject(new Error('Unable to create the book cover.')), 'image/jpeg', 0.86)
-  })
-  page.cleanup()
-  await pdf.destroy()
-  return new File([blob], `${file.name.replace(/\.pdf$/i, '')}-cover.jpg`, { type: 'image/jpeg' })
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(result => result ? resolve(result) : reject(new Error('Unable to create the book cover.')), 'image/jpeg', 0.86)
+    })
+    page.cleanup()
+    await pdf.destroy()
+    return new File([blob], `${file.name.replace(/\.pdf$/i, '')}-cover.jpg`, { type: 'image/jpeg' })
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
 }
 
 export default function BookManager({ books, loadError }: { books: ManagedBook[]; loadError: string }) {
@@ -152,7 +158,7 @@ export default function BookManager({ books, loadError }: { books: ManagedBook[]
       return
     }
     if (file.size > maximumPdfSize) {
-      setError('PDF must be 50 MB or smaller. Optimize the PDF before uploading.')
+      setError('PDF must be 500 MB or smaller.')
       event.target.value = ''
       return
     }
@@ -192,6 +198,43 @@ export default function BookManager({ books, loadError }: { books: ManagedBook[]
   const uploadFile = async (file: File, kind: 'pdf' | 'cover') => {
     const signedUpload = await requestBookUpload(file.name, file.type, file.size, kind)
     const supabase = createClient()
+
+    if (kind === 'pdf' && file.size > 6 * 1024 * 1024) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      if (!supabaseUrl) throw new Error('Supabase Storage is not configured.')
+      const resumableEndpoint = `${supabaseUrl.replace('.supabase.co', '.storage.supabase.co')}/storage/v1/upload/resumable`
+
+      await new Promise<void>((resolve, reject) => {
+        const upload = new Upload(file, {
+          endpoint: resumableEndpoint,
+          retryDelays: [0, 3000, 5000, 10000, 20000],
+          headers: { 'x-signature': signedUpload.token },
+          uploadDataDuringCreation: true,
+          removeFingerprintOnSuccess: true,
+          metadata: {
+            bucketName: signedUpload.bucket,
+            objectName: signedUpload.path,
+            contentType: file.type,
+            cacheControl: '3600',
+          },
+          chunkSize: 6 * 1024 * 1024,
+          onError: reject,
+          onProgress: (bytesUploaded, bytesTotal) => {
+            const percentage = Math.max(1, Math.round((bytesUploaded / bytesTotal) * 100))
+            setStatus(`Uploading PDF (${fileSizeLabel(file.size)}) · ${percentage}%`)
+          },
+          onSuccess: () => resolve(),
+        })
+
+        void upload.findPreviousUploads().then(previousUploads => {
+          if (previousUploads.length > 0) upload.resumeFromPreviousUpload(previousUploads[0])
+          upload.start()
+        }).catch(reject)
+      })
+
+      return signedUpload.path
+    }
+
     const { error: uploadError } = await supabase.storage
       .from(signedUpload.bucket)
       .uploadToSignedUrl(signedUpload.path, signedUpload.token, file, {
@@ -407,7 +450,7 @@ export default function BookManager({ books, loadError }: { books: ManagedBook[]
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <span className="text-sm font-bold text-gray-800">PDF File</span>
                   <p className="mt-1 text-xs leading-5 text-gray-500">
-                    {editingBook ? 'Choose a PDF only when replacing the current book.' : 'Required. Maximum 50 MB.'}
+                    {editingBook ? 'Choose a PDF only when replacing the current book.' : 'Required. Maximum 500 MB.'}
                   </p>
                   <button type="button" onClick={() => pdfInputRef.current?.click()} disabled={isSaving} className="mt-3 rounded-lg bg-banner-dark px-3 py-2 text-sm font-bold text-white disabled:opacity-50">
                     {pdfFile ? 'Choose Another PDF' : editingBook ? 'Replace PDF' : 'Choose PDF'}

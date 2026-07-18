@@ -99,8 +99,57 @@ body {
 
 /* Flipbook reader */
 .flipbook-reader-shell {
+  position: relative;
   min-height: calc(100vh - 5rem);
   color: #171717;
+}
+
+.flipbook-reader-toolbar-shell {
+  border-radius: 1rem;
+}
+
+.flipbook-progress {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 45;
+  display: flex;
+  width: min(32rem, calc(100vw - 7rem));
+  align-items: center;
+  gap: 0.8rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.flipbook-progress > span {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  flex: none;
+  border-radius: 999px;
+  background: rgba(15, 102, 48, 0.94);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 6px 18px rgba(24, 45, 30, 0.24);
+}
+
+.flipbook-progress-track {
+  height: 3px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: 0 1px 4px rgba(24,45,30,0.18);
+}
+
+.flipbook-progress-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #0f6630;
+  transition: width 260ms ease;
 }
 
 .flipbook-stage {
@@ -110,10 +159,8 @@ body {
   align-items: flex-start;
   justify-content: center;
   overflow: auto;
-  padding: 2rem 1rem 3.5rem;
-  background:
-    radial-gradient(circle at 50% 5%, rgba(255,255,255,0.96), rgba(255,255,255,0) 38%),
-    linear-gradient(180deg, #eef3ef 0%, #e5ebe7 100%);
+  padding: 6.5rem 1rem 4.5rem;
+  background: #fff;
 }
 
 .flipbook-stage > .react-pdf__Document {
@@ -318,6 +365,14 @@ body {
   height: 100%;
 }
 
+.flipbook-engine-host {
+  position: relative;
+  contain: strict;
+  flex: 0 0 auto;
+  overflow: hidden;
+  filter: drop-shadow(0 22px 22px rgba(24, 45, 30, 0.24));
+}
+
 .flipbook-stable-spread {
   position: relative;
   display: flex;
@@ -520,6 +575,18 @@ body {
 @media (min-width: 1024px) {
   .bookshelf-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .book-cover-card { width: min(100%, 12rem); }
+  .flipbook-reader-toolbar-shell {
+    position: absolute !important;
+    top: 1rem !important;
+    left: 50%;
+    width: min(74rem, calc(100% - 9rem));
+    overflow: hidden;
+    border: 1px solid rgba(15, 102, 48, 0.2);
+    background: rgba(255,255,255,0.9) !important;
+    box-shadow: 0 14px 36px rgba(24,45,30,0.2);
+    transform: translateX(-50%);
+  }
+  .flipbook-reader-toolbar { max-width: none; }
 }
 
 @media (max-width: 639px) {

@@ -13,7 +13,7 @@ import {
 
 const pdfBucketName = 'textbook-pdfs'
 const coverBucketName = 'textbooks'
-const maximumPdfSize = 50 * 1024 * 1024
+const maximumPdfSize = 500 * 1024 * 1024
 const maximumCoverSize = 5 * 1024 * 1024
 
 async function verifyAdminAccess() {
@@ -80,7 +80,7 @@ export async function requestBookUpload(
 
   const maximumSize = isPdf ? maximumPdfSize : maximumCoverSize
   if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > maximumSize) {
-    throw new Error(isPdf ? 'PDF must be 50 MB or smaller.' : 'Cover image must be 5 MB or smaller.')
+    throw new Error(isPdf ? 'PDF must be 500 MB or smaller.' : 'Cover image must be 5 MB or smaller.')
   }
 
   const safeExtension = isPdf
