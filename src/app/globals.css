@@ -421,11 +421,31 @@ body {
 }
 
 .flipbook-page:nth-child(odd) .flipbook-page-paper {
-  box-shadow: inset -40px 0 50px -20px rgba(0, 0, 0, 0.15), inset -2px 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 50px 0 50px -20px rgba(0, 0, 0, 0.15), inset 3px 0 6px rgba(0, 0, 0, 0.15);
 }
 
 .flipbook-page:nth-child(even) .flipbook-page-paper {
-  box-shadow: inset 40px 0 50px -20px rgba(0, 0, 0, 0.15), inset 2px 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: inset -50px 0 50px -20px rgba(0, 0, 0, 0.15), inset -3px 0 6px rgba(0, 0, 0, 0.15);
+}
+
+.flipbook-page-paper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.flipbook-page:nth-child(odd) .flipbook-page-paper::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 30%, transparent 100%);
+}
+
+.flipbook-page:nth-child(even) .flipbook-page-paper::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 30%, transparent 100%);
 }
 
 .flipbook-page .react-pdf__Page,
