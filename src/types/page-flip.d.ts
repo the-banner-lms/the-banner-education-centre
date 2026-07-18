@@ -36,6 +36,7 @@ declare module 'page-flip' {
     flipNext(corner?: 'top' | 'bottom'): void
     flipPrev(corner?: 'top' | 'bottom'): void
     turnToPage(page: number): void
+    getUI(): { destroy(): void }
     destroy(): void
   }
 }
