@@ -173,15 +173,15 @@ function RealPageFlipWindow({
       height: pageHeight,
       size: 'fixed',
       startPage,
-      drawShadow: true,
-      flippingTime: 520,
+      drawShadow: false,
+      flippingTime: 480,
       usePortrait: true,
       startZIndex: 0,
       autoSize: false,
-      maxShadowOpacity: 0.48,
+      maxShadowOpacity: 0,
       showCover: windowStart === 0,
       mobileScrollSupport: true,
-      clickEventForward: true,
+      clickEventForward: false,
       useMouseEvents: true,
       swipeDistance: 24,
       showPageCorners: true,
@@ -525,7 +525,7 @@ export default function FlipbookReader({
         const pageFlip = bookRef.current
         if (direction === 'previous') pageFlip?.flipPrev('bottom')
         else pageFlip?.flipNext('bottom')
-      }, 16)
+      }, 120)
     })
   }, [])
 
