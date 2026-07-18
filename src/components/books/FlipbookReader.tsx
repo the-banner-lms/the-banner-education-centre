@@ -152,6 +152,7 @@ export default function FlipbookReader({
 }: FlipbookReaderProps) {
   const bookRef = useRef<PageFlip | null>(null)
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
+  const bookContainerMountFrameRef = useRef<number | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
   const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -160,6 +161,7 @@ export default function FlipbookReader({
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [pageWindowStart, setPageWindowStart] = useState(0)
+  const [bookContainerGeneration, setBookContainerGeneration] = useState(0)
   const [pageInput, setPageInput] = useState('1')
   const [zoom, setZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -229,6 +231,9 @@ export default function FlipbookReader({
   }, [])
 
   useEffect(() => () => {
+    if (bookContainerMountFrameRef.current !== null) {
+      window.cancelAnimationFrame(bookContainerMountFrameRef.current)
+    }
     if (pendingPageTurnFrameRef.current !== null) {
       window.cancelAnimationFrame(pendingPageTurnFrameRef.current)
     }
@@ -263,6 +268,20 @@ export default function FlipbookReader({
     })
     localStorage.setItem(storageKey, String(safeIndex + 1))
   }, [numPages, storageKey])
+
+  const captureBookContainer = useCallback((container: HTMLDivElement | null) => {
+    bookContainerRef.current = container
+    if (bookContainerMountFrameRef.current !== null) {
+      window.cancelAnimationFrame(bookContainerMountFrameRef.current)
+      bookContainerMountFrameRef.current = null
+    }
+    if (container) {
+      bookContainerMountFrameRef.current = window.requestAnimationFrame(() => {
+        bookContainerMountFrameRef.current = null
+        if (!bookRef.current) setBookContainerGeneration(value => value + 1)
+      })
+    }
+  }, [])
 
   useEffect(() => {
     const container = bookContainerRef.current
@@ -329,7 +348,7 @@ export default function FlipbookReader({
         // The page container may already be removed during route transitions.
       }
     }
-  }, [isMobile, numPages, pageHeight, pageWidth, pageWindowStart, updateCurrentPage, windowPages.length])
+  }, [bookContainerGeneration, isMobile, numPages, pageHeight, pageWidth, pageWindowStart, updateCurrentPage, windowPages.length])
 
   const goToPage = () => {
     if (!numPages) return
@@ -524,7 +543,7 @@ export default function FlipbookReader({
               <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
                 <div
                   key={`${pageWindowStart}-${bookWidth}x${pageHeight}`}
-                  ref={bookContainerRef}
+                  ref={captureBookContainer}
                   className="banner-flipbook"
                   data-window-start={pageWindowStart}
                   style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
