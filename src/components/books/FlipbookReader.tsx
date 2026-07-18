@@ -9,7 +9,7 @@ import {
   memo,
   startTransition,
 } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import Link, { useLinkStatus } from 'next/link'
 import { Document, Page, pdfjs } from 'react-pdf'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
@@ -136,6 +136,7 @@ export default function FlipbookReader({
   const pendingPageTurnFrameRef = useRef<number | null>(null)
   const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
   const currentPageIndexRef = useRef(0)
+  const pointerStartXRef = useRef<number | null>(null)
   const [numPages, setNumPages] = useState(0)
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -249,6 +250,12 @@ export default function FlipbookReader({
     updateCurrentPage(targetIndex)
   }
 
+  const turnPage = useCallback((direction: 'previous' | 'next') => {
+    const pageStep = isMobile ? 1 : 2
+    const offset = direction === 'previous' ? -pageStep : pageStep
+    updateCurrentPage(currentPageIndexRef.current + offset)
+  }, [isMobile, updateCurrentPage])
+
   const schedulePageTurn = useCallback((
     direction: 'previous' | 'next',
     trigger: HTMLButtonElement
@@ -263,9 +270,7 @@ export default function FlipbookReader({
       pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
         pendingPageTurnFrameRef.current = null
         try {
-          const pageStep = isMobile ? 1 : 2
-          const offset = direction === 'previous' ? -pageStep : pageStep
-          updateCurrentPage(currentPageIndexRef.current + offset)
+          turnPage(direction)
         } finally {
           delete trigger.dataset.turning
           trigger.removeAttribute('aria-busy')
@@ -273,7 +278,28 @@ export default function FlipbookReader({
         }
       })
     })
-  }, [isMobile, updateCurrentPage])
+  }, [turnPage])
+
+  const handlePagePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.isPrimary) pointerStartXRef.current = event.clientX
+  }
+
+  const handlePagePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const startX = pointerStartXRef.current
+    pointerStartXRef.current = null
+    if (startX === null || !event.isPrimary) return
+
+    const distance = event.clientX - startX
+    if (Math.abs(distance) >= 48) {
+      turnPage(distance > 0 ? 'previous' : 'next')
+      return
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const relativeX = event.clientX - bounds.left
+    if (relativeX <= bounds.width * 0.2) turnPage('previous')
+    if (relativeX >= bounds.width * 0.8) turnPage('next')
+  }
 
   const toggleFullscreen = async () => {
     if (!readerRef.current) return
@@ -418,7 +444,10 @@ export default function FlipbookReader({
                 <div
                   key={`${currentPageIndex}-${bookWidth}x${pageHeight}`}
                   className="flipbook-stable-spread"
-                  style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
+                  style={{ width: bookWidth, height: pageHeight, margin: '0 auto', touchAction: 'pan-y' }}
+                  onPointerDown={handlePagePointerDown}
+                  onPointerUp={handlePagePointerUp}
+                  onPointerCancel={() => { pointerStartXRef.current = null }}
                 >
                   {visiblePages.map(pageNumber => (
                     <div
