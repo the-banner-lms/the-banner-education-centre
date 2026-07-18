@@ -302,7 +302,6 @@ export default function FlipbookReader({
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
   const pendingPageTurnTimerRef = useRef<number | null>(null)
-  const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
   const pendingPageRenderTimerRef = useRef<number | null>(null)
   const pendingWindowTimerRef = useRef<number | null>(null)
   const currentPageIndexRef = useRef(0)
@@ -426,10 +425,6 @@ export default function FlipbookReader({
     if (pendingWindowTimerRef.current !== null) {
       window.clearTimeout(pendingWindowTimerRef.current)
     }
-    if (pendingPageTurnButtonRef.current) {
-      delete pendingPageTurnButtonRef.current.dataset.turning
-      pendingPageTurnButtonRef.current.removeAttribute('aria-busy')
-    }
   }, [])
 
   const onDocumentLoadSuccess = useCallback((pdf: PDFDocumentProxy) => {
@@ -513,33 +508,20 @@ export default function FlipbookReader({
     bookRef.current = instance
   }, [])
 
-  const schedulePageTurn = useCallback((
-    direction: 'previous' | 'next',
-    trigger: HTMLButtonElement
-  ) => {
+  const schedulePageTurn = useCallback((direction: 'previous' | 'next') => {
     if (
       pendingPageTurnFrameRef.current !== null
       || pendingPageTurnTimerRef.current !== null
     ) return
 
-    pendingPageTurnButtonRef.current = trigger
-    trigger.dataset.turning = 'true'
-    trigger.setAttribute('aria-busy', 'true')
-
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
       pendingPageTurnFrameRef.current = null
       pendingPageTurnTimerRef.current = window.setTimeout(() => {
         pendingPageTurnTimerRef.current = null
-        try {
-          const pageFlip = bookRef.current
-          if (direction === 'previous') pageFlip?.flipPrev('bottom')
-          else pageFlip?.flipNext('bottom')
-        } finally {
-          delete trigger.dataset.turning
-          trigger.removeAttribute('aria-busy')
-          pendingPageTurnButtonRef.current = null
-        }
-      }, 0)
+        const pageFlip = bookRef.current
+        if (direction === 'previous') pageFlip?.flipPrev('bottom')
+        else pageFlip?.flipNext('bottom')
+      }, 16)
     })
   }, [])
 
@@ -581,7 +563,7 @@ export default function FlipbookReader({
             <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 p-1 shadow-inner">
               <button
                 type="button"
-                onClick={event => schedulePageTurn('previous', event.currentTarget)}
+                onClick={() => schedulePageTurn('previous')}
                 disabled={!isBookReady || currentPageIndex <= 0}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous page"
@@ -613,7 +595,7 @@ export default function FlipbookReader({
               </button>
               <button
                 type="button"
-                onClick={event => schedulePageTurn('next', event.currentTarget)}
+                onClick={() => schedulePageTurn('next')}
                 disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Next page"
@@ -656,7 +638,7 @@ export default function FlipbookReader({
       <div className="flipbook-stage" style={stageStyle} aria-live="polite">
         <button
           type="button"
-          onClick={event => schedulePageTurn('previous', event.currentTarget)}
+          onClick={() => schedulePageTurn('previous')}
           disabled={!isBookReady || currentPageIndex <= 0}
           className="flipbook-side-navigation flipbook-side-navigation-left"
           aria-label="Previous page from left side"
@@ -714,7 +696,7 @@ export default function FlipbookReader({
 
         <button
           type="button"
-          onClick={event => schedulePageTurn('next', event.currentTarget)}
+          onClick={() => schedulePageTurn('next')}
           disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
           className="flipbook-side-navigation flipbook-side-navigation-right"
           aria-label="Next page from right side"
