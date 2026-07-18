@@ -278,7 +278,7 @@ export default function FlipbookReader({
     if (container) {
       bookContainerMountFrameRef.current = window.requestAnimationFrame(() => {
         bookContainerMountFrameRef.current = null
-        if (!bookRef.current) setBookContainerGeneration(value => value + 1)
+        setBookContainerGeneration(value => value + 1)
       })
     }
   }, [])
