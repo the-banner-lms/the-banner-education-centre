@@ -9,7 +9,7 @@ import {
   memo,
   startTransition,
 } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import Link, { useLinkStatus } from 'next/link'
 import { PageFlip } from 'page-flip'
 import { Document, Page, pdfjs } from 'react-pdf'
@@ -143,6 +143,88 @@ function BookshelfLinkContent() {
   )
 }
 
+function FlipbookWindow({
+  windowStart,
+  pageWidth,
+  pageHeight,
+  bookWidth,
+  startPage,
+  pageCount,
+  onFlip,
+  onReady,
+  onInstanceChange,
+  children,
+}: {
+  windowStart: number
+  pageWidth: number
+  pageHeight: number
+  bookWidth: number
+  startPage: number
+  pageCount: number
+  onFlip: (localIndex: number) => void
+  onReady: () => void
+  onInstanceChange: (instance: PageFlip | null) => void
+  children: ReactNode
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || pageCount === 0) return
+
+    const pageElements = Array.from(container.querySelectorAll<HTMLElement>(':scope > .flipbook-page'))
+    if (pageElements.length !== pageCount) return
+
+    const pageFlip = new PageFlip(container, {
+      width: pageWidth,
+      height: pageHeight,
+      size: 'fixed',
+      startPage,
+      drawShadow: true,
+      flippingTime: 360,
+      usePortrait: true,
+      startZIndex: 0,
+      autoSize: false,
+      maxShadowOpacity: 0.45,
+      showCover: false,
+      mobileScrollSupport: true,
+      clickEventForward: true,
+      useMouseEvents: true,
+      swipeDistance: 24,
+      showPageCorners: true,
+      disableFlipByClick: false,
+    })
+
+    pageFlip.on('flip', event => onFlip(Number(event.data)))
+    pageFlip.on('init', onReady)
+    pageFlip.loadFromHTML(pageElements)
+    onInstanceChange(pageFlip)
+
+    return () => {
+      pageFlip.off('flip')
+      pageFlip.off('init')
+      onInstanceChange(null)
+      try {
+        // The full destroy method removes the React-owned container.
+        pageFlip.getUI().destroy()
+      } catch {
+        // React may already have removed the old page window.
+      }
+    }
+  }, [onFlip, onInstanceChange, onReady, pageCount, pageHeight, pageWidth, startPage])
+
+  return (
+    <div
+      ref={containerRef}
+      className="banner-flipbook"
+      data-window-start={windowStart}
+      style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function FlipbookReader({
   bookId,
   title,
@@ -263,90 +345,28 @@ export default function FlipbookReader({
     localStorage.setItem(storageKey, String(safeIndex + 1))
   }, [numPages, storageKey])
 
-  useEffect(() => {
-    if (numPages === 0 || windowPages.length === 0) return
+  const handleFlip = useCallback((localIndex: number) => {
+    const logicalIndex = pageWindowStart + localIndex
+    updateCurrentPage(logicalIndex)
 
-    let pageFlip: PageFlip | null = null
-    let secondFrame = 0
-    let disposed = false
-
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        if (disposed) return
-
-        const container = readerRef.current?.querySelector<HTMLDivElement>('.banner-flipbook')
-        if (!container) return
-
-        const pageElements = Array.from(container.querySelectorAll<HTMLElement>(':scope > .flipbook-page'))
-        if (pageElements.length !== windowPages.length) return
-
-        const localStartPage = Math.max(
-          0,
-          Math.min(windowPages.length - 1, currentPageIndexRef.current - pageWindowStart)
-        )
-
-        pageFlip = new PageFlip(container, {
-          width: pageWidth,
-          height: pageHeight,
-          size: 'fixed',
-          startPage: localStartPage,
-          drawShadow: true,
-          flippingTime: 360,
-          usePortrait: true,
-          startZIndex: 0,
-          autoSize: false,
-          maxShadowOpacity: 0.45,
-          showCover: false,
-          mobileScrollSupport: true,
-          clickEventForward: true,
-          useMouseEvents: true,
-          swipeDistance: 24,
-          showPageCorners: true,
-          disableFlipByClick: false,
-        })
-
-        const activePageFlip = pageFlip
-        bookRef.current = activePageFlip
-        activePageFlip.on('flip', event => {
-          const logicalIndex = pageWindowStart + Number(event.data)
-          updateCurrentPage(logicalIndex)
-
-          const windowEnd = pageWindowStart + windowPages.length
-          const edgeBuffer = isMobile ? 2 : 3
-          if (
-            logicalIndex <= pageWindowStart + 1 ||
-            logicalIndex >= windowEnd - edgeBuffer
-          ) {
-            const nextWindowStart = getPageWindowStart(logicalIndex, numPages, isMobile)
-            if (nextWindowStart !== pageWindowStart) {
-              setIsBookReady(false)
-              setPageWindowStart(nextWindowStart)
-            }
-          }
-        })
-        activePageFlip.on('init', () => setIsBookReady(true))
-        activePageFlip.loadFromHTML(pageElements)
-      })
-    })
-
-    return () => {
-      disposed = true
-      window.cancelAnimationFrame(firstFrame)
-      if (secondFrame) window.cancelAnimationFrame(secondFrame)
-      if (!pageFlip) return
-
-      pageFlip.off('flip')
-      pageFlip.off('init')
-      if (bookRef.current === pageFlip) bookRef.current = null
-      try {
-        // pageFlip.destroy() also removes the React-owned container. Destroy
-        // only the library UI; React will remove or replace the container.
-        pageFlip.getUI().destroy()
-      } catch {
-        // The page container may already be removed during route transitions.
+    const windowEnd = pageWindowStart + windowPages.length
+    const edgeBuffer = isMobile ? 2 : 3
+    if (
+      logicalIndex <= pageWindowStart + 1 ||
+      logicalIndex >= windowEnd - edgeBuffer
+    ) {
+      const nextWindowStart = getPageWindowStart(logicalIndex, numPages, isMobile)
+      if (nextWindowStart !== pageWindowStart) {
+        setIsBookReady(false)
+        setPageWindowStart(nextWindowStart)
       }
     }
-  }, [isMobile, numPages, pageHeight, pageWidth, pageWindowStart, updateCurrentPage, windowPages.length])
+  }, [isMobile, numPages, pageWindowStart, updateCurrentPage, windowPages.length])
+
+  const handleBookReady = useCallback(() => setIsBookReady(true), [])
+  const handleBookInstanceChange = useCallback((instance: PageFlip | null) => {
+    bookRef.current = instance
+  }, [])
 
   const goToPage = () => {
     if (!numPages) return
@@ -539,11 +559,20 @@ export default function FlipbookReader({
                 </div>
               )}
               <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-                <div
+                <FlipbookWindow
                   key={`${pageWindowStart}-${bookWidth}x${pageHeight}`}
-                  className="banner-flipbook"
-                  data-window-start={pageWindowStart}
-                  style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
+                  windowStart={pageWindowStart}
+                  pageWidth={pageWidth}
+                  pageHeight={pageHeight}
+                  bookWidth={bookWidth}
+                  startPage={Math.max(
+                    0,
+                    Math.min(windowPages.length - 1, currentPageIndex - pageWindowStart)
+                  )}
+                  pageCount={windowPages.length}
+                  onFlip={handleFlip}
+                  onReady={handleBookReady}
+                  onInstanceChange={handleBookInstanceChange}
                 >
                   {windowPages.map(pageNumber => (
                     <div
@@ -561,7 +590,7 @@ export default function FlipbookReader({
                       />
                     </div>
                   ))}
-                </div>
+                </FlipbookWindow>
               </div>
             </div>
           )}
