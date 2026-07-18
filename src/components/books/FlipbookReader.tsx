@@ -167,6 +167,7 @@ function FlipbookWindow({
   children: ReactNode
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const initialStartPageRef = useRef(startPage)
 
   useEffect(() => {
     const container = containerRef.current
@@ -179,7 +180,7 @@ function FlipbookWindow({
       width: pageWidth,
       height: pageHeight,
       size: 'fixed',
-      startPage,
+      startPage: initialStartPageRef.current,
       drawShadow: true,
       flippingTime: 360,
       usePortrait: true,
@@ -211,7 +212,7 @@ function FlipbookWindow({
         // React may already have removed the old page window.
       }
     }
-  }, [onFlip, onInstanceChange, onReady, pageCount, pageHeight, pageWidth, startPage])
+  }, [onFlip, onInstanceChange, onReady, pageCount, pageHeight, pageWidth])
 
   return (
     <div
