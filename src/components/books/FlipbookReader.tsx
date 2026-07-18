@@ -1,13 +1,13 @@
 'use client'
 
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
+  memo,
+  startTransition,
 } from 'react'
 import Link, { useLinkStatus } from 'next/link'
 import { PageFlip } from 'page-flip'
@@ -35,26 +35,22 @@ export type FlipbookReaderProps = {
   coverUrl: string | null
 }
 
-const CurrentPageContext = createContext(0)
-
 type PdfBookPageContentProps = {
   pageNumber: number
   pageWidth: number
   renderRadius: number
   devicePixelRatio: number
+  shouldRender: boolean
   onFirstPageRendered: () => void
 }
 
-function PdfBookPageContent({
+const PdfBookPageContent = memo(function PdfBookPageContent({
   pageNumber,
   pageWidth,
-  renderRadius,
   devicePixelRatio,
+  shouldRender,
   onFirstPageRendered,
 }: PdfBookPageContentProps) {
-  const currentPageIndex = useContext(CurrentPageContext)
-  const shouldRender = Math.abs(pageNumber - 1 - currentPageIndex) <= renderRadius
-
   return (
     <div className="flipbook-page-paper">
       {shouldRender ? (
@@ -73,7 +69,7 @@ function PdfBookPageContent({
       <span className="flipbook-page-number">{pageNumber}</span>
     </div>
   )
-}
+})
 
 function BookLoadingPreview({
   coverUrl,
@@ -139,6 +135,8 @@ export default function FlipbookReader({
   const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
+  const pendingPageTurnTimerRef = useRef<number | null>(null)
+  const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
   const [numPages, setNumPages] = useState(0)
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -203,6 +201,13 @@ export default function FlipbookReader({
     if (pendingPageTurnFrameRef.current !== null) {
       window.cancelAnimationFrame(pendingPageTurnFrameRef.current)
     }
+    if (pendingPageTurnTimerRef.current !== null) {
+      window.clearTimeout(pendingPageTurnTimerRef.current)
+    }
+    if (pendingPageTurnButtonRef.current) {
+      delete pendingPageTurnButtonRef.current.dataset.turning
+      pendingPageTurnButtonRef.current.removeAttribute('aria-busy')
+    }
   }, [])
 
   useEffect(() => {
@@ -229,8 +234,10 @@ export default function FlipbookReader({
 
   const updateCurrentPage = useCallback((index: number) => {
     const safeIndex = Math.max(0, Math.min(numPages - 1, index))
-    setCurrentPageIndex(safeIndex)
-    setPageInput(String(safeIndex + 1))
+    startTransition(() => {
+      setCurrentPageIndex(safeIndex)
+      setPageInput(String(safeIndex + 1))
+    })
     localStorage.setItem(storageKey, String(safeIndex + 1))
   }, [numPages, storageKey])
 
@@ -294,23 +301,35 @@ export default function FlipbookReader({
     window.requestAnimationFrame(() => bookRef.current?.turnToPage(targetIndex))
   }
 
-  const schedulePageTurn = useCallback((direction: 'previous' | 'next') => {
+  const schedulePageTurn = useCallback((
+    direction: 'previous' | 'next',
+    trigger: HTMLButtonElement
+  ) => {
     // page-flip performs synchronous DOM measurements before its animation starts.
-    // Give the click/tap a paint first so that work is not charged to the input event.
-    if (pendingPageTurnFrameRef.current !== null) return
+    // Paint visible feedback first, then begin that work in a separate browser task.
+    if (pendingPageTurnFrameRef.current !== null || pendingPageTurnTimerRef.current !== null) return
+
+    pendingPageTurnButtonRef.current = trigger
+    trigger.dataset.turning = 'true'
+    trigger.setAttribute('aria-busy', 'true')
 
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
-      pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
-        pendingPageTurnFrameRef.current = null
+      pendingPageTurnFrameRef.current = null
+      pendingPageTurnTimerRef.current = window.setTimeout(() => {
+        pendingPageTurnTimerRef.current = null
         const pageFlip = bookRef.current
-        if (!pageFlip) return
-
-        if (direction === 'previous') {
-          pageFlip.flipPrev('bottom')
-        } else {
-          pageFlip.flipNext('bottom')
+        if (pageFlip) {
+          if (direction === 'previous') {
+            pageFlip.flipPrev('bottom')
+          } else {
+            pageFlip.flipNext('bottom')
+          }
         }
-      })
+
+        delete trigger.dataset.turning
+        trigger.removeAttribute('aria-busy')
+        pendingPageTurnButtonRef.current = null
+      }, 0)
     })
   }, [])
 
@@ -345,7 +364,7 @@ export default function FlipbookReader({
             <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 p-1 shadow-inner">
               <button
                 type="button"
-                onClick={() => schedulePageTurn('previous')}
+                onClick={event => schedulePageTurn('previous', event.currentTarget)}
                 disabled={!isBookReady || currentPageIndex <= 0}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Previous page"
@@ -377,7 +396,7 @@ export default function FlipbookReader({
               </button>
               <button
                 type="button"
-                onClick={() => schedulePageTurn('next')}
+                onClick={event => schedulePageTurn('next', event.currentTarget)}
                 disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
                 className="rounded-full p-2 text-banner-dark hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label="Next page"
@@ -420,7 +439,7 @@ export default function FlipbookReader({
       <div className="flipbook-stage" aria-live="polite">
         <button
           type="button"
-          onClick={() => schedulePageTurn('previous')}
+          onClick={event => schedulePageTurn('previous', event.currentTarget)}
           disabled={!isBookReady || currentPageIndex <= 0}
           className="flipbook-side-navigation flipbook-side-navigation-left"
           aria-label="Previous page from left side"
@@ -454,29 +473,28 @@ export default function FlipbookReader({
                 </div>
               )}
               <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
-                <CurrentPageContext.Provider value={currentPageIndex}>
-                  <div
-                    ref={bookContainerRef}
-                    className="banner-flipbook"
-                    style={{ margin: '0 auto' }}
-                  >
-                    {pages.map(pageNumber => (
-                      <div
-                        key={pageNumber}
-                        className="flipbook-page"
-                        data-density={pageNumber === 1 ? 'hard' : 'soft'}
-                      >
-                        <PdfBookPageContent
-                          pageNumber={pageNumber}
-                          pageWidth={pageWidth}
-                          renderRadius={renderRadius}
-                          devicePixelRatio={devicePixelRatio}
-                          onFirstPageRendered={onFirstPageRendered}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </CurrentPageContext.Provider>
+                <div
+                  ref={bookContainerRef}
+                  className="banner-flipbook"
+                  style={{ margin: '0 auto' }}
+                >
+                  {pages.map(pageNumber => (
+                    <div
+                      key={pageNumber}
+                      className="flipbook-page"
+                      data-density={pageNumber === 1 ? 'hard' : 'soft'}
+                    >
+                      <PdfBookPageContent
+                        pageNumber={pageNumber}
+                        pageWidth={pageWidth}
+                        renderRadius={renderRadius}
+                        devicePixelRatio={devicePixelRatio}
+                        shouldRender={Math.abs(pageNumber - 1 - currentPageIndex) <= renderRadius}
+                        onFirstPageRendered={onFirstPageRendered}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -486,7 +504,7 @@ export default function FlipbookReader({
 
         <button
           type="button"
-          onClick={() => schedulePageTurn('next')}
+          onClick={event => schedulePageTurn('next', event.currentTarget)}
           disabled={!isBookReady || !numPages || currentPageIndex >= numPages - 1}
           className="flipbook-side-navigation flipbook-side-navigation-right"
           aria-label="Next page from right side"
