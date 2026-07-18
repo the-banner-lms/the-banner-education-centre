@@ -151,7 +151,6 @@ export default function FlipbookReader({
   coverUrl,
 }: FlipbookReaderProps) {
   const bookRef = useRef<PageFlip | null>(null)
-  const bookContainerRef = useRef<HTMLDivElement | null>(null)
   const readerRef = useRef<HTMLDivElement | null>(null)
   const pendingPageTurnFrameRef = useRef<number | null>(null)
   const pendingPageTurnButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -265,7 +264,9 @@ export default function FlipbookReader({
   }, [numPages, storageKey])
 
   useEffect(() => {
-    const container = bookContainerRef.current
+    const container = readerRef.current?.querySelector<HTMLDivElement>(
+      `.banner-flipbook[data-window-start="${pageWindowStart}"]`
+    )
     if (!container || numPages === 0 || windowPages.length === 0) return
 
     const pageElements = Array.from(container.querySelectorAll<HTMLElement>(':scope > .flipbook-page'))
@@ -522,8 +523,8 @@ export default function FlipbookReader({
               <div className="flipbook-zoom-layer" style={{ transform: `scale(${zoom})` }}>
                 <div
                   key={`${pageWindowStart}-${bookWidth}x${pageHeight}`}
-                  ref={bookContainerRef}
                   className="banner-flipbook"
+                  data-window-start={pageWindowStart}
                   style={{ width: bookWidth, height: pageHeight, margin: '0 auto' }}
                 >
                   {windowPages.map(pageNumber => (
