@@ -552,7 +552,7 @@ export default function FlipbookReader({
       aria-modal="true"
       aria-label={`${title} book reader`}
     >
-      <div className="flipbook-reader-toolbar-shell sticky top-20 z-40 border-b border-banner-light/25 bg-white/95 shadow-sm backdrop-blur md:top-24">
+      <div className="flipbook-reader-toolbar-shell z-40 shrink-0 border-b border-banner-light/25 bg-white/95 shadow-sm backdrop-blur">
         <div className="flipbook-reader-toolbar mx-auto flex max-w-7xl flex-col gap-3 px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Link
