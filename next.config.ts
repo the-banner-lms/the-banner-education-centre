@@ -25,6 +25,32 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '5mb',
     },
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'the-banner-education-centre.vercel.app',
+          },
+        ],
+        destination: 'https://www.thebannereducentre.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'thebannereducentre.com',
+          },
+        ],
+        destination: 'https://www.thebannereducentre.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
