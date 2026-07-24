@@ -18,7 +18,7 @@ export default function BlogComments({ postId }: { postId: string }) {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const fetchComments = useCallback(async () => {
     const { data, error } = await supabase

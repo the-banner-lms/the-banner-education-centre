@@ -18,7 +18,7 @@ export default function ChatUI({
   const [newMessage, setNewMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   // Scroll to bottom on new message
   useEffect(() => {

@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
 
   const getSafeNextPath = () => {
     const next = new URLSearchParams(location.search).get('next')
