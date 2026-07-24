@@ -11,6 +11,7 @@ import { getRoleBadgeStyle } from '@/utils/theme'
 import { getTuitionDisplayStatus, getTuitionStatusStyle } from '@/lib/tuition'
 import { getEnrollmentReviewNotices } from '@/lib/enrollmentNotices'
 import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
+import ChangeEmailForm from '@/components/students/ChangeEmailForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -143,14 +144,15 @@ export default async function StudentDashboardPage(props: { searchParams: Promis
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{profile.full_name || 'My Dashboard'}</h1>
             <p className="text-gray-500">{profile.email}</p>
+            <ChangeEmailForm currentEmail={profile.email} />
             {profile.role === 'student' && (
-              <div className="mt-1 space-y-1 text-sm font-semibold text-gray-700">
+              <div className="mt-3 space-y-1 text-sm font-semibold text-gray-700">
                 <p>Student ID: {profile.student_number || 'Pending assignment'}</p>
                 <p>Class: {getStudentClassLabel(profile.assigned_class)}</p>
                 {profile.assigned_subclass && <p className="text-blue-700">YLE: {getYleSubclassLabel(profile.assigned_subclass)}</p>}
               </div>
             )}
-            <p className={`inline-block mt-2 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
+            <p className={`inline-block mt-3 text-xs px-2 py-1 rounded-full font-semibold uppercase tracking-wide ${getRoleBadgeStyle(profile.role)}`}>
               {profile.role}
             </p>
           </div>

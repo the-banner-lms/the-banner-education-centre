@@ -4,6 +4,7 @@ import DeleteUserButton from './DeleteUserButton'
 import { isAdmin } from '@/utils/supabase/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getStudentClassLabel, getYleSubclassLabel } from '@/lib/studentClasses'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,6 +76,9 @@ export default async function AdminUsersPage() {
                       Email
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Class
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -106,6 +110,18 @@ export default async function AdminUsersPage() {
                       <td className="whitespace-nowrap p-0">
                         <Link href={`/dashboard/${user.id}`} className="block px-6 py-4 text-sm text-gray-500 w-full h-full">
                           {user.email}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap p-0">
+                        <Link href={`/dashboard/${user.id}`} className="block px-6 py-4 text-sm text-gray-500 w-full h-full">
+                          {user.assigned_class ? (
+                            <span>
+                              {getStudentClassLabel(user.assigned_class)}
+                              {user.assigned_subclass && ` - ${getYleSubclassLabel(user.assigned_subclass)}`}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">None</span>
+                          )}
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap relative z-10">
