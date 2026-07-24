@@ -8,6 +8,10 @@ export const STUDENT_CLASSES = [
   { value: 'primary4', label: 'Primary 4' },
   { value: 'primary5', label: 'Primary 5' },
   { value: 'primary6', label: 'Primary 6' },
+  { value: 'grade1', label: 'Grade 1' },
+  { value: 'grade2', label: 'Grade 2' },
+  { value: 'year5', label: 'Year 5' },
+  { value: 'year8', label: 'Year 8' },
 ] as const
 
 export const YLE_SUBCLASSES = [
