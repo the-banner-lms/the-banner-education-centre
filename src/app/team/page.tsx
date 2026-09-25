@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 import { sortTeamMembers } from '@/lib/teamOrdering';
+import { publicTeamFallbackMembers } from '@/lib/publicTeamFallback';
 
 export const metadata = {
   title: 'Our Team | The Banner Education Centre',
@@ -29,7 +30,13 @@ export default async function TeamPage() {
     error = fallbackResult.error
   }
 
-  const arrangedTeamMembers = sortTeamMembers(teamMembers || []);
+  if (error) {
+    console.error('Unable to load public team members:', error)
+  }
+
+  const arrangedTeamMembers = sortTeamMembers(
+    teamMembers && teamMembers.length > 0 ? teamMembers : publicTeamFallbackMembers,
+  );
 
   return (
     <div className="flex flex-col">

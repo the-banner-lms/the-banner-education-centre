@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { ArrowLeftIcon, BriefcaseIcon } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
+import { getPublicTeamFallbackMember } from '@/lib/publicTeamFallback';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,24 +17,32 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .eq('id', resolvedParams.id)
     .single();
 
-  if (!member) {
+  const fallbackMember = member || getPublicTeamFallbackMember(resolvedParams.id);
+
+  if (!fallbackMember) {
     return { title: 'Member Not Found | The Banner Education Centre' };
   }
 
   return {
-    title: `${member.name} - ${member.role} | The Banner Education Centre`,
-    description: member.bio ? member.bio.substring(0, 160) : '',
+    title: `${fallbackMember.name} - ${fallbackMember.role} | The Banner Education Centre`,
+    description: fallbackMember.bio ? fallbackMember.bio.substring(0, 160) : '',
   };
 }
 
 export default async function TeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   const supabase = await createClient();
-  const { data: member } = await supabase
+  const { data, error } = await supabase
     .from('team_members')
     .select('*')
     .eq('id', resolvedParams.id)
     .single();
+
+  if (error) {
+    console.error('Unable to load team member detail:', error)
+  }
+
+  const member = data || getPublicTeamFallbackMember(resolvedParams.id);
 
   if (!member) {
     notFound();
