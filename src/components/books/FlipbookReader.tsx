@@ -32,7 +32,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const BOOK_PAGE_ASPECT_RATIO = 1.414
 const MOBILE_PAGE_WINDOW_SIZE = 3
-const DESKTOP_PAGE_WINDOW_SIZE = 4
+const DESKTOP_PAGE_WINDOW_SIZE = 8
+const PAGE_FLIP_PRELOAD_TIMEOUT_MS = 1400
 
 function getPageWindowStart(targetIndex: number, totalPages: number, isMobile: boolean) {
   const windowSize = isMobile ? MOBILE_PAGE_WINDOW_SIZE : DESKTOP_PAGE_WINDOW_SIZE
@@ -42,10 +43,12 @@ function getPageWindowStart(targetIndex: number, totalPages: number, isMobile: b
     return Math.max(0, Math.min(totalPages - windowSize, targetIndex - 1))
   }
 
-  // Landscape spreads pair global pages 2+3, 4+5, etc. Start the tiny
-  // window at that spread's left page; the third page is the next turn.
-  if (targetIndex === 0) return 0
-  return targetIndex % 2 === 0 ? targetIndex - 1 : targetIndex
+  // Landscape mode needs a real book window: previous spread, current spread,
+  // and next spread. Without the previous spread, back-flips disappear; without
+  // the next spread, the turning sheet can briefly look like a blank card.
+  if (targetIndex <= 1) return 0
+  const currentSpreadLeftIndex = targetIndex % 2 === 0 ? targetIndex - 1 : targetIndex
+  return Math.max(0, Math.min(totalPages - windowSize, currentSpreadLeftIndex - 2))
 }
 
 export type FlipbookReaderProps = {
@@ -61,7 +64,7 @@ type PdfBookPageContentProps = {
   pageWidth: number
   devicePixelRatio: number
   shouldRender: boolean
-  onFirstPageRendered: () => void
+  onPageRendered: (pageNumber: number) => void
 }
 
 const PdfBookPageContent = memo(function PdfBookPageContent({
@@ -69,7 +72,7 @@ const PdfBookPageContent = memo(function PdfBookPageContent({
   pageWidth,
   devicePixelRatio,
   shouldRender,
-  onFirstPageRendered,
+  onPageRendered,
 }: PdfBookPageContentProps) {
   return (
     <div className="flipbook-page-paper">
@@ -80,7 +83,7 @@ const PdfBookPageContent = memo(function PdfBookPageContent({
           devicePixelRatio={devicePixelRatio}
           renderAnnotationLayer={false}
           renderTextLayer={false}
-          onRenderSuccess={onFirstPageRendered}
+          onRenderSuccess={() => onPageRendered(pageNumber)}
           loading={<PagePlaceholder pageNumber={pageNumber} />}
         />
       ) : (
@@ -105,7 +108,7 @@ function RealPageFlipWindow({
   bookWidth,
   devicePixelRatio,
   isMobile,
-  onFirstPageRendered,
+  onPageRendered,
   onFlip,
   onReady,
   onInstanceChange,
@@ -119,7 +122,7 @@ function RealPageFlipWindow({
   bookWidth: number
   devicePixelRatio: number
   isMobile: boolean
-  onFirstPageRendered: () => void
+  onPageRendered: (pageNumber: number) => void
   onFlip: (localIndex: number) => void
   onReady: () => void
   onInstanceChange: (instance: PageFlip | null) => void
@@ -152,7 +155,7 @@ function RealPageFlipWindow({
     const targets = pageNumbers.map(pageNumber => {
       const element = pageElementCacheRef.current.get(pageNumber) ?? document.createElement('div')
       element.className = 'flipbook-page'
-      element.dataset.density = (pageNumber === 1 || pageNumber === totalPages) ? 'hard' : 'soft'
+      element.dataset.density = 'soft'
       element.dataset.pageNumber = String(pageNumber)
       pageElementCacheRef.current.set(pageNumber, element)
       bookElement.appendChild(element)
@@ -185,11 +188,11 @@ function RealPageFlipWindow({
       size: 'fixed',
       startPage,
       drawShadow: true,
-      flippingTime: 420,
+      flippingTime: 620,
       usePortrait: isMobile,
       startZIndex: 0,
       autoSize: false,
-      maxShadowOpacity: 0.42,
+      maxShadowOpacity: 0.68,
       showCover: pageNumbers[0] === 1,
       mobileScrollSupport: true,
       clickEventForward: false,
@@ -239,8 +242,8 @@ function RealPageFlipWindow({
           pageNumber={pageNumber}
           pageWidth={pageWidth}
           devicePixelRatio={devicePixelRatio}
-          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= (isMobile ? 1 : 3)}
-          onFirstPageRendered={onFirstPageRendered}
+          shouldRender={Math.abs(pageNumber - 1 - renderPageIndex) <= (isMobile ? 1 : 4)}
+          onPageRendered={onPageRendered}
         />,
         element,
         pageNumber
@@ -316,6 +319,7 @@ export default function FlipbookReader({
   const pendingPageTurnTimerRef = useRef<number | null>(null)
   const pendingPageRenderTimerRef = useRef<number | null>(null)
   const currentPageIndexRef = useRef(0)
+  const renderedPageNumbersRef = useRef(new Set<number>())
   const [numPages, setNumPages] = useState(0)
   const [canLoadDocument, setCanLoadDocument] = useState(false)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -433,6 +437,7 @@ export default function FlipbookReader({
   const onDocumentLoadSuccess = useCallback((pdf: PDFDocumentProxy) => {
     setLoadError('')
     setIsFirstPageRendered(false)
+    renderedPageNumbersRef.current.clear()
     const savedPage = Number.parseInt(localStorage.getItem(storageKey) || '1', 10)
     const targetIndex = Number.isFinite(savedPage)
       ? Math.max(0, Math.min(pdf.numPages - 1, savedPage - 1))
@@ -446,7 +451,10 @@ export default function FlipbookReader({
     setIsBookReady(false)
   }, [isMobile, storageKey])
 
-  const onFirstPageRendered = useCallback(() => setIsFirstPageRendered(true), [])
+  const onPageRendered = useCallback((pageNumber: number) => {
+    renderedPageNumbersRef.current.add(pageNumber)
+    setIsFirstPageRendered(true)
+  }, [])
 
   const updateCurrentPage = useCallback((index: number, deferUi = false) => {
     const safeIndex = Math.max(0, Math.min(numPages - 1, index))
@@ -467,12 +475,13 @@ export default function FlipbookReader({
         setRenderPageIndex(safeIndex)
         setWindowStartIndex(previousStart => {
           const previousEnd = Math.min(numPages - 1, previousStart + pageWindowSize - 1)
+          const desiredStart = getPageWindowStart(safeIndex, numPages, isMobile)
           const staysInsideSafeWindow = isMobile
             ? safeIndex > previousStart && safeIndex < previousEnd
-            : safeIndex === previousStart || safeIndex === previousStart + 1
+            : previousStart === desiredStart
           return staysInsideSafeWindow
             ? previousStart
-            : getPageWindowStart(safeIndex, numPages, isMobile)
+            : desiredStart
         })
       })
       localStorage.setItem(storageKey, String(safeIndex + 1))
@@ -502,6 +511,31 @@ export default function FlipbookReader({
     bookRef.current = instance
   }, [])
 
+  const getTargetSpreadPageNumbers = useCallback((targetIndex: number) => {
+    const firstPageNumber = targetIndex + 1
+    if (isMobile) return [firstPageNumber]
+    const secondPageNumber = Math.min(numPages, firstPageNumber + 1)
+    return firstPageNumber === secondPageNumber
+      ? [firstPageNumber]
+      : [firstPageNumber, secondPageNumber]
+  }, [isMobile, numPages])
+
+  const waitForRenderedPages = useCallback((pageNumbers: number[]) => new Promise<void>(resolve => {
+    const startedAt = Date.now()
+    const check = () => {
+      const allPagesReady = pageNumbers.every(pageNumber => {
+        if (renderedPageNumbersRef.current.has(pageNumber)) return true
+        return !!readerRef.current?.querySelector(`.flipbook-page[data-page-number="${pageNumber}"] canvas`)
+      })
+      if (allPagesReady || Date.now() - startedAt >= PAGE_FLIP_PRELOAD_TIMEOUT_MS) {
+        resolve()
+        return
+      }
+      window.setTimeout(check, 40)
+    }
+    check()
+  }), [])
+
   const schedulePageTurn = useCallback((direction: 'previous' | 'next') => {
     if (
       pendingPageTurnFrameRef.current !== null
@@ -509,18 +543,32 @@ export default function FlipbookReader({
     ) return
 
     if (readerRef.current) readerRef.current.dataset.turning = direction
+    const pageStep = isMobile ? 1 : 2
+    const targetIndex = direction === 'previous'
+      ? Math.max(0, currentPageIndexRef.current - pageStep)
+      : Math.min(numPages - 1, currentPageIndexRef.current + pageStep)
+    const targetWindowStartIndex = getPageWindowStart(targetIndex, numPages, isMobile)
+    const targetIsInsideWindow = targetIndex >= windowStartIndex
+      && targetIndex < windowStartIndex + pageWindowSize
+
+    // Pre-warm the target spread before starting the page-flip animation. This
+    // keeps the next/previous sheet real during the curl instead of revealing a
+    // white placeholder while react-pdf catches up.
+    setRenderPageIndex(targetIndex)
+    if (!targetIsInsideWindow) setWindowStartIndex(targetWindowStartIndex)
 
     pendingPageTurnFrameRef.current = window.requestAnimationFrame(() => {
       pendingPageTurnFrameRef.current = null
-      pendingPageTurnTimerRef.current = window.setTimeout(() => {
+      pendingPageTurnTimerRef.current = window.setTimeout(async () => {
+        await waitForRenderedPages(getTargetSpreadPageNumbers(targetIndex))
         pendingPageTurnTimerRef.current = null
         if (readerRef.current) delete readerRef.current.dataset.turning
         const pageFlip = bookRef.current
         if (direction === 'previous') pageFlip?.flipPrev('top')
         else pageFlip?.flipNext('top')
-      }, 64)
+      }, targetIsInsideWindow ? 120 : 220)
     })
-  }, [])
+  }, [getTargetSpreadPageNumbers, isMobile, numPages, pageWindowSize, waitForRenderedPages, windowStartIndex])
 
   const toggleFullscreen = async () => {
     if (!readerRef.current) return
@@ -680,7 +728,7 @@ export default function FlipbookReader({
                   bookWidth={bookWidth}
                   devicePixelRatio={devicePixelRatio}
                   isMobile={isMobile}
-                  onFirstPageRendered={onFirstPageRendered}
+                  onPageRendered={onPageRendered}
                   onFlip={handleEngineFlip}
                   onReady={handleBookReady}
                   onInstanceChange={handleBookInstanceChange}

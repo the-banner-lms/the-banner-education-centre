@@ -375,18 +375,25 @@ body {
 
 .banner-flipbook {
   position: relative;
+  perspective: 2200px;
+  transform-style: preserve-3d;
 }
 
 .banner-flipbook .stf__wrapper,
 .banner-flipbook .stf__block {
   width: 100%;
   height: 100%;
+  transform-style: preserve-3d;
 }
 
 .flipbook-engine-host {
   position: relative;
   flex: 0 0 auto;
-  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.38);
+  border-radius: 0.35rem;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.42),
+    0 12px 22px rgba(0, 0, 0, 0.22);
+  perspective: 2200px;
 }
 
 .flipbook-engine-host::after {
@@ -430,7 +437,11 @@ body {
   justify-content: center;
   overflow: hidden;
   background: #fffef9;
-  box-shadow: inset 0 0 10px rgba(76, 58, 38, 0.035);
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  box-shadow:
+    inset 0 0 10px rgba(76, 58, 38, 0.035),
+    inset 0 0 0 1px rgba(80, 64, 48, 0.045);
 }
 
 .flipbook-page:nth-child(odd) .flipbook-page-paper {
@@ -447,19 +458,46 @@ body {
   top: 0;
   bottom: 0;
   z-index: 10;
-  width: 46%;
+  width: 62%;
   pointer-events: none;
-  opacity: 0.38;
+  opacity: 0.58;
+  mix-blend-mode: multiply;
 }
 
 .banner-flipbook .stf__item.--right:not(.--simple) .flipbook-page-paper::before {
   left: 0;
-  background: linear-gradient(90deg, rgba(25, 20, 16, 0.22), rgba(25, 20, 16, 0.075) 28%, transparent 100%);
+  background:
+    linear-gradient(96deg, rgba(13, 10, 8, 0.34), rgba(44, 34, 25, 0.14) 22%, rgba(255,255,255,0.02) 52%, transparent 100%),
+    radial-gradient(120% 90% at 0% 50%, rgba(0,0,0,0.22), transparent 58%);
 }
 
 .banner-flipbook .stf__item.--left:not(.--simple) .flipbook-page-paper::before {
   right: 0;
-  background: linear-gradient(270deg, rgba(25, 20, 16, 0.22), rgba(25, 20, 16, 0.075) 28%, transparent 100%);
+  background:
+    linear-gradient(264deg, rgba(13, 10, 8, 0.34), rgba(44, 34, 25, 0.14) 22%, rgba(255,255,255,0.02) 52%, transparent 100%),
+    radial-gradient(120% 90% at 100% 50%, rgba(0,0,0,0.22), transparent 58%);
+}
+
+.banner-flipbook .stf__item:not(.--simple) .flipbook-page-paper::after {
+  content: '';
+  position: absolute;
+  top: -8%;
+  bottom: -8%;
+  z-index: 11;
+  width: 38%;
+  pointer-events: none;
+  opacity: 0.52;
+  filter: blur(0.2px);
+}
+
+.banner-flipbook .stf__item.--right:not(.--simple) .flipbook-page-paper::after {
+  left: 0;
+  background: linear-gradient(92deg, rgba(255,255,255,0.62), rgba(255,255,255,0.18) 18%, rgba(0,0,0,0.18) 47%, transparent 76%);
+}
+
+.banner-flipbook .stf__item.--left:not(.--simple) .flipbook-page-paper::after {
+  right: 0;
+  background: linear-gradient(268deg, rgba(255,255,255,0.62), rgba(255,255,255,0.18) 18%, rgba(0,0,0,0.18) 47%, transparent 76%);
 }
 
 .banner-flipbook .stf__outerShadow,
@@ -521,6 +559,7 @@ body {
   .bookshelf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .book-shelf-slot { padding-right: 0.45rem; padding-left: 0.45rem; }
   .book-cover-card { width: min(100%, 9.5rem); }
+  .flipbook-engine-host::after { display: none; }
   .flipbook-stage {
     min-height: 0;
     padding: 1rem 0.45rem 3rem;
