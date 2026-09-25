@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
+import { sortTeamMembers } from '@/lib/teamOrdering';
 
 export const metadata = {
   title: 'Our Team | The Banner Education Centre',
@@ -11,11 +12,24 @@ export const dynamic = 'force-dynamic'
 
 export default async function TeamPage() {
   const supabase = await createClient();
-  const { data: teamMembers, error } = await supabase
+  let { data: teamMembers, error } = await supabase
     .from('team_members')
     .select('*')
     .order('order_index', { ascending: true })
     .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Unable to load team members with order_index:', error)
+    const fallbackResult = await supabase
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    teamMembers = fallbackResult.data
+    error = fallbackResult.error
+  }
+
+  const arrangedTeamMembers = sortTeamMembers(teamMembers || []);
 
   return (
     <div className="flex flex-col">
@@ -33,7 +47,7 @@ export default async function TeamPage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {teamMembers && teamMembers.map((member: any) => (
+            {arrangedTeamMembers.map((member: any) => (
               <Link key={member.id} href={`/team/${member.id}`} className="group">
                 <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border-b-4 border-transparent hover:border-blue-600 h-full flex flex-col">
                   <div className="relative w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -52,8 +66,13 @@ export default async function TeamPage() {
                 </div>
               </Link>
             ))}
-            {(!teamMembers || teamMembers.length === 0) && !error && (
+            {arrangedTeamMembers.length === 0 && !error && (
               <p className="col-span-3 text-center text-gray-500">No team members found.</p>
+            )}
+            {arrangedTeamMembers.length === 0 && error && (
+              <p className="col-span-3 text-center text-red-600">
+                Team members could not be loaded right now.
+              </p>
             )}
           </div>
         </div>
